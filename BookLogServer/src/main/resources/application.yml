@@ -1,0 +1,47 @@
+server:
+  port: 9090
+  servlet:
+    context-path: /api/v1
+
+spring:
+  datasource:
+    url: jdbc:sqlite:booklog.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: com.booklog.config.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  h2:
+    console:
+      enabled: false
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+jwt:
+  secret: bookLogSecretKey123456789012345678901234567890
+  expiration: 86400000
+
+logging:
+  level:
+    org.springframework: INFO
+    com.booklog: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  packagesToScan: com.booklog.controller
+  pathsToMatch: /api/**
