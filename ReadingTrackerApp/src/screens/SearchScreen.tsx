@@ -257,8 +257,8 @@ export default function SearchScreen() {
         let matches = true;
 
         if (filter.author && info.authors) {
-          matches = matches && info.authors.some(author => 
-            author.toLowerCase().includes(filter.author.toLowerCase())
+          matches = matches && info.authors.some((author: string) => 
+            author.toLowerCase().includes(filter.author?.toLowerCase() ?? '')
           );
         }
 
@@ -267,8 +267,8 @@ export default function SearchScreen() {
         }
 
         if (filter.category && info.categories) {
-          matches = matches && info.categories.some(category => 
-            category.toLowerCase().includes(filter.category.toLowerCase())
+          matches = matches && info.categories.some((category: string) => 
+            category.toLowerCase().includes(filter.category?.toLowerCase() ?? '')
           );
         }
 
@@ -903,6 +903,7 @@ export default function SearchScreen() {
         visible={showManualEntry}
         animationType="slide"
         onRequestClose={() => setShowManualEntry(false)}
+        transparent={false}
       >
         <View style={[styles.modalContainer, isDarkMode && styles.darkModalContainer]}>
           <View style={styles.modalHeader}>
@@ -910,6 +911,7 @@ export default function SearchScreen() {
               style={styles.closeButton}
               onPress={() => {
                 setShowManualEntry(false);
+                // 입력 필드 초기화
                 setManualTitle('');
                 setManualAuthor('');
                 setManualPublisher('');

@@ -5,6 +5,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { registerRootComponent } from 'expo';
+import { useEffect } from 'react';
+import { initDatabase } from './src/database/database';
 
 // 각 스크린 import
 import StartLoginScreen from './src/screens/StartLoginScreen';
@@ -54,6 +56,19 @@ function MainTabs() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const setupDatabase = async () => {
+      try {
+        await initDatabase();
+        console.log('Database initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize database:', error);
+      }
+    };
+
+    setupDatabase();
+  }, []);
+
   return (
     <NavigationContainer>
       <AuthProvider>
