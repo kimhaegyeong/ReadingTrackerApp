@@ -2,12 +2,19 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, Image, Button, TouchableOpacity } from 'react-native';
 import { useBookContext } from '../contexts/BookContext';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type RootStackParamList = {
+  BookDetail: { book: any };
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'BookDetail'>;
 
 export default function LibraryScreen() {
   const { books } = useBookContext();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
 
-  const handleBookPress = (book) => {
+  const handleBookPress = (book: any) => {
     navigation.navigate('BookDetail', { book });
   };
 

@@ -7,8 +7,8 @@ export const saveReadingGoal = async (goal: ReadingGoal): Promise<number> => {
   const statement = await db.prepareAsync(
     `INSERT INTO reading_goals (
       yearly_books, monthly_books, yearly_pages, monthly_pages, 
-      start_date, end_date
-    ) VALUES (?, ?, ?, ?, ?, ?)`
+      start_date, end_date, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
   );
 
   try {
