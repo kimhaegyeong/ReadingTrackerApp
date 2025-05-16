@@ -3,65 +3,72 @@ import { View, Text, StyleSheet, Button, ScrollView, Image, TouchableOpacity, Sh
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Rating } from 'react-native-ratings';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRoute } from '@react-navigation/native';
 
 // 탭 컴포넌트들
-const InfoTab = () => (
+const InfoTab = ({ book }) => (
   <ScrollView style={styles.tabContent}>
     <View style={styles.infoSection}>
       <Text style={styles.sectionTitle}>출판 정보</Text>
-      <Text>출판사: 예시출판사</Text>
-      <Text>출판일: 2020-01-01</Text>
-      <Text>ISBN: 978-89-1234-5678</Text>
+      <Text>출판사: {book.publisher || '정보 없음'}</Text>
+      <Text>출판일: {book.publishedDate || '정보 없음'}</Text>
+      <Text>ISBN: {book.isbn || '정보 없음'}</Text>
     </View>
     <View style={styles.infoSection}>
       <Text style={styles.sectionTitle}>도서 소개</Text>
       <Text style={styles.description}>
-        어린왕자는 프랑스의 작가 생텍쥐페리가 쓴 소설로, 
-        어른들의 세계를 어린 왕자의 시선으로 바라보는 이야기입니다.
+        {book.description || '도서 소개가 없습니다.'}
       </Text>
     </View>
     <View style={styles.infoSection}>
       <Text style={styles.sectionTitle}>키워드</Text>
       <View style={styles.keywordContainer}>
-        <Text style={styles.keyword}>#판타지</Text>
-        <Text style={styles.keyword}>#철학</Text>
-        <Text style={styles.keyword}>#성장</Text>
+        {book.categories?.map((category, index) => (
+          <Text key={index} style={styles.keyword}>#{category}</Text>
+        ))}
       </View>
     </View>
   </ScrollView>
 );
 
-const MemoTab = () => (
+const MemoTab = ({ book }) => (
   <ScrollView style={styles.tabContent}>
     <View style={styles.memoSection}>
       <Text style={styles.sectionTitle}>메모 목록</Text>
-      <TouchableOpacity style={styles.memoItem}>
-        <Text style={styles.memoDate}>2024-03-15</Text>
-        <Text style={styles.memoText}>주인공의 성장 과정이 인상적이었다.</Text>
-      </TouchableOpacity>
+      {book.memos?.map((memo, index) => (
+        <TouchableOpacity key={index} style={styles.memoItem}>
+          <Text style={styles.memoDate}>{memo.date}</Text>
+          <Text style={styles.memoText}>{memo.content}</Text>
+        </TouchableOpacity>
+      ))}
+      {(!book.memos || book.memos.length === 0) && (
+        <Text style={styles.emptyText}>작성된 메모가 없습니다.</Text>
+      )}
     </View>
   </ScrollView>
 );
 
-const StatsTab = () => (
+const StatsTab = ({ book }) => (
   <ScrollView style={styles.tabContent}>
     <View style={styles.statsSection}>
       <Text style={styles.sectionTitle}>독서 통계</Text>
       <View style={styles.statItem}>
         <Text style={styles.statLabel}>총 읽은 페이지</Text>
-        <Text style={styles.statValue}>150/200</Text>
+        <Text style={styles.statValue}>{book.readPages || 0}/{book.totalPages || '?'}</Text>
       </View>
       <View style={styles.statItem}>
         <Text style={styles.statLabel}>평균 독서 속도</Text>
-        <Text style={styles.statValue}>30페이지/시간</Text>
+        <Text style={styles.statValue}>{book.readingSpeed || '0'}페이지/시간</Text>
       </View>
     </View>
   </ScrollView>
 );
 
 export default function BookDetailScreen() {
+  const route = useRoute();
+  const { book } = route.params;
   const [index, setIndex] = useState(0);
-  const [rating, setRating] = useState(4);
+  const [rating, setRating] = useState(book.rating || 0);
   const [routes] = useState([
     { key: 'info', title: '정보' },
     { key: 'memo', title: '메모' },
@@ -69,15 +76,15 @@ export default function BookDetailScreen() {
   ]);
 
   const renderScene = SceneMap({
-    info: InfoTab,
-    memo: MemoTab,
-    stats: StatsTab,
+    info: () => <InfoTab book={book} />,
+    memo: () => <MemoTab book={book} />,
+    stats: () => <StatsTab book={book} />,
   });
 
   const handleShare = async () => {
     try {
       await Share.share({
-        message: '어린왕자 독서 중! 현재 75% 완독했어요.',
+        message: `${book.title} 독서 중! 현재 ${book.readPages || 0}페이지 읽었어요.`,
       });
     } catch (error) {
       console.error(error);
@@ -89,12 +96,12 @@ export default function BookDetailScreen() {
       <ScrollView>
         <View style={styles.header}>
           <Image 
-            source={{ uri: 'https://example.com/book-cover.jpg' }}
+            source={{ uri: book.thumbnail || 'https://via.placeholder.com/120x180' }}
             style={styles.coverImage}
           />
           <View style={styles.bookInfo}>
-            <Text style={styles.title}>어린왕자</Text>
-            <Text style={styles.author}>생텍쥐페리</Text>
+            <Text style={styles.title}>{book.title}</Text>
+            <Text style={styles.author}>{book.authors?.join(', ') || '저자 정보 없음'}</Text>
             <Rating
               showRating
               onFinishRating={setRating}
@@ -262,5 +269,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 20,
   },
 });
