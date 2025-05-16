@@ -19,13 +19,49 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useBookContext } from '../contexts/BookContext';
 import { useReadingContext } from '../contexts/ReadingContext';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
+type RootStackParamList = {
+  MainTabs: undefined;
+  Search: { query?: string; tab?: string };
+  BookDetail: { bookId: string };
+  RecordEdit: { bookId?: string };
+  GoalSetting: undefined;
+  MemoManage: { highlightId?: string; mode?: string };
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+interface Book {
+  id: string;
+  title: string;
+  authors?: string[];
+  thumbnail?: string;
+  progress: number;
+  lastRead: string;
+}
+
+interface RecommendedBook {
+  id: string;
+  title: string;
+  author: string;
+  genre: string;
+  recommendationReason?: string;
+}
+
+interface ReadingHighlight {
+  id: string;
+  bookId: string;
+  content: string;
+  page: number;
+}
 
 const { width } = Dimensions.get('window');
 const BOOK_CARD_WIDTH = width * 0.7;
 const BOOK_CARD_MARGIN = 10;
 
 export default function HomeScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
   const { user } = useAuth();
   const { books } = useBookContext();
   const { 
@@ -38,12 +74,15 @@ export default function HomeScreen() {
   } = useReadingContext();
 
   const [greeting, setGreeting] = useState('');
-  const [currentBooks, setCurrentBooks] = useState([]);
-  const [recentHighlights, setRecentHighlights] = useState([]);
-  const [recommendedBooks, setRecommendedBooks] = useState([]);
+  const [currentBooks, setCurrentBooks] = useState<Book[]>([]);
+  const [recentHighlights, setRecentHighlights] = useState<ReadingHighlight[]>([]);
+  const [recommendedBooks, setRecommendedBooks] = useState<RecommendedBook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [activeBookIndex, setActiveBookIndex] = useState(0);
+  const [yesterdayReadingTime, setYesterdayReadingTime] = useState(0);
+  const [showGoalCelebration, setShowGoalCelebration] = useState(false);
+  const celebrationAnim = useRef(new Animated.Value(0)).current;
 
   const scrollX = useRef(new Animated.Value(0)).current;
   const fabAnim = useRef(new Animated.Value(0)).current;
@@ -90,8 +129,30 @@ export default function HomeScreen() {
     // Get recent highlights
     setRecentHighlights(getRecentHighlights(3));
 
+    // Mock yesterday's reading time
+    setYesterdayReadingTime(Math.floor(Math.random() * 120));
+
+    // Check if goal is completed
+    const activeGoal = goals.find(goal => !goal.completed);
+    if (activeGoal && activeGoal.progress >= activeGoal.target) {
+      setShowGoalCelebration(true);
+      Animated.sequence([
+        Animated.spring(celebrationAnim, {
+          toValue: 1,
+          friction: 3,
+          useNativeDriver: true,
+        }),
+        Animated.delay(2000),
+        Animated.spring(celebrationAnim, {
+          toValue: 0,
+          friction: 3,
+          useNativeDriver: true,
+        })
+      ]).start(() => setShowGoalCelebration(false));
+    }
+
     setIsLoading(false);
-  }, [books, getRecentHighlights]);
+  }, [books, getRecentHighlights, goals]);
 
   // Animate FAB
   useEffect(() => {
@@ -106,12 +167,12 @@ export default function HomeScreen() {
     setIsFabOpen(!isFabOpen);
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return `${date.getMonth() + 1}월 ${date.getDate()}일`;
   };
 
-  const formatTime = (minutes) => {
+  const formatTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
 
@@ -121,10 +182,10 @@ export default function HomeScreen() {
     return `${mins}분`;
   };
 
-  const getProgressColor = (progress) => {
-    if (progress < 30) return ['#FF9500', '#FFCC00'];
-    if (progress < 70) return ['#34C759', '#32D74B'];
-    return ['#007AFF', '#5AC8FA'];
+  const getProgressColor = (progress: number): readonly [string, string] => {
+    if (progress < 30) return ['#FF9500', '#FFCC00'] as const;
+    if (progress < 70) return ['#34C759', '#32D74B'] as const;
+    return ['#007AFF', '#5AC8FA'] as const;
   };
 
   const renderBookCarousel = () => {
@@ -137,7 +198,7 @@ export default function HomeScreen() {
           </Text>
           <TouchableOpacity 
             style={styles.emptyStateButton}
-            onPress={() => navigation.navigate('Search')}
+            onPress={() => navigation.navigate('Search' as never)}
           >
             <Text style={styles.emptyStateButtonText}>책 찾아보기</Text>
           </TouchableOpacity>
@@ -180,8 +241,8 @@ export default function HomeScreen() {
             return (
               <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
-                onLongPress={() => navigation.navigate('RecordEdit', { bookId: item.id })}
+                onPress={() => navigation.navigate('BookDetail' as never, { bookId: item.id } as never)}
+                onLongPress={() => navigation.navigate('RecordEdit' as never, { bookId: item.id } as never)}
               >
                 <Animated.View 
                   style={[
@@ -250,6 +311,8 @@ export default function HomeScreen() {
   const renderReadingSummary = () => {
     const todayTime = getTodayReadingTime();
     const streak = getReadingStreak();
+    const timeDiff = todayTime - yesterdayReadingTime;
+    const timeDiffColor = timeDiff >= 0 ? '#34C759' : '#FF3B30';
 
     return (
       <View style={[styles.summaryCard, isDarkMode && styles.darkCard]}>
@@ -261,6 +324,11 @@ export default function HomeScreen() {
               {formatTime(todayTime)}
             </Text>
             <Text style={[styles.summaryLabel, isDarkMode && styles.darkSubText]}>독서 시간</Text>
+            {timeDiff !== 0 && (
+              <Text style={[styles.timeDiffText, { color: timeDiffColor }]}>
+                {timeDiff > 0 ? '+' : ''}{formatTime(timeDiff)}
+              </Text>
+            )}
           </View>
 
           <View style={styles.summaryDivider} />
@@ -278,14 +346,13 @@ export default function HomeScreen() {
   };
 
   const renderGoalWidget = () => {
-    // Use the first active goal, or show a placeholder if none exists
     const activeGoal = goals.find(goal => !goal.completed);
 
     if (!activeGoal) {
       return (
         <TouchableOpacity 
           style={[styles.goalCard, styles.emptyGoalCard, isDarkMode && styles.darkCard]}
-          onPress={() => navigation.navigate('GoalSetting')}
+          onPress={() => navigation.navigate('GoalSetting' as never)}
         >
           <MaterialIcons name="add-circle-outline" size={24} color={isDarkMode ? '#fff' : '#007AFF'} />
           <Text style={[styles.emptyGoalText, isDarkMode && styles.darkText]}>독서 목표 설정하기</Text>
@@ -294,12 +361,33 @@ export default function HomeScreen() {
     }
 
     const progress = (activeGoal.progress / activeGoal.target) * 100;
+    const isCompleted = progress >= 100;
 
     return (
       <TouchableOpacity 
         style={[styles.goalCard, isDarkMode && styles.darkCard]}
-        onPress={() => navigation.navigate('GoalSetting')}
+        onPress={() => navigation.navigate('GoalSetting' as never)}
       >
+        {showGoalCelebration && (
+          <Animated.View 
+            style={[
+              styles.celebrationContainer,
+              {
+                opacity: celebrationAnim,
+                transform: [
+                  { scale: celebrationAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.8, 1]
+                  })}
+                ]
+              }
+            ]}
+          >
+            <MaterialIcons name="celebration" size={48} color="#FFD700" />
+            <Text style={styles.celebrationText}>목표 달성!</Text>
+          </Animated.View>
+        )}
+
         <View style={styles.goalHeader}>
           <Text style={[styles.cardTitle, isDarkMode && styles.darkText]}>독서 목표</Text>
           <Text style={[styles.goalPeriod, isDarkMode && styles.darkSubText]}>
@@ -345,7 +433,7 @@ export default function HomeScreen() {
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>최근 메모/하이라이트</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('MemoManage')}>
+          <TouchableOpacity onPress={() => navigation.navigate('MemoManage' as never)}>
             <Text style={styles.seeAllText}>모두 보기</Text>
           </TouchableOpacity>
         </View>
@@ -362,7 +450,7 @@ export default function HomeScreen() {
               <TouchableOpacity 
                 key={highlight.id}
                 style={[styles.highlightCard, isDarkMode && styles.darkCard]}
-                onPress={() => navigation.navigate('MemoManage', { highlightId: highlight.id })}
+                onPress={() => navigation.navigate('MemoManage' as never, { highlightId: highlight.id } as never)}
               >
                 <Text style={[styles.highlightContent, isDarkMode && styles.darkText]} numberOfLines={4}>
                   "{highlight.content}"
@@ -392,7 +480,7 @@ export default function HomeScreen() {
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>추천 도서</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Search', { tab: 'recommendations' })}>
+          <TouchableOpacity onPress={() => navigation.navigate('Search' as never, { tab: 'recommendations' } as never)}>
             <Text style={styles.seeAllText}>모두 보기</Text>
           </TouchableOpacity>
         </View>
@@ -405,7 +493,7 @@ export default function HomeScreen() {
           renderItem={({ item }) => (
             <TouchableOpacity 
               style={[styles.recommendedBookCard, isDarkMode && styles.darkCard]}
-              onPress={() => navigation.navigate('Search', { query: item.title })}
+              onPress={() => navigation.navigate('Search' as never, { query: item.title } as never)}
             >
               <View style={styles.recommendedBookCover}>
                 <MaterialIcons name="book" size={30} color="#999" />
@@ -459,7 +547,7 @@ export default function HomeScreen() {
             style={[styles.fabActionButton, { backgroundColor: '#FF9500' }]}
             onPress={() => {
               toggleFab();
-              navigation.navigate('RecordEdit');
+              navigation.navigate('RecordEdit' as never);
             }}
           >
             <MaterialIcons name="timer" size={20} color="#fff" />
@@ -482,7 +570,7 @@ export default function HomeScreen() {
             style={[styles.fabActionButton, { backgroundColor: '#34C759' }]}
             onPress={() => {
               toggleFab();
-              navigation.navigate('MemoManage', { mode: 'add' });
+              navigation.navigate('MemoManage' as never, { mode: 'add' } as never);
             }}
           >
             <MaterialIcons name="note-add" size={20} color="#fff" />
@@ -505,7 +593,7 @@ export default function HomeScreen() {
             style={[styles.fabActionButton, { backgroundColor: '#007AFF' }]}
             onPress={() => {
               toggleFab();
-              navigation.navigate('RecordEdit');
+              navigation.navigate('RecordEdit' as never);
             }}
           >
             <MaterialIcons name="edit" size={20} color="#fff" />
@@ -972,5 +1060,33 @@ const styles = StyleSheet.create({
   // Misc
   bottomPadding: {
     height: 80,
+  },
+  timeDiffText: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  celebrationContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    zIndex: 1,
+  },
+  celebrationText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 12,
+  },
+  recommendationReason: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });

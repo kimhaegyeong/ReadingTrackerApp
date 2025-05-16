@@ -18,6 +18,9 @@ export interface ReadingGoal {
   end_date: string;
   created_at?: string;
   updated_at?: string;
+  is_public?: boolean;
+  notifications_enabled?: boolean;
+  notification_time?: string;
 }
 
 export interface ReadingSession {

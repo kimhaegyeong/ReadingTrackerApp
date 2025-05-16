@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from './AuthContext';
+import { getCurrentReadingGoal, saveReadingGoal, updateReadingGoal } from '../database/goalOperations';
+import type { ReadingGoal } from '../database/types';
 
 export interface ReadingSession {
   id: string;
@@ -12,17 +14,6 @@ export interface ReadingSession {
   notes?: string;
   emotion?: 'happy' | 'sad' | 'confused' | 'excited' | 'bored';
   rating?: number; // 1-5
-}
-
-export interface ReadingGoal {
-  id: string;
-  type: 'books' | 'pages' | 'time';
-  target: number;
-  period: 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
-  startDate: string; // ISO string
-  endDate?: string; // ISO string
-  progress: number;
-  completed: boolean;
 }
 
 export interface ReadingHighlight {
@@ -51,27 +42,18 @@ interface ReadingContextType {
   getTodayReadingTime: () => number;
   getReadingStreak: () => number;
   getRecentHighlights: (limit?: number) => ReadingHighlight[];
+  refreshGoals: () => Promise<void>;
 }
 
-const ReadingContext = createContext<ReadingContextType>({
-  readingSessions: [],
-  goals: [],
-  highlights: [],
-  addReadingSession: async () => ({ id: '', bookId: '', date: '', startPage: 0, endPage: 0, duration: 0 }),
-  updateReadingSession: async () => {},
-  deleteReadingSession: async () => {},
-  addGoal: async () => ({ id: '', type: 'books', target: 0, period: 'monthly', startDate: '', progress: 0, completed: false }),
-  updateGoal: async () => {},
-  deleteGoal: async () => {},
-  addHighlight: async () => ({ id: '', bookId: '', content: '', page: 0, date: '' }),
-  updateHighlight: async () => {},
-  deleteHighlight: async () => {},
-  getTodayReadingTime: () => 0,
-  getReadingStreak: () => 0,
-  getRecentHighlights: () => [],
-});
+const ReadingContext = createContext<ReadingContextType | undefined>(undefined);
 
-export const useReadingContext = () => useContext(ReadingContext);
+export const useReadingContext = () => {
+  const context = useContext(ReadingContext);
+  if (!context) {
+    throw new Error('useReadingContext must be used within a ReadingProvider');
+  }
+  return context;
+};
 
 export const ReadingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -297,6 +279,25 @@ export const ReadingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       .slice(0, limit);
   };
 
+  const loadGoals = async () => {
+    try {
+      const currentGoal = await getCurrentReadingGoal();
+      if (currentGoal) {
+        setGoals([currentGoal]);
+      }
+    } catch (error) {
+      console.error('목표 로딩 중 오류 발생:', error);
+    }
+  };
+
+  const refreshGoals = async () => {
+    await loadGoals();
+  };
+
+  useEffect(() => {
+    loadGoals();
+  }, []);
+
   return (
     <ReadingContext.Provider
       value={{
@@ -315,6 +316,7 @@ export const ReadingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         getTodayReadingTime,
         getReadingStreak,
         getRecentHighlights,
+        refreshGoals,
       }}
     >
       {children}

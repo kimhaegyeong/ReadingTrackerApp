@@ -24,6 +24,12 @@
     "plugins": [
       "expo-web-browser",
       [
+        "expo-calendar",
+        {
+          "calendarPermission": "The app needs to access your calendar."
+        }
+      ],
+      [
         "expo-sqlite",
         {
           "enableFTS": true,

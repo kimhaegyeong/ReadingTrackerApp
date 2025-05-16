@@ -1,14 +1,16 @@
 import { getDBConnection } from './connection';
-import { SQLiteTransaction } from 'expo-sqlite';
 import { ReadingGoal } from './types';
+
+export type { ReadingGoal };
 
 export const saveReadingGoal = async (goal: ReadingGoal): Promise<number> => {
   const db = await getDBConnection();
   const statement = await db.prepareAsync(
     `INSERT INTO reading_goals (
       yearly_books, monthly_books, yearly_pages, monthly_pages, 
-      start_date, end_date, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
+      start_date, end_date, is_public, notifications_enabled, notification_time,
+      created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
   );
 
   try {
@@ -18,7 +20,10 @@ export const saveReadingGoal = async (goal: ReadingGoal): Promise<number> => {
       goal.yearly_pages,
       goal.monthly_pages,
       goal.start_date,
-      goal.end_date
+      goal.end_date,
+      goal.is_public ? 1 : 0,
+      goal.notifications_enabled ? 1 : 0,
+      goal.notification_time || null
     ]);
     return result.lastInsertRowId;
   } finally {
@@ -45,13 +50,18 @@ export const getCurrentReadingGoal = async (): Promise<ReadingGoal | null> => {
   }
 };
 
-export const updateReadingGoal = async (goal: ReadingGoal): Promise<void> => {
+interface UpdateReadingGoal extends ReadingGoal {
+  id: number;
+}
+
+export const updateReadingGoal = async (goal: UpdateReadingGoal): Promise<void> => {
   const db = await getDBConnection();
   const statement = await db.prepareAsync(
     `UPDATE reading_goals 
      SET yearly_books = ?, monthly_books = ?, 
          yearly_pages = ?, monthly_pages = ?,
          start_date = ?, end_date = ?,
+         is_public = ?, notifications_enabled = ?, notification_time = ?,
          updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`
   );
@@ -64,6 +74,9 @@ export const updateReadingGoal = async (goal: ReadingGoal): Promise<void> => {
       goal.monthly_pages,
       goal.start_date,
       goal.end_date,
+      goal.is_public ? 1 : 0,
+      goal.notifications_enabled ? 1 : 0,
+      goal.notification_time || null,
       goal.id
     ]);
   } finally {

@@ -51,7 +51,8 @@ export default function SearchScreen() {
     toggleFilterActive,
     clearActiveFilters,
     setViewMode,
-    saveFilter
+    saveFilter,
+    clearSearchHistory
   } = useSearchContext();
 
   // State for search
@@ -100,13 +101,14 @@ export default function SearchScreen() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
-  // Request camera permissions
-  useEffect(() => {
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasCameraPermission(status === 'granted');
-    })();
-  }, []);
+  // Request camera permissions when scanner is opened
+  const requestCameraPermission = async () => {
+    const { status } = await Camera.requestCameraPermissionsAsync();
+    setHasCameraPermission(status === 'granted');
+    if (status === 'granted') {
+      setShowScanner(true);
+    }
+  };
 
   // Apply filters when activeFilters changes
   useEffect(() => {
@@ -669,8 +671,11 @@ export default function SearchScreen() {
           <View style={styles.dropdownHeader}>
             <Text style={[styles.dropdownTitle, isDarkMode && styles.darkText]}>최근 검색어</Text>
             <TouchableOpacity 
-              //onPress={() => clearSearchHistory()}
-              >
+              onPress={() => {
+                clearSearchHistory();
+                setShowHistory(false);
+              }}
+            >
               <Text style={styles.clearHistoryText}>전체 삭제</Text>
             </TouchableOpacity>
           </View>
@@ -682,6 +687,7 @@ export default function SearchScreen() {
                 onPress={() => {
                   setQuery(item.query);
                   searchBooks(item.query);
+                  setShowHistory(false);
                 }}
               >
                 <MaterialIcons name="history" size={18} color={isDarkMode ? "#aaa" : "#999"} />
@@ -690,7 +696,12 @@ export default function SearchScreen() {
                 </Text>
                 <TouchableOpacity
                   style={styles.historyDeleteBtn}
-                  onPress={() => removeFromSearchHistory(item.query)}
+                  onPress={() => {
+                    removeFromSearchHistory(item.query);
+                    if (searchHistory.length === 1) {
+                      setShowHistory(false);
+                    }
+                  }}
                 >
                   <MaterialIcons name="close" size={18} color={isDarkMode ? "#aaa" : "#999"} />
                 </TouchableOpacity>
@@ -818,7 +829,7 @@ export default function SearchScreen() {
       <View style={styles.actionButtonsContainer}>
         <TouchableOpacity
           style={[styles.floatingButton, styles.scanButton, isDarkMode && styles.darkFloatingButton]}
-          onPress={() => setShowScanner(true)}
+          onPress={requestCameraPermission}
         >
           <MaterialIcons name="qr-code-scanner" size={24} color="#fff" />
           <Text style={styles.floatingButtonText}>바코드 스캔</Text>
@@ -837,264 +848,347 @@ export default function SearchScreen() {
       <Modal
         visible={showScanner}
         animationType="slide"
-        onRequestClose={() => setShowScanner(false)}
+        onRequestClose={() => {
+          setShowScanner(false);
+          setScanned(false);
+        }}
+        transparent={true}
       >
-        <View style={[styles.modalContainer, isDarkMode && styles.darkModalContainer]}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowScanner(false)}
-            >
-              <MaterialIcons name="close" size={24} color={isDarkMode ? "#fff" : "#000"} />
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, isDarkMode && styles.darkText]}>바코드 스캔</Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          {hasCameraPermission === null ? (
-            <View style={styles.cameraPermissionContainer}>
-              <Text style={[styles.cameraPermissionText, isDarkMode && styles.darkText]}>
-                카메라 권한을 확인하는 중...
-              </Text>
-            </View>
-          ) : hasCameraPermission === false ? (
-            <View style={styles.cameraPermissionContainer}>
-              <Text style={[styles.cameraPermissionText, isDarkMode && styles.darkText]}>
-                카메라 접근 권한이 없습니다
-              </Text>
+        <TouchableOpacity 
+          style={[styles.modalContainer, isDarkMode && styles.darkModalContainer]}
+          activeOpacity={1}
+          onPress={() => {
+            setShowScanner(false);
+            setScanned(false);
+          }}
+        >
+          <TouchableOpacity 
+            activeOpacity={1} 
+            onPress={(e) => e.stopPropagation()}
+            style={[styles.modalContent, isDarkMode && styles.darkModalContent]}
+          >
+            <View style={styles.modalHeader}>
               <TouchableOpacity
-                style={styles.permissionButton}
-                onPress={async () => {
-                  const { status } = await Camera.requestCameraPermissionsAsync();
-                  setHasCameraPermission(status === 'granted');
+                style={styles.closeButton}
+                onPress={() => {
+                  setShowScanner(false);
+                  setScanned(false);
                 }}
               >
-                <Text style={styles.permissionButtonText}>권한 요청</Text>
+                <MaterialIcons name="close" size={24} color={isDarkMode ? "#fff" : "#000"} />
               </TouchableOpacity>
+              <Text style={[styles.modalTitle, isDarkMode && styles.darkText]}>바코드 스캔</Text>
+              <View style={{ width: 24 }} />
             </View>
-          ) : (
-            <View style={styles.cameraContainer}>
-              <CameraView
-                style={styles.camera}
-                onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-              >
-                <View style={styles.scanOverlay}>
-                  <View style={styles.scanFrame} />
-                  <Text style={styles.scanInstructions}>
-                    책의 바코드를 프레임 안에 위치시키세요
-                  </Text>
-                </View>
-              </CameraView>
-              {scanned && (
+
+            {hasCameraPermission === null ? (
+              <View style={styles.cameraPermissionContainer}>
+                <Text style={[styles.cameraPermissionText, isDarkMode && styles.darkText]}>
+                  카메라 권한을 확인하는 중...
+                </Text>
+              </View>
+            ) : hasCameraPermission === false ? (
+              <View style={styles.cameraPermissionContainer}>
+                <Text style={[styles.cameraPermissionText, isDarkMode && styles.darkText]}>
+                  카메라 접근 권한이 없습니다
+                </Text>
                 <TouchableOpacity
-                  style={styles.rescanButton}
-                  onPress={() => setScanned(false)}
+                  style={styles.permissionButton}
+                  onPress={async () => {
+                    const { status } = await Camera.requestCameraPermissionsAsync();
+                    setHasCameraPermission(status === 'granted');
+                  }}
                 >
-                  <Text style={styles.rescanButtonText}>다시 스캔</Text>
+                  <Text style={styles.permissionButtonText}>권한 요청</Text>
                 </TouchableOpacity>
-              )}
-            </View>
-          )}
-        </View>
+              </View>
+            ) : (
+              <View style={styles.cameraContainer}>
+                <CameraView
+                  style={styles.camera}
+                  onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+                >
+                  <View style={styles.scanOverlay}>
+                    <View style={styles.scanFrame} />
+                    <Text style={styles.scanInstructions}>
+                      책의 바코드를 프레임 안에 위치시키세요
+                    </Text>
+                  </View>
+                </CameraView>
+                {scanned && (
+                  <TouchableOpacity
+                    style={styles.rescanButton}
+                    onPress={() => setScanned(false)}
+                  >
+                    <Text style={styles.rescanButtonText}>다시 스캔</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* Manual Entry Modal */}
       <Modal
         visible={showManualEntry}
         animationType="slide"
-        onRequestClose={() => setShowManualEntry(false)}
-        transparent={false}
+        onRequestClose={() => {
+          setShowManualEntry(false);
+          setManualTitle('');
+          setManualAuthor('');
+          setManualPublisher('');
+          setManualYear('');
+          setManualIsbn('');
+          setManualPages('');
+        }}
+        transparent={true}
       >
-        <View style={[styles.modalContainer, isDarkMode && styles.darkModalContainer]}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => {
-                setShowManualEntry(false);
-                // 입력 필드 초기화
-                setManualTitle('');
-                setManualAuthor('');
-                setManualPublisher('');
-                setManualYear('');
-                setManualIsbn('');
-                setManualPages('');
-              }}
-            >
-              <MaterialIcons name="close" size={24} color={isDarkMode ? "#fff" : "#000"} />
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, isDarkMode && styles.darkText]}>책 수동 입력</Text>
-            <View style={{ width: 24 }} />
-          </View>
+        <TouchableOpacity 
+          style={[styles.modalContainer, isDarkMode && styles.darkModalContainer]}
+          activeOpacity={1}
+          onPress={() => {
+            setShowManualEntry(false);
+            setManualTitle('');
+            setManualAuthor('');
+            setManualPublisher('');
+            setManualYear('');
+            setManualIsbn('');
+            setManualPages('');
+          }}
+        >
+          <TouchableOpacity 
+            activeOpacity={1} 
+            onPress={(e) => e.stopPropagation()}
+            style={[styles.modalContent, isDarkMode && styles.darkModalContent]}
+          >
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => {
+                  setShowManualEntry(false);
+                  setManualTitle('');
+                  setManualAuthor('');
+                  setManualPublisher('');
+                  setManualYear('');
+                  setManualIsbn('');
+                  setManualPages('');
+                }}
+              >
+                <MaterialIcons name="close" size={24} color={isDarkMode ? "#fff" : "#000"} />
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, isDarkMode && styles.darkText]}>책 수동 입력</Text>
+              <View style={{ width: 24 }} />
+            </View>
 
-          <ScrollView style={styles.manualEntryForm}>
-            <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>제목 *</Text>
-            <TextInput
-              style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-              value={manualTitle}
-              onChangeText={setManualTitle}
-              placeholder="책 제목"
-              placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-            />
+            <ScrollView style={styles.manualEntryForm}>
+              <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>제목 *</Text>
+              <TextInput
+                style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                value={manualTitle}
+                onChangeText={setManualTitle}
+                placeholder="책 제목"
+                placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+              />
 
-            <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>저자</Text>
-            <TextInput
-              style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-              value={manualAuthor}
-              onChangeText={setManualAuthor}
-              placeholder="저자 이름"
-              placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-            />
+              <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>저자</Text>
+              <TextInput
+                style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                value={manualAuthor}
+                onChangeText={setManualAuthor}
+                placeholder="저자 이름"
+                placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+              />
 
-            <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>출판사</Text>
-            <TextInput
-              style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-              value={manualPublisher}
-              onChangeText={setManualPublisher}
-              placeholder="출판사"
-              placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-            />
+              <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>출판사</Text>
+              <TextInput
+                style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                value={manualPublisher}
+                onChangeText={setManualPublisher}
+                placeholder="출판사"
+                placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+              />
 
-            <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>출판년도</Text>
-            <TextInput
-              style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-              value={manualYear}
-              onChangeText={setManualYear}
-              placeholder="YYYY"
-              placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-              keyboardType="number-pad"
-              maxLength={4}
-            />
+              <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>출판년도</Text>
+              <TextInput
+                style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                value={manualYear}
+                onChangeText={setManualYear}
+                placeholder="YYYY"
+                placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+                keyboardType="number-pad"
+                maxLength={4}
+              />
 
-            <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>ISBN</Text>
-            <TextInput
-              style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-              value={manualIsbn}
-              onChangeText={setManualIsbn}
-              placeholder="ISBN"
-              placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-              keyboardType="number-pad"
-            />
+              <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>ISBN</Text>
+              <TextInput
+                style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                value={manualIsbn}
+                onChangeText={setManualIsbn}
+                placeholder="ISBN"
+                placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+                keyboardType="number-pad"
+              />
 
-            <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>페이지 수</Text>
-            <TextInput
-              style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-              value={manualPages}
-              onChangeText={setManualPages}
-              placeholder="페이지 수"
-              placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-              keyboardType="number-pad"
-            />
+              <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>페이지 수</Text>
+              <TextInput
+                style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                value={manualPages}
+                onChangeText={setManualPages}
+                placeholder="페이지 수"
+                placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+                keyboardType="number-pad"
+              />
 
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleManualEntry}
-            >
-              <Text style={styles.submitButtonText}>저장</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={handleManualEntry}
+              >
+                <Text style={styles.submitButtonText}>저장</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* Filter Modal */}
       <Modal
         visible={showFilterModal}
         animationType="slide"
-        onRequestClose={() => setShowFilterModal(false)}
+        onRequestClose={() => {
+          setShowFilterModal(false);
+          setFilterName('');
+          setFilterAuthor('');
+          setFilterPublisher('');
+          setFilterCategory('');
+          setFilterYearFrom('');
+          setFilterYearTo('');
+          setFilterLanguage('');
+        }}
+        transparent={true}
       >
-        <View style={[styles.modalContainer, isDarkMode && styles.darkModalContainer]}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setShowFilterModal(false)}
-            >
-              <MaterialIcons name="close" size={24} color={isDarkMode ? "#fff" : "#000"} />
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, isDarkMode && styles.darkText]}>필터 추가</Text>
-            <View style={{ width: 24 }} />
-          </View>
-
-          <ScrollView style={styles.filterForm}>
-            <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>필터 이름 *</Text>
-            <TextInput
-              style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-              value={filterName}
-              onChangeText={setFilterName}
-              placeholder="필터 이름"
-              placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-            />
-
-            <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>저자</Text>
-            <TextInput
-              style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-              value={filterAuthor}
-              onChangeText={setFilterAuthor}
-              placeholder="저자 이름"
-              placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-            />
-
-            <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>출판사</Text>
-            <TextInput
-              style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-              value={filterPublisher}
-              onChangeText={setFilterPublisher}
-              placeholder="출판사"
-              placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-            />
-
-            <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>카테고리</Text>
-            <TextInput
-              style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-              value={filterCategory}
-              onChangeText={setFilterCategory}
-              placeholder="카테고리"
-              placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-            />
-
-            <View style={styles.yearRangeContainer}>
-              <View style={styles.yearInputContainer}>
-                <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>출판년도 (시작)</Text>
-                <TextInput
-                  style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-                  value={filterYearFrom}
-                  onChangeText={setFilterYearFrom}
-                  placeholder="YYYY"
-                  placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-                  keyboardType="number-pad"
-                  maxLength={4}
-                />
-              </View>
-
-              <View style={styles.yearInputContainer}>
-                <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>출판년도 (종료)</Text>
-                <TextInput
-                  style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-                  value={filterYearTo}
-                  onChangeText={setFilterYearTo}
-                  placeholder="YYYY"
-                  placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-                  keyboardType="number-pad"
-                  maxLength={4}
-                />
-              </View>
+        <TouchableOpacity 
+          style={[styles.modalContainer, isDarkMode && styles.darkModalContainer]}
+          activeOpacity={1}
+          onPress={() => {
+            setShowFilterModal(false);
+            setFilterName('');
+            setFilterAuthor('');
+            setFilterPublisher('');
+            setFilterCategory('');
+            setFilterYearFrom('');
+            setFilterYearTo('');
+            setFilterLanguage('');
+          }}
+        >
+          <TouchableOpacity 
+            activeOpacity={1} 
+            onPress={(e) => e.stopPropagation()}
+            style={[styles.modalContent, isDarkMode && styles.darkModalContent]}
+          >
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => {
+                  setShowFilterModal(false);
+                  setFilterName('');
+                  setFilterAuthor('');
+                  setFilterPublisher('');
+                  setFilterCategory('');
+                  setFilterYearFrom('');
+                  setFilterYearTo('');
+                  setFilterLanguage('');
+                }}
+              >
+                <MaterialIcons name="close" size={24} color={isDarkMode ? "#fff" : "#000"} />
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, isDarkMode && styles.darkText]}>필터 추가</Text>
+              <View style={{ width: 24 }} />
             </View>
 
-            <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>언어</Text>
-            <TextInput
-              style={[styles.formInput, isDarkMode && styles.darkFormInput]}
-              value={filterLanguage}
-              onChangeText={setFilterLanguage}
-              placeholder="언어 코드 (예: ko, en)"
-              placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
-            />
+            <ScrollView style={styles.filterForm}>
+              <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>필터 이름 *</Text>
+              <TextInput
+                style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                value={filterName}
+                onChangeText={setFilterName}
+                placeholder="필터 이름"
+                placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+              />
 
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={saveCurrentFilter}
-            >
-              <Text style={styles.submitButtonText}>필터 저장</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
+              <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>저자</Text>
+              <TextInput
+                style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                value={filterAuthor}
+                onChangeText={setFilterAuthor}
+                placeholder="저자 이름"
+                placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+              />
+
+              <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>출판사</Text>
+              <TextInput
+                style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                value={filterPublisher}
+                onChangeText={setFilterPublisher}
+                placeholder="출판사"
+                placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+              />
+
+              <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>카테고리</Text>
+              <TextInput
+                style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                value={filterCategory}
+                onChangeText={setFilterCategory}
+                placeholder="카테고리"
+                placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+              />
+
+              <View style={styles.yearRangeContainer}>
+                <View style={styles.yearInputContainer}>
+                  <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>출판년도 (시작)</Text>
+                  <TextInput
+                    style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                    value={filterYearFrom}
+                    onChangeText={setFilterYearFrom}
+                    placeholder="YYYY"
+                    placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                  />
+                </View>
+
+                <View style={styles.yearInputContainer}>
+                  <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>출판년도 (종료)</Text>
+                  <TextInput
+                    style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                    value={filterYearTo}
+                    onChangeText={setFilterYearTo}
+                    placeholder="YYYY"
+                    placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                  />
+                </View>
+              </View>
+
+              <Text style={[styles.formLabel, isDarkMode && styles.darkText]}>언어</Text>
+              <TextInput
+                style={[styles.formInput, isDarkMode && styles.darkFormInput]}
+                value={filterLanguage}
+                onChangeText={setFilterLanguage}
+                placeholder="언어 코드 (예: ko, en)"
+                placeholderTextColor={isDarkMode ? "#aaa" : "#999"}
+              />
+
+              <TouchableOpacity
+                style={styles.submitButton}
+                onPress={saveCurrentFilter}
+              >
+                <Text style={styles.submitButtonText}>필터 저장</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -1572,10 +1666,22 @@ const styles = StyleSheet.create({
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   darkModalContainer: {
-    backgroundColor: '#121212',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  modalContent: {
+    width: '90%',
+    maxHeight: '90%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  darkModalContent: {
+    backgroundColor: '#1e1e1e',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1586,7 +1692,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   closeButton: {
-    padding: 4,
+    padding: 8,
   },
   modalTitle: {
     fontSize: 18,
