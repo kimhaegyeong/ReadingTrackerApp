@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Button, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Button, ScrollView, TouchableOpacity, Alert, Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import Slider from '@react-native-community/slider';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { saveReadingRecord, updateReadingRecord, getReadingRecord } from '../database/recordOperations';
-import { ReadingRecord, UpdateReadingRecord } from '../types';
+import { ReadingRecord, UpdateReadingRecord, Book } from '../types';
+import { getBookInfo } from '../database/bookOperations';
 
 type RootStackParamList = {
   RecordEdit: {
@@ -21,24 +22,41 @@ export default function RecordEditScreen() {
   const navigation = useNavigation();
   const { bookId, recordId } = route.params;
 
+  const [book, setBook] = useState<Book | null>(null);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pageRange, setPageRange] = useState('');
-  const [readingTime, setReadingTime] = useState('');
+  const [readingHours, setReadingHours] = useState('');
+  const [readingMinutes, setReadingMinutes] = useState('');
   const [memo, setMemo] = useState('');
   const [emotion, setEmotion] = useState('');
   const [satisfaction, setSatisfaction] = useState(3);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [pageError, setPageError] = useState('');
 
   const emotions = ['😊', '😢', '😡', '😴', '🤔', '😮', '😍', '😱', '😭', '😤'];
 
   useEffect(() => {
+    if (bookId) {
+      loadBookInfo();
+    }
     if (recordId) {
       loadRecord();
     }
-  }, [recordId]);
+  }, [bookId, recordId]);
+
+  const loadBookInfo = async () => {
+    try {
+      const bookInfo = await getBookInfo(bookId!);
+      if (bookInfo) {
+        setBook(bookInfo);
+      }
+    } catch (error) {
+      Alert.alert('오류', '책 정보를 불러오는데 실패했습니다.');
+    }
+  };
 
   const loadRecord = async () => {
     try {
@@ -46,7 +64,6 @@ export default function RecordEditScreen() {
       if (record) {
         setDate(new Date(record.date));
         setPageRange(`${record.startPage}-${record.endPage}`);
-        setReadingTime(record.readingTime.toString());
         setEmotion(record.emotion);
         setSatisfaction(record.satisfaction);
         setMemo(record.memo);
@@ -71,29 +88,61 @@ export default function RecordEditScreen() {
     }
   };
 
-  const validateInputs = (): boolean => {
-    if (!pageRange) {
-      Alert.alert('오류', '읽은 페이지 범위를 입력해주세요.');
-      return false;
-    }
-
-    if (!readingTime) {
-      Alert.alert('오류', '독서 시간을 입력해주세요.');
-      return false;
-    }
-
+  const validatePageRange = (range: string): boolean => {
     const pageRangeRegex = /^\d+-\d+$/;
-    if (!pageRangeRegex.test(pageRange)) {
-      Alert.alert('오류', '페이지 범위는 "시작-끝" 형식으로 입력해주세요.');
+    if (!pageRangeRegex.test(range)) {
+      setPageError('페이지 범위는 "시작-끝" 형식으로 입력해주세요.');
       return false;
     }
 
-    const [startPage, endPage] = pageRange.split('-').map(Number);
+    const [startPage, endPage] = range.split('-').map(Number);
     if (startPage >= endPage) {
-      Alert.alert('오류', '시작 페이지는 끝 페이지보다 작아야 합니다.');
+      setPageError('시작 페이지는 끝 페이지보다 작아야 합니다.');
       return false;
     }
 
+    if (book && endPage > book.totalPages) {
+      setPageError(`페이지 범위는 전체 페이지 수(${book.totalPages}페이지)를 초과할 수 없습니다.`);
+      return false;
+    }
+
+    setPageError('');
+    return true;
+  };
+
+  const validateReadingTime = (): boolean => {
+    const hours = parseInt(readingHours) || 0;
+    const minutes = parseInt(readingMinutes) || 0;
+    const totalMinutes = hours * 60 + minutes;
+
+    if (totalMinutes <= 0) {
+      Alert.alert('오류', '독서 시간은 1분 이상이어야 합니다.');
+      return false;
+    }
+
+    if (totalMinutes > 24 * 60) {
+      Alert.alert('오류', '독서 시간은 24시간을 초과할 수 없습니다.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const validateDate = (): boolean => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (date > today) {
+      Alert.alert('오류', '미래 날짜는 선택할 수 없습니다.');
+      return false;
+    }
+    return true;
+  };
+
+  const validateInputs = (): boolean => {
+    if (!validateDate()) return false;
+    if (!validatePageRange(pageRange)) return false;
+    if (!validateReadingTime()) return false;
     return true;
   };
 
@@ -103,13 +152,14 @@ export default function RecordEditScreen() {
     try {
       setIsLoading(true);
       const [startPage, endPage] = pageRange.split('-').map(Number);
+      const totalMinutes = (parseInt(readingHours) || 0) * 60 + (parseInt(readingMinutes) || 0);
       
       const record: ReadingRecord = {
         bookId: bookId || '',
         date: date.toISOString(),
         startPage,
         endPage,
-        readingTime: parseInt(readingTime),
+        readingTime: totalMinutes,
         emotion,
         satisfaction,
         memo,
@@ -137,6 +187,19 @@ export default function RecordEditScreen() {
     <ScrollView style={styles.container}>
       <Text style={styles.title}>독서 기록 {recordId ? '수정' : '추가'}</Text>
       
+      {book && (
+        <View style={styles.bookInfo}>
+          {book.thumbnail && (
+            <Image source={{ uri: book.thumbnail }} style={styles.bookCover} />
+          )}
+          <View style={styles.bookDetails}>
+            <Text style={styles.bookTitle}>{book.title}</Text>
+            <Text style={styles.bookAuthor}>{book.authors?.join(', ')}</Text>
+            <Text style={styles.bookPages}>전체 {book.totalPages}페이지</Text>
+          </View>
+        </View>
+      )}
+
       <Text style={styles.label}>날짜</Text>
       <TouchableOpacity onPress={() => setShowDatePicker(true)}>
         <Text style={styles.dateText}>{date.toLocaleDateString()}</Text>
@@ -146,26 +209,46 @@ export default function RecordEditScreen() {
           value={date}
           mode="date"
           onChange={handleDateChange}
+          maximumDate={new Date()}
         />
       )}
 
       <Text style={styles.label}>읽은 페이지 범위</Text>
       <TextInput 
-        style={styles.input} 
+        style={[styles.input, pageError ? styles.inputError : null]} 
         placeholder="예: 1-20" 
         value={pageRange}
-        onChangeText={setPageRange}
+        onChangeText={(text) => {
+          setPageRange(text);
+          validatePageRange(text);
+        }}
         keyboardType="numeric"
       />
+      {pageError ? <Text style={styles.errorText}>{pageError}</Text> : null}
 
-      <Text style={styles.label}>독서 시간(분)</Text>
-      <TextInput 
-        style={styles.input} 
-        placeholder="예: 30" 
-        keyboardType="numeric"
-        value={readingTime}
-        onChangeText={setReadingTime}
-      />
+      <Text style={styles.label}>독서 시간</Text>
+      <View style={styles.timeInputContainer}>
+        <View style={styles.timeInput}>
+          <TextInput 
+            style={styles.input} 
+            placeholder="시간" 
+            keyboardType="numeric"
+            value={readingHours}
+            onChangeText={setReadingHours}
+          />
+          <Text style={styles.timeLabel}>시간</Text>
+        </View>
+        <View style={styles.timeInput}>
+          <TextInput 
+            style={styles.input} 
+            placeholder="분" 
+            keyboardType="numeric"
+            value={readingMinutes}
+            onChangeText={setReadingMinutes}
+          />
+          <Text style={styles.timeLabel}>분</Text>
+        </View>
+      </View>
 
       <Text style={styles.label}>감정</Text>
       <View style={styles.emotionContainer}>
@@ -233,15 +316,66 @@ export default function RecordEditScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 12 },
-  label: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  container: { 
+    flex: 1, 
+    padding: 20, 
+    backgroundColor: '#fff' 
+  },
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    marginBottom: 12 
+  },
+  bookInfo: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    padding: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+  },
+  bookCover: {
+    width: 80,
+    height: 120,
+    borderRadius: 4,
+  },
+  bookDetails: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  bookTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  bookAuthor: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  bookPages: {
+    fontSize: 14,
+    color: '#666',
+  },
+  label: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    marginBottom: 8 
+  },
   input: { 
     borderWidth: 1, 
     borderColor: '#ccc', 
     borderRadius: 8, 
     padding: 12, 
     marginBottom: 12 
+  },
+  inputError: {
+    borderColor: '#ff3b30',
+  },
+  errorText: {
+    color: '#ff3b30',
+    fontSize: 12,
+    marginTop: -8,
+    marginBottom: 12,
   },
   dateText: {
     fontSize: 16,
@@ -250,6 +384,21 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     borderRadius: 8,
     marginBottom: 12
+  },
+  timeInputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  timeInput: {
+    flex: 1,
+    marginRight: 8,
+  },
+  timeLabel: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    color: '#666',
   },
   emotionContainer: {
     flexDirection: 'row',

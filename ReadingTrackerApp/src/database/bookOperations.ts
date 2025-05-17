@@ -66,4 +66,15 @@ export const deleteBook = async (id: number): Promise<void> => {
   } finally {
     await statement.finalizeAsync();
   }
+};
+
+export const getBookInfo = async (bookId: string): Promise<Book | null> => {
+  try {
+    const db = await getDBConnection();
+    const [rows] = await db.executeSql('SELECT * FROM books WHERE id = ?', [bookId]);
+    return rows.item(0) || null;
+  } catch (error) {
+    console.error('책 정보 조회 실패:', error);
+    throw error;
+  }
 }; 
