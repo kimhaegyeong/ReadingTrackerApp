@@ -3,27 +3,35 @@ import { ReadingGoal } from './types';
 
 export type { ReadingGoal };
 
+export interface UpdateReadingGoal extends ReadingGoal {
+  id: number;
+}
+
 export const saveReadingGoal = async (goal: ReadingGoal): Promise<number> => {
   const db = await getDBConnection();
   const statement = await db.prepareAsync(
     `INSERT INTO reading_goals (
-      yearly_books, monthly_books, yearly_pages, monthly_pages, 
-      start_date, end_date, is_public, notifications_enabled, notification_time,
-      created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`
+      yearly_books, monthly_books, yearly_pages, monthly_pages,
+      startDate, endDate, isPublic, notificationsEnabled, notificationTime,
+      target, progress, completed, period
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
   try {
     const result = await statement.executeAsync([
-      goal.yearly_books,
-      goal.monthly_books,
-      goal.yearly_pages,
-      goal.monthly_pages,
-      goal.start_date,
-      goal.end_date,
-      goal.is_public ? 1 : 0,
-      goal.notifications_enabled ? 1 : 0,
-      goal.notification_time || null
+      goal.yearly_books || 0,
+      goal.monthly_books || 0,
+      goal.yearly_pages || 0,
+      goal.monthly_pages || 0,
+      goal.startDate || new Date().toISOString(),
+      goal.endDate || new Date().toISOString(),
+      goal.isPublic ? 1 : 0,
+      goal.notificationsEnabled ? 1 : 0,
+      goal.notificationTime || '',
+      goal.target || 0,
+      goal.progress || 0,
+      goal.completed ? 1 : 0,
+      goal.period || 'yearly'
     ]);
     return result.lastInsertRowId;
   } finally {
@@ -50,33 +58,41 @@ export const getCurrentReadingGoal = async (): Promise<ReadingGoal | null> => {
   }
 };
 
-interface UpdateReadingGoal extends ReadingGoal {
-  id: number;
-}
-
 export const updateReadingGoal = async (goal: UpdateReadingGoal): Promise<void> => {
   const db = await getDBConnection();
   const statement = await db.prepareAsync(
-    `UPDATE reading_goals 
-     SET yearly_books = ?, monthly_books = ?, 
-         yearly_pages = ?, monthly_pages = ?,
-         start_date = ?, end_date = ?,
-         is_public = ?, notifications_enabled = ?, notification_time = ?,
-         updated_at = CURRENT_TIMESTAMP
-     WHERE id = ?`
+    `UPDATE reading_goals SET
+      yearly_books = ?,
+      monthly_books = ?,
+      yearly_pages = ?,
+      monthly_pages = ?,
+      startDate = ?,
+      endDate = ?,
+      isPublic = ?,
+      notificationsEnabled = ?,
+      notificationTime = ?,
+      target = ?,
+      progress = ?,
+      completed = ?,
+      period = ?
+    WHERE id = ?`
   );
 
   try {
     await statement.executeAsync([
-      goal.yearly_books,
-      goal.monthly_books,
-      goal.yearly_pages,
-      goal.monthly_pages,
-      goal.start_date,
-      goal.end_date,
-      goal.is_public ? 1 : 0,
-      goal.notifications_enabled ? 1 : 0,
-      goal.notification_time || null,
+      goal.yearly_books || 0,
+      goal.monthly_books || 0,
+      goal.yearly_pages || 0,
+      goal.monthly_pages || 0,
+      goal.startDate || new Date().toISOString(),
+      goal.endDate || new Date().toISOString(),
+      goal.isPublic ? 1 : 0,
+      goal.notificationsEnabled ? 1 : 0,
+      goal.notificationTime || '',
+      goal.target || 0,
+      goal.progress || 0,
+      goal.completed ? 1 : 0,
+      goal.period || 'yearly',
       goal.id
     ]);
   } finally {

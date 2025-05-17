@@ -20,6 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useBookContext } from '../contexts/BookContext';
 import { useReadingContext } from '../contexts/ReadingContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { LineChart, PieChart } from 'react-native-chart-kit';
 
 type RootStackParamList = {
   MainTabs: undefined;
@@ -27,7 +28,7 @@ type RootStackParamList = {
   BookDetail: { bookId: string };
   RecordEdit: { bookId?: string };
   GoalSetting: undefined;
-  MemoManage: { highlightId?: string; mode?: string };
+  MemoManage: { highlightId?: string; mode?: string; bookId?: string };
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -41,12 +42,26 @@ interface Book {
   lastRead: string;
 }
 
+interface ReadingGoal {
+  id: number;
+  target: number;
+  progress: number;
+  completed: boolean;
+  period: 'yearly' | 'monthly';
+  endDate: string;
+  startDate: string;
+  isPublic: boolean;
+  notificationsEnabled: boolean;
+  notificationTime?: string;
+}
+
 interface RecommendedBook {
   id: string;
   title: string;
   author: string;
   genre: string;
-  recommendationReason?: string;
+  coverUrl: string;
+  reason?: string;
 }
 
 interface ReadingHighlight {
@@ -56,9 +71,397 @@ interface ReadingHighlight {
   page: number;
 }
 
+interface WidgetConfig {
+  id: string;
+  visible: boolean;
+}
+
+interface ReadingData {
+  date: string;
+  minutes: number;
+}
+
+interface ReadingStats {
+  dailyMinutes: number;
+  weeklyMinutes: number;
+  monthlyMinutes: number;
+  genreDistribution: {
+    genre: string;
+    percentage: number;
+    color: string;
+  }[];
+  readingTimeDistribution: {
+    hour: number;
+    minutes: number;
+  }[];
+}
+
+interface ReadingSession {
+  id: string;
+  bookId: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  pagesRead: number;
+}
+
+interface PieChartData {
+  data: Array<{
+    name: string;
+    population: number;
+    color: string;
+    legendFontColor?: string;
+    legendFontSize?: number;
+  }>;
+}
+
 const { width } = Dimensions.get('window');
 const BOOK_CARD_WIDTH = width * 0.7;
 const BOOK_CARD_MARGIN = 10;
+
+interface WidgetItem {
+  id: string;
+  component: React.ReactNode;
+}
+
+const BookCarousel = ({ books, isDarkMode, navigation }: { books: Book[], isDarkMode: boolean, navigation: NavigationProp }) => {
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const [activeBookIndex, setActiveBookIndex] = useState(0);
+
+  if (books.length === 0) {
+    return (
+      <View style={styles.emptyStateContainer}>
+        <MaterialIcons name="library-books" size={48} color={isDarkMode ? '#777' : '#ccc'} />
+        <Text style={[styles.emptyStateText, isDarkMode && styles.darkText]}>
+          아직 읽고 있는 책이 없어요
+        </Text>
+        <TouchableOpacity 
+          style={styles.emptyStateButton}
+          onPress={() => navigation.navigate('Search', { query: '' })}
+        >
+          <Text style={styles.emptyStateButtonText}>책 찾아보기</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <Animated.FlatList
+        data={books}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={BOOK_CARD_WIDTH + BOOK_CARD_MARGIN * 2}
+        decelerationRate="fast"
+        contentContainerStyle={styles.carouselContainer}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: false }
+        )}
+        onMomentumScrollEnd={(event) => {
+          const index = Math.round(
+            event.nativeEvent.contentOffset.x / (BOOK_CARD_WIDTH + BOOK_CARD_MARGIN * 2)
+          );
+          setActiveBookIndex(index);
+        }}
+        renderItem={({ item, index }) => {
+          const inputRange = [
+            (index - 1) * (BOOK_CARD_WIDTH + BOOK_CARD_MARGIN * 2),
+            index * (BOOK_CARD_WIDTH + BOOK_CARD_MARGIN * 2),
+            (index + 1) * (BOOK_CARD_WIDTH + BOOK_CARD_MARGIN * 2),
+          ];
+
+          const scale = scrollX.interpolate({
+            inputRange,
+            outputRange: [0.9, 1, 0.9],
+            extrapolate: 'clamp',
+          });
+
+          return (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
+              onLongPress={() => navigation.navigate('RecordEdit', { bookId: item.id })}
+            >
+              <Animated.View 
+                style={[
+                  styles.bookCard, 
+                  { transform: [{ scale }] },
+                  isDarkMode && styles.darkBookCard
+                ]}
+              >
+                <View style={styles.bookCardContent}>
+                  {item.thumbnail ? (
+                    <Image source={{ uri: item.thumbnail }} style={styles.bookCover} />
+                  ) : (
+                    <View style={styles.bookCoverPlaceholder}>
+                      <MaterialIcons name="book" size={40} color="#999" />
+                    </View>
+                  )}
+                  <View style={styles.bookInfo}>
+                    <Text style={[styles.bookTitle, isDarkMode && styles.darkText]} numberOfLines={2}>
+                      {item.title}
+                    </Text>
+                    <Text style={[styles.bookAuthor, isDarkMode && styles.darkSubText]} numberOfLines={1}>
+                      {item.authors?.join(', ')}
+                    </Text>
+                    <Text style={[styles.lastReadText, isDarkMode && styles.darkSubText]}>
+                      마지막 독서: {formatDate(item.lastRead)}
+                    </Text>
+                    <View style={styles.progressContainer}>
+                      <View style={styles.progressBarContainer}>
+                        <LinearGradient
+                          colors={getProgressColor(item.progress)}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={[styles.progressBar, { width: `${item.progress}%` }]}
+                        />
+                      </View>
+                      <Text style={[styles.progressText, isDarkMode && styles.darkSubText]}>
+                        {Math.round(item.progress)}%
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.bookActions}>
+                  <TouchableOpacity 
+                    style={styles.bookActionButton}
+                    onPress={() => navigation.navigate('RecordEdit', { bookId: item.id })}
+                  >
+                    <MaterialIcons name="timer" size={20} color={isDarkMode ? '#fff' : '#007AFF'} />
+                    <Text style={[styles.bookActionText, isDarkMode && styles.darkText]}>타이머</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.bookActionButton}
+                    onPress={() => navigation.navigate('MemoManage', { bookId: item.id })}
+                  >
+                    <MaterialIcons name="note-add" size={20} color={isDarkMode ? '#fff' : '#007AFF'} />
+                    <Text style={[styles.bookActionText, isDarkMode && styles.darkText]}>메모</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.bookActionButton}
+                    onPress={() => navigation.navigate('BookDetail', { bookId: item.id })}
+                  >
+                    <MaterialIcons name="bookmark-border" size={20} color={isDarkMode ? '#fff' : '#007AFF'} />
+                    <Text style={[styles.bookActionText, isDarkMode && styles.darkText]}>북마크</Text>
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            </TouchableOpacity>
+          );
+        }}
+        keyExtractor={item => item.id}
+      />
+
+      <View style={styles.paginationContainer}>
+        {books.map((_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.paginationDot,
+              index === activeBookIndex && styles.paginationDotActive,
+              isDarkMode && styles.darkPaginationDot,
+              index === activeBookIndex && isDarkMode && styles.darkPaginationDotActive
+            ]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+};
+
+const ReadingSummary = ({ isDarkMode, todayTime, yesterdayTime, streak, weeklyReadingData }: {
+  isDarkMode: boolean;
+  todayTime: number;
+  yesterdayTime: number;
+  streak: number;
+  weeklyReadingData: ReadingData[];
+}) => {
+  const timeDiff = todayTime - yesterdayTime;
+  const timeDiffColor = timeDiff >= 0 ? '#34C759' : '#FF3B30';
+
+  const chartData = {
+    labels: weeklyReadingData.map(data => data.date),
+    datasets: [{
+      data: weeklyReadingData.map(data => data.minutes),
+    }],
+  };
+
+  return (
+    <View style={[styles.summaryCard, isDarkMode && styles.darkCard]}>
+      <Text style={[styles.cardTitle, isDarkMode && styles.darkText]}>오늘의 독서</Text>
+      <View style={styles.summaryContent}>
+        <View style={styles.summaryItem}>
+          <MaterialIcons name="timer" size={24} color={isDarkMode ? '#fff' : '#007AFF'} />
+          <Text style={[styles.summaryValue, isDarkMode && styles.darkText]}>
+            {formatTime(todayTime)}
+          </Text>
+          <Text style={[styles.summaryLabel, isDarkMode && styles.darkSubText]}>독서 시간</Text>
+          {timeDiff !== 0 && (
+            <Text style={[styles.timeDiffText, { color: timeDiffColor }]}>
+              {timeDiff > 0 ? '+' : ''}{formatTime(timeDiff)}
+            </Text>
+          )}
+        </View>
+
+        <View style={styles.summaryDivider} />
+
+        <View style={styles.summaryItem}>
+          <MaterialIcons name="local-fire-department" size={24} color={isDarkMode ? '#fff' : '#FF9500'} />
+          <Text style={[styles.summaryValue, isDarkMode && styles.darkText]}>
+            {streak}일
+          </Text>
+          <Text style={[styles.summaryLabel, isDarkMode && styles.darkSubText]}>연속 독서</Text>
+        </View>
+      </View>
+
+      <View style={styles.chartContainer}>
+        <LineChart
+          data={chartData}
+          width={width - 80}
+          height={180}
+          chartConfig={{
+            backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
+            backgroundGradientFrom: isDarkMode ? '#1e1e1e' : '#ffffff',
+            backgroundGradientTo: isDarkMode ? '#1e1e1e' : '#ffffff',
+            decimalPlaces: 0,
+            color: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 122, 255, ${opacity})`,
+            labelColor: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
+            style: {
+              borderRadius: 16,
+            },
+            propsForDots: {
+              r: 6,
+              strokeWidth: 2,
+              stroke: isDarkMode ? '#ffffff' : '#007AFF',
+            },
+          }}
+          bezier
+          style={styles.chart}
+        />
+      </View>
+    </View>
+  );
+};
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+};
+
+const formatTime = (minutes: number): string => {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+
+  if (hours > 0) {
+    return `${hours}시간 ${mins}분`;
+  }
+  return `${mins}분`;
+};
+
+const getProgressColor = (progress: number): readonly [string, string] => {
+  if (progress < 30) return ['#FF9500', '#FFCC00'] as const;
+  if (progress < 70) return ['#34C759', '#32D74B'] as const;
+  return ['#007AFF', '#5AC8FA'] as const;
+};
+
+const ReadingStats = ({ isDarkMode, readingStats }: { isDarkMode: boolean; readingStats: ReadingStats }) => {
+  const pieData: PieChartData = {
+    data: readingStats.genreDistribution.map(item => ({
+      name: item.genre,
+      population: item.percentage,
+      color: item.color,
+      legendFontColor: isDarkMode ? '#fff' : '#000',
+      legendFontSize: 12,
+    }))
+  };
+
+  return (
+    <View style={[styles.statsCard, isDarkMode && styles.darkCard]}>
+      <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
+        독서 통계
+      </Text>
+      <View style={styles.statsGrid}>
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>
+            {readingStats.dailyMinutes}분
+          </Text>
+          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>
+            오늘
+          </Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>
+            {readingStats.weeklyMinutes}분
+          </Text>
+          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>
+            이번 주
+          </Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>
+            {readingStats.monthlyMinutes}분
+          </Text>
+          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>
+            이번 달
+          </Text>
+        </View>
+      </View>
+      <View style={styles.chartContainer}>
+        <PieChart
+          data={pieData}
+          width={width - 80}
+          height={180}
+          chartConfig={{
+            backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
+            backgroundGradientFrom: isDarkMode ? '#1e1e1e' : '#ffffff',
+            backgroundGradientTo: isDarkMode ? '#1e1e1e' : '#ffffff',
+            decimalPlaces: 0,
+            color: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
+            labelColor: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
+            style: {
+              borderRadius: 16,
+            },
+          }}
+          accessor="population"
+          backgroundColor="transparent"
+          paddingLeft="15"
+          absolute
+        />
+      </View>
+    </View>
+  );
+};
+
+const GoalWidget = ({ isDarkMode, goals }: { isDarkMode: boolean; goals: ReadingGoal[] }) => {
+  const activeGoal = goals.find(goal => !goal.completed);
+  if (!activeGoal) return null;
+
+  const progress = (activeGoal.progress / activeGoal.target) * 100;
+  const [startColor, endColor] = getProgressColor(progress);
+
+  return (
+    <View style={[styles.goalCard, isDarkMode && styles.darkCard]}>
+      <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
+        독서 목표
+      </Text>
+      <View style={styles.goalProgress}>
+        <LinearGradient
+          colors={[startColor, endColor]}
+          style={[styles.progressBar, { width: `${progress}%` }]}
+        />
+      </View>
+      <View style={styles.goalInfo}>
+        <Text style={[styles.goalText, isDarkMode && styles.darkText]}>
+          {activeGoal.target}권 읽기
+        </Text>
+        <Text style={[styles.progressText, isDarkMode && styles.darkText]}>
+          {activeGoal.progress}권 완료
+        </Text>
+      </View>
+    </View>
+  );
+};
 
 export default function HomeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -70,7 +473,9 @@ export default function HomeScreen() {
     highlights,
     getTodayReadingTime,
     getReadingStreak,
-    getRecentHighlights
+    getRecentHighlights,
+    getReadingSessionsByDate,
+    getReadingStats
   } = useReadingContext();
 
   const [greeting, setGreeting] = useState('');
@@ -79,17 +484,41 @@ export default function HomeScreen() {
   const [recommendedBooks, setRecommendedBooks] = useState<RecommendedBook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFabOpen, setIsFabOpen] = useState(false);
-  const [activeBookIndex, setActiveBookIndex] = useState(0);
-  const [yesterdayReadingTime, setYesterdayReadingTime] = useState(0);
+  const [todayReadingTime, setTodayReadingTime] = useState<number>(0);
+  const [yesterdayReadingTime, setYesterdayReadingTime] = useState<number>(0);
   const [showGoalCelebration, setShowGoalCelebration] = useState(false);
   const celebrationAnim = useRef(new Animated.Value(0)).current;
-
-  const scrollX = useRef(new Animated.Value(0)).current;
   const fabAnim = useRef(new Animated.Value(0)).current;
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
 
-  // Set greeting based on time of day
+  const [widgetConfig, setWidgetConfig] = useState<WidgetConfig[]>([
+    { id: 'bookCarousel', visible: true },
+    { id: 'readingSummary', visible: true },
+    { id: 'goalWidget', visible: true },
+    { id: 'highlights', visible: true },
+    { id: 'recommendedBooks', visible: true },
+  ]);
+
+  const [weeklyReadingData, setWeeklyReadingData] = useState<ReadingData[]>([]);
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
+  const [readingStats, setReadingStats] = useState<ReadingStats>({
+    dailyMinutes: 0,
+    weeklyMinutes: 0,
+    monthlyMinutes: 0,
+    genreDistribution: [],
+    readingTimeDistribution: []
+  });
+
+  useEffect(() => {
+    const loadReadingStats = () => {
+      const stats = getReadingStats();
+      setReadingStats(stats);
+    };
+
+    loadReadingStats();
+  }, [getReadingStats]);
+
   useEffect(() => {
     const hour = new Date().getHours();
     let newGreeting = '';
@@ -109,30 +538,22 @@ export default function HomeScreen() {
     setGreeting(newGreeting);
   }, [user]);
 
-  // Set current books
   useEffect(() => {
-    // In a real app, you would have a "current" flag on books
-    // For now, we'll just use the first 3 books as "current"
     setCurrentBooks(books.slice(0, 3).map(book => ({
       ...book,
-      progress: Math.random() * 100, // Mock progress
-      lastRead: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() // Random date within last week
+      progress: Math.random() * 100,
+      lastRead: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
     })));
 
-    // Mock recommended books
     setRecommendedBooks([
-      { id: 'rec1', title: '사피엔스', author: '유발 하라리', genre: '역사/과학' },
-      { id: 'rec2', title: '아몬드', author: '손원평', genre: '소설' },
-      { id: 'rec3', title: '부의 추월차선', author: '엠제이 드마코', genre: '자기계발' },
+      { id: 'rec1', title: '사피엔스', author: '유발 하라리', genre: '역사/과학', coverUrl: '' },
+      { id: 'rec2', title: '아몬드', author: '손원평', genre: '소설', coverUrl: '' },
+      { id: 'rec3', title: '부의 추월차선', author: '엠제이 드마코', genre: '자기계발', coverUrl: '' },
     ]);
 
-    // Get recent highlights
     setRecentHighlights(getRecentHighlights(3));
-
-    // Mock yesterday's reading time
     setYesterdayReadingTime(Math.floor(Math.random() * 120));
 
-    // Check if goal is completed
     const activeGoal = goals.find(goal => !goal.completed);
     if (activeGoal && activeGoal.progress >= activeGoal.target) {
       setShowGoalCelebration(true);
@@ -154,7 +575,6 @@ export default function HomeScreen() {
     setIsLoading(false);
   }, [books, getRecentHighlights, goals]);
 
-  // Animate FAB
   useEffect(() => {
     Animated.spring(fabAnim, {
       toValue: isFabOpen ? 1 : 0,
@@ -167,353 +587,85 @@ export default function HomeScreen() {
     setIsFabOpen(!isFabOpen);
   };
 
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+  const toggleWidgetVisibility = (widgetId: string) => {
+    setWidgetConfig(prev => 
+      prev.map(widget => 
+        widget.id === widgetId 
+          ? { ...widget, visible: !widget.visible }
+          : widget
+      )
+    );
   };
 
-  const formatTime = (minutes: number): string => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-
-    if (hours > 0) {
-      return `${hours}시간 ${mins}분`;
-    }
-    return `${mins}분`;
-  };
-
-  const getProgressColor = (progress: number): readonly [string, string] => {
-    if (progress < 30) return ['#FF9500', '#FFCC00'] as const;
-    if (progress < 70) return ['#34C759', '#32D74B'] as const;
-    return ['#007AFF', '#5AC8FA'] as const;
-  };
-
-  const renderBookCarousel = () => {
-    if (currentBooks.length === 0) {
-      return (
-        <View style={styles.emptyStateContainer}>
-          <MaterialIcons name="library-books" size={48} color={isDarkMode ? '#777' : '#ccc'} />
-          <Text style={[styles.emptyStateText, isDarkMode && styles.darkText]}>
-            아직 읽고 있는 책이 없어요
-          </Text>
-          <TouchableOpacity 
-            style={styles.emptyStateButton}
-            onPress={() => navigation.navigate('Search' as never)}
-          >
-            <Text style={styles.emptyStateButtonText}>책 찾아보기</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    return (
-      <View>
-        <Animated.FlatList
-          data={currentBooks}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          snapToInterval={BOOK_CARD_WIDTH + BOOK_CARD_MARGIN * 2}
-          decelerationRate="fast"
-          contentContainerStyle={styles.carouselContainer}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-            { useNativeDriver: false }
-          )}
-          onMomentumScrollEnd={(event) => {
-            const index = Math.round(
-              event.nativeEvent.contentOffset.x / (BOOK_CARD_WIDTH + BOOK_CARD_MARGIN * 2)
-            );
-            setActiveBookIndex(index);
-          }}
-          renderItem={({ item, index }) => {
-            const inputRange = [
-              (index - 1) * (BOOK_CARD_WIDTH + BOOK_CARD_MARGIN * 2),
-              index * (BOOK_CARD_WIDTH + BOOK_CARD_MARGIN * 2),
-              (index + 1) * (BOOK_CARD_WIDTH + BOOK_CARD_MARGIN * 2),
-            ];
-
-            const scale = scrollX.interpolate({
-              inputRange,
-              outputRange: [0.9, 1, 0.9],
-              extrapolate: 'clamp',
-            });
-
-            return (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('BookDetail' as never, { bookId: item.id } as never)}
-                onLongPress={() => navigation.navigate('RecordEdit' as never, { bookId: item.id } as never)}
-              >
-                <Animated.View 
-                  style={[
-                    styles.bookCard, 
-                    { transform: [{ scale }] },
-                    isDarkMode && styles.darkBookCard
-                  ]}
-                >
-                  <View style={styles.bookCardContent}>
-                    {item.thumbnail ? (
-                      <Image source={{ uri: item.thumbnail }} style={styles.bookCover} />
-                    ) : (
-                      <View style={styles.bookCoverPlaceholder}>
-                        <MaterialIcons name="book" size={40} color="#999" />
-                      </View>
-                    )}
-                    <View style={styles.bookInfo}>
-                      <Text style={[styles.bookTitle, isDarkMode && styles.darkText]} numberOfLines={2}>
-                        {item.title}
-                      </Text>
-                      <Text style={[styles.bookAuthor, isDarkMode && styles.darkSubText]} numberOfLines={1}>
-                        {item.authors?.join(', ')}
-                      </Text>
-                      <Text style={[styles.lastReadText, isDarkMode && styles.darkSubText]}>
-                        마지막 독서: {formatDate(item.lastRead)}
-                      </Text>
-                      <View style={styles.progressContainer}>
-                        <View style={styles.progressBarContainer}>
-                          <LinearGradient
-                            colors={getProgressColor(item.progress)}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={[styles.progressBar, { width: `${item.progress}%` }]}
-                          />
-                        </View>
-                        <Text style={[styles.progressText, isDarkMode && styles.darkSubText]}>
-                          {Math.round(item.progress)}%
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </Animated.View>
-              </TouchableOpacity>
-            );
-          }}
-          keyExtractor={item => item.id}
-        />
-
-        <View style={styles.paginationContainer}>
-          {currentBooks.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.paginationDot,
-                index === activeBookIndex && styles.paginationDotActive,
-                isDarkMode && styles.darkPaginationDot,
-                index === activeBookIndex && isDarkMode && styles.darkPaginationDotActive
-              ]}
+  const renderWidget = (widgetId: string) => {
+    switch (widgetId) {
+      case 'bookCarousel':
+        return (
+          <View>
+            <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
+              현재 읽고 있는 책
+            </Text>
+            <BookCarousel books={currentBooks} isDarkMode={isDarkMode} navigation={navigation} />
+          </View>
+        );
+      case 'readingSummary':
+        return (
+          <View>
+            <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
+              오늘의 독서 요약
+            </Text>
+            <ReadingSummary
+              isDarkMode={isDarkMode}
+              todayTime={getTodayReadingTime()}
+              yesterdayTime={yesterdayReadingTime}
+              streak={getReadingStreak()}
+              weeklyReadingData={weeklyReadingData}
             />
-          ))}
-        </View>
-      </View>
-    );
-  };
-
-  const renderReadingSummary = () => {
-    const todayTime = getTodayReadingTime();
-    const streak = getReadingStreak();
-    const timeDiff = todayTime - yesterdayReadingTime;
-    const timeDiffColor = timeDiff >= 0 ? '#34C759' : '#FF3B30';
-
-    return (
-      <View style={[styles.summaryCard, isDarkMode && styles.darkCard]}>
-        <Text style={[styles.cardTitle, isDarkMode && styles.darkText]}>오늘의 독서</Text>
-        <View style={styles.summaryContent}>
-          <View style={styles.summaryItem}>
-            <MaterialIcons name="timer" size={24} color={isDarkMode ? '#fff' : '#007AFF'} />
-            <Text style={[styles.summaryValue, isDarkMode && styles.darkText]}>
-              {formatTime(todayTime)}
-            </Text>
-            <Text style={[styles.summaryLabel, isDarkMode && styles.darkSubText]}>독서 시간</Text>
-            {timeDiff !== 0 && (
-              <Text style={[styles.timeDiffText, { color: timeDiffColor }]}>
-                {timeDiff > 0 ? '+' : ''}{formatTime(timeDiff)}
-              </Text>
-            )}
           </View>
-
-          <View style={styles.summaryDivider} />
-
-          <View style={styles.summaryItem}>
-            <MaterialIcons name="local-fire-department" size={24} color={isDarkMode ? '#fff' : '#FF9500'} />
-            <Text style={[styles.summaryValue, isDarkMode && styles.darkText]}>
-              {streak}일
+        );
+      case 'goalWidget':
+        return (
+          <View>
+            <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
+              독서 목표
             </Text>
-            <Text style={[styles.summaryLabel, isDarkMode && styles.darkSubText]}>연속 독서</Text>
+            <GoalWidget isDarkMode={isDarkMode} goals={goals} />
           </View>
-        </View>
-      </View>
-    );
-  };
-
-  const renderGoalWidget = () => {
-    const activeGoal = goals.find(goal => !goal.completed);
-
-    if (!activeGoal) {
-      return (
-        <TouchableOpacity 
-          style={[styles.goalCard, styles.emptyGoalCard, isDarkMode && styles.darkCard]}
-          onPress={() => navigation.navigate('GoalSetting' as never)}
-        >
-          <MaterialIcons name="add-circle-outline" size={24} color={isDarkMode ? '#fff' : '#007AFF'} />
-          <Text style={[styles.emptyGoalText, isDarkMode && styles.darkText]}>독서 목표 설정하기</Text>
-        </TouchableOpacity>
-      );
+        );
+      case 'readingStats':
+        return (
+          <View>
+            <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
+              독서 통계
+            </Text>
+            <ReadingStats isDarkMode={isDarkMode} readingStats={readingStats} />
+          </View>
+        );
+      default:
+        return null;
     }
+  };
 
-    const progress = (activeGoal.progress / activeGoal.target) * 100;
-    const isCompleted = progress >= 100;
+  const renderWidgets = () => {
+    const visibleWidgets = widgetConfig
+      .filter(widget => widget.visible)
+      .map(widget => ({
+        id: widget.id,
+        component: renderWidget(widget.id)
+      }));
 
     return (
-      <TouchableOpacity 
-        style={[styles.goalCard, isDarkMode && styles.darkCard]}
-        onPress={() => navigation.navigate('GoalSetting' as never)}
-      >
-        {showGoalCelebration && (
-          <Animated.View 
-            style={[
-              styles.celebrationContainer,
-              {
-                opacity: celebrationAnim,
-                transform: [
-                  { scale: celebrationAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.8, 1]
-                  })}
-                ]
-              }
-            ]}
-          >
-            <MaterialIcons name="celebration" size={48} color="#FFD700" />
-            <Text style={styles.celebrationText}>목표 달성!</Text>
-          </Animated.View>
+      <FlatList
+        data={visibleWidgets}
+        renderItem={({ item }) => (
+          <View style={[styles.widgetContainer, isDarkMode && styles.darkWidgetContainer]}>
+            {item.component}
+          </View>
         )}
-
-        <View style={styles.goalHeader}>
-          <Text style={[styles.cardTitle, isDarkMode && styles.darkText]}>독서 목표</Text>
-          <Text style={[styles.goalPeriod, isDarkMode && styles.darkSubText]}>
-            {activeGoal.period === 'daily' ? '일간' : 
-             activeGoal.period === 'weekly' ? '주간' : 
-             activeGoal.period === 'monthly' ? '월간' : '연간'}
-          </Text>
-        </View>
-
-        <View style={styles.goalProgressContainer}>
-          <View style={styles.goalProgressBarContainer}>
-            <LinearGradient
-              colors={getProgressColor(progress)}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[styles.goalProgressBar, { width: `${progress}%` }]}
-            />
-          </View>
-        </View>
-
-        <View style={styles.goalDetails}>
-          <Text style={[styles.goalProgress, isDarkMode && styles.darkText]}>
-            {activeGoal.progress} / {activeGoal.target}
-            {activeGoal.type === 'books' ? ' 권' : 
-             activeGoal.type === 'pages' ? ' 페이지' : ' 시간'}
-          </Text>
-          <Text style={[styles.goalRemaining, isDarkMode && styles.darkSubText]}>
-            {activeGoal.target - activeGoal.progress}
-            {activeGoal.type === 'books' ? '권' : 
-             activeGoal.type === 'pages' ? '페이지' : '시간'} 남음
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderRecentHighlights = () => {
-    if (recentHighlights.length === 0) {
-      return null;
-    }
-
-    return (
-      <View style={styles.sectionContainer}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>최근 메모/하이라이트</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('MemoManage' as never)}>
-            <Text style={styles.seeAllText}>모두 보기</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.highlightsContainer}
-        >
-          {recentHighlights.map((highlight) => {
-            const book = books.find(b => b.id === highlight.bookId);
-
-            return (
-              <TouchableOpacity 
-                key={highlight.id}
-                style={[styles.highlightCard, isDarkMode && styles.darkCard]}
-                onPress={() => navigation.navigate('MemoManage' as never, { highlightId: highlight.id } as never)}
-              >
-                <Text style={[styles.highlightContent, isDarkMode && styles.darkText]} numberOfLines={4}>
-                  "{highlight.content}"
-                </Text>
-                <View style={styles.highlightFooter}>
-                  <Text style={[styles.highlightBook, isDarkMode && styles.darkSubText]} numberOfLines={1}>
-                    {book?.title || '알 수 없는 책'} - p.{highlight.page}
-                  </Text>
-                  <TouchableOpacity style={styles.bookmarkButton}>
-                    <MaterialIcons name="bookmark-border" size={18} color={isDarkMode ? '#aaa' : '#777'} />
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
-    );
-  };
-
-  const renderRecommendedBooks = () => {
-    if (recommendedBooks.length === 0) {
-      return null;
-    }
-
-    return (
-      <View style={styles.sectionContainer}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>추천 도서</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Search' as never, { tab: 'recommendations' } as never)}>
-            <Text style={styles.seeAllText}>모두 보기</Text>
-          </TouchableOpacity>
-        </View>
-
-        <FlatList
-          data={recommendedBooks}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.recommendationsContainer}
-          renderItem={({ item }) => (
-            <TouchableOpacity 
-              style={[styles.recommendedBookCard, isDarkMode && styles.darkCard]}
-              onPress={() => navigation.navigate('Search' as never, { query: item.title } as never)}
-            >
-              <View style={styles.recommendedBookCover}>
-                <MaterialIcons name="book" size={30} color="#999" />
-              </View>
-              <View style={styles.recommendedBookInfo}>
-                <Text style={[styles.recommendedBookTitle, isDarkMode && styles.darkText]} numberOfLines={2}>
-                  {item.title}
-                </Text>
-                <Text style={[styles.recommendedBookAuthor, isDarkMode && styles.darkSubText]} numberOfLines={1}>
-                  {item.author}
-                </Text>
-                <View style={styles.recommendedBookGenre}>
-                  <Text style={styles.recommendedBookGenreText}>{item.genre}</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-          )}
-          keyExtractor={item => item.id}
-        />
-      </View>
+        keyExtractor={item => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.widgetList}
+      />
     );
   };
 
@@ -547,7 +699,7 @@ export default function HomeScreen() {
             style={[styles.fabActionButton, { backgroundColor: '#FF9500' }]}
             onPress={() => {
               toggleFab();
-              navigation.navigate('RecordEdit' as never);
+              navigation.navigate('RecordEdit', { bookId: '' });
             }}
           >
             <MaterialIcons name="timer" size={20} color="#fff" />
@@ -570,7 +722,7 @@ export default function HomeScreen() {
             style={[styles.fabActionButton, { backgroundColor: '#34C759' }]}
             onPress={() => {
               toggleFab();
-              navigation.navigate('MemoManage' as never, { mode: 'add' } as never);
+              navigation.navigate('MemoManage', { mode: 'add' });
             }}
           >
             <MaterialIcons name="note-add" size={20} color="#fff" />
@@ -593,7 +745,7 @@ export default function HomeScreen() {
             style={[styles.fabActionButton, { backgroundColor: '#007AFF' }]}
             onPress={() => {
               toggleFab();
-              navigation.navigate('RecordEdit' as never);
+              navigation.navigate('RecordEdit', { bookId: '' });
             }}
           >
             <MaterialIcons name="edit" size={20} color="#fff" />
@@ -625,23 +777,10 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, isDarkMode && styles.darkContainer]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <View style={styles.header}>
         <Text style={[styles.greeting, isDarkMode && styles.darkText]}>{greeting}</Text>
-
-        <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>현재 읽고 있는 책</Text>
-        {renderBookCarousel()}
-
-        {renderReadingSummary()}
-
-        {renderGoalWidget()}
-
-        {renderRecentHighlights()}
-
-        {renderRecommendedBooks()}
-
-        <View style={styles.bottomPadding} />
-      </ScrollView>
-
+      </View>
+      {renderWidgets()}
       {renderFloatingActionButton()}
     </View>
   );
@@ -673,10 +812,10 @@ const styles = StyleSheet.create({
     color: '#aaa',
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 16,
-    paddingHorizontal: 20,
+    marginBottom: 12,
+    marginLeft: 20,
   },
   sectionContainer: {
     marginTop: 24,
@@ -766,10 +905,9 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   progressText: {
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: 'bold',
     color: '#666',
-    width: 36,
-    textAlign: 'right',
   },
   paginationContainer: {
     flexDirection: 'row',
@@ -875,52 +1013,43 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  emptyGoalCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 24,
-  },
-  emptyGoalText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  goalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  goalPeriod: {
-    fontSize: 14,
-    color: '#666',
-  },
-  goalProgressContainer: {
-    marginBottom: 12,
-  },
-  goalProgressBarContainer: {
-    height: 8,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  goalProgressBar: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  goalDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   goalProgress: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    marginBottom: 12,
   },
-  goalRemaining: {
+  goalInfo: {
+    marginTop: 12,
+  },
+  goalText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#34C759',
+    borderRadius: 4,
+  },
+  celebrationContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(76, 175, 80, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+  },
+  celebrationText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  celebrationSubText: {
+    color: '#fff',
     fontSize: 14,
-    color: '#666',
+    marginTop: 4,
   },
 
   // Highlights section
@@ -956,14 +1085,57 @@ const styles = StyleSheet.create({
     color: '#666',
     flex: 1,
   },
-  bookmarkButton: {
+  highlightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  highlightActionButton: {
     padding: 4,
+    marginLeft: 8,
   },
 
   // Recommended books section
-  recommendationsContainer: {
+  recommendedSection: {
+    marginTop: 24,
+  },
+  recommendedHeader: {
+    marginBottom: 16,
+  },
+  genreFilter: {
+    marginTop: 12,
+    paddingHorizontal: 20,
+  },
+  genreChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    marginRight: 8,
+  },
+  genreChipSelected: {
+    backgroundColor: '#007AFF',
+  },
+  darkGenreChip: {
+    backgroundColor: '#2c2c2c',
+  },
+  darkGenreChipSelected: {
+    backgroundColor: '#0A84FF',
+  },
+  genreChipText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  genreChipTextSelected: {
+    color: '#fff',
+  },
+  darkGenreChipText: {
+    color: '#fff',
+  },
+  darkGenreChipTextSelected: {
+    color: '#fff',
+  },
+  recommendedScroll: {
     paddingHorizontal: 10,
-    paddingBottom: 10,
   },
   recommendedBookCard: {
     width: 160,
@@ -986,9 +1158,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  recommendedBookInfo: {
-    flex: 1,
-  },
   recommendedBookTitle: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -999,12 +1168,19 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
+  recommendationReason: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
   recommendedBookGenre: {
     backgroundColor: '#f0f0f0',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     alignSelf: 'flex-start',
+    marginTop: 4,
   },
   recommendedBookGenreText: {
     fontSize: 10,
@@ -1062,31 +1238,160 @@ const styles = StyleSheet.create({
     height: 80,
   },
   timeDiffText: {
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  timeDiffContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 4,
   },
-  celebrationContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12,
-    zIndex: 1,
-  },
-  celebrationText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 12,
-  },
-  recommendationReason: {
+  timeDiffLabel: {
     fontSize: 12,
     color: '#666',
-    marginTop: 8,
-    fontStyle: 'italic',
+  },
+
+  // Widget settings
+  widgetSettingsContainer: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  widgetSettingsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  widgetSettingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  widgetSettingToggle: {
+    marginRight: 16,
+  },
+  widgetSettingLabel: {
+    flex: 1,
+    fontSize: 16,
+  },
+  widgetSettingDrag: {
+    padding: 8,
+  },
+
+  // Chart
+  chartContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  chart: {
+    marginVertical: 8,
+    borderRadius: 16,
+  },
+  statsCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  statItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+  },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  timeDistributionContainer: {
+    marginTop: 20,
+  },
+  timeDistributionGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    height: 100,
+    paddingHorizontal: 10,
+  },
+  timeDistributionItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  timeDistributionBar: {
+    width: 8,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  timeDistributionLabel: {
+    fontSize: 10,
+    color: '#666',
+  },
+  bookActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  bookActionButton: {
+    alignItems: 'center',
+  },
+  bookActionText: {
+    fontSize: 12,
+    color: '#007AFF',
+    marginTop: 4,
+  },
+  sectionActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionActionButton: {
+    marginLeft: 16,
+  },
+  widgetList: {
+    paddingBottom: 100, // FAB를 위한 여백
+  },
+  widgetContainer: {
+    marginBottom: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    marginHorizontal: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  darkWidgetContainer: {
+    backgroundColor: '#1e1e1e',
+  },
+  header: {
+    padding: 20,
   },
 });

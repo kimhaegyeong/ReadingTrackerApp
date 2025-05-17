@@ -9,18 +9,22 @@ export interface Book {
 }
 
 export interface ReadingGoal {
-  id?: number;
-  yearly_books: number;
-  monthly_books: number;
-  yearly_pages: number;
-  monthly_pages: number;
-  start_date: string;
-  end_date: string;
+  id: number;
+  target: number;
+  progress: number;
+  completed: boolean;
+  period: 'yearly' | 'monthly';
+  endDate: string;
+  startDate: string;
+  isPublic: boolean;
+  notificationsEnabled: boolean;
+  notificationTime?: string;
+  yearly_books?: number;
+  monthly_books?: number;
+  yearly_pages?: number;
+  monthly_pages?: number;
   created_at?: string;
   updated_at?: string;
-  is_public?: boolean;
-  notifications_enabled?: boolean;
-  notification_time?: string;
 }
 
 export interface ReadingSession {

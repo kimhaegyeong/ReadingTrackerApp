@@ -7,6 +7,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { registerRootComponent } from 'expo';
 import { useEffect } from 'react';
 import { initDatabase } from './src/database/database';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // 각 스크린 import
 import StartLoginScreen from './src/screens/StartLoginScreen';
@@ -70,30 +71,32 @@ export default function App() {
   }, []);
 
   return (
-    <NavigationContainer>
-      <AuthProvider>
-        <ReadingProvider>
-          <SearchProvider>
-            <BookProvider>
-              <SafeAreaProvider>
-                <Stack.Navigator 
-                  id={undefined}
-                  initialRouteName="StartLogin">
-                  <Stack.Screen name="StartLogin" component={StartLoginScreen} options={{ headerShown: false }} />
-                  <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} initialParams={{ id: undefined }} />
-                  {/* 상세/기능 페이지 */}
-                  <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ title: '책 상세' }} />
-                  <Stack.Screen name="RecordEdit" component={RecordEditScreen} options={{ title: '독서 기록 추가/수정' }} />
-                  <Stack.Screen name="MemoManage" component={MemoManageScreen} options={{ title: '메모 관리' }} />
-                  <Stack.Screen name="GoalSetting" component={GoalSettingScreen} options={{ title: '목표 설정' }} />
-                  <Stack.Screen name="Community" component={CommunityScreen} options={{ title: '커뮤니티' }} />
-                </Stack.Navigator>
-              </SafeAreaProvider>
-            </BookProvider>
-          </SearchProvider>
-        </ReadingProvider>
-      </AuthProvider>
-    </NavigationContainer>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer>
+        <AuthProvider>
+          <ReadingProvider>
+            <SearchProvider>
+              <BookProvider>
+                <SafeAreaProvider>
+                  <Stack.Navigator 
+                    id={undefined}
+                    initialRouteName="StartLogin">
+                    <Stack.Screen name="StartLogin" component={StartLoginScreen} options={{ headerShown: false }} />
+                    <Stack.Screen name="MainTabs" component={MainTabs} options={{ headerShown: false }} initialParams={{ id: undefined }} />
+                    {/* 상세/기능 페이지 */}
+                    <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ title: '책 상세' }} />
+                    <Stack.Screen name="RecordEdit" component={RecordEditScreen} options={{ title: '독서 기록 추가/수정' }} />
+                    <Stack.Screen name="MemoManage" component={MemoManageScreen} options={{ title: '메모 관리' }} />
+                    <Stack.Screen name="GoalSetting" component={GoalSettingScreen} options={{ title: '목표 설정' }} />
+                    <Stack.Screen name="Community" component={CommunityScreen} options={{ title: '커뮤니티' }} />
+                  </Stack.Navigator>
+                </SafeAreaProvider>
+              </BookProvider>
+            </SearchProvider>
+          </ReadingProvider>
+        </AuthProvider>
+      </NavigationContainer>
+    </GestureHandlerRootView>
   );
 }
 

@@ -16,6 +16,19 @@ export interface ReadingSession {
   rating?: number; // 1-5
 }
 
+export interface ReadingGoal {
+  id: string;
+  target: number;
+  progress: number;
+  completed: boolean;
+  period: 'yearly' | 'monthly';
+  endDate: string;
+  startDate: string;
+  isPublic: boolean;
+  notificationsEnabled: boolean;
+  notificationTime?: string;
+}
+
 export interface ReadingHighlight {
   id: string;
   bookId: string;
@@ -43,6 +56,21 @@ interface ReadingContextType {
   getReadingStreak: () => number;
   getRecentHighlights: (limit?: number) => ReadingHighlight[];
   refreshGoals: () => Promise<void>;
+  getReadingSessionsByDate: (startDate: string, endDate: string) => ReadingSession[];
+  getReadingStats: () => {
+    dailyMinutes: number;
+    weeklyMinutes: number;
+    monthlyMinutes: number;
+    genreDistribution: {
+      genre: string;
+      percentage: number;
+      color: string;
+    }[];
+    readingTimeDistribution: {
+      hour: number;
+      minutes: number;
+    }[];
+  };
 }
 
 const ReadingContext = createContext<ReadingContextType | undefined>(undefined);
@@ -298,6 +326,61 @@ export const ReadingProvider: React.FC<{ children: React.ReactNode }> = ({ child
     loadGoals();
   }, []);
 
+  // Get reading sessions between two dates
+  const getReadingSessionsByDate = (startDate: string, endDate: string): ReadingSession[] => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    return readingSessions.filter(session => {
+      const sessionDate = new Date(session.date);
+      return sessionDate >= start && sessionDate <= end;
+    });
+  };
+
+  // Get reading statistics
+  const getReadingStats = () => {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const dailyMinutes = getTodayReadingTime();
+    
+    const weeklySessions = getReadingSessionsByDate(
+      startOfWeek.toISOString(),
+      today.toISOString()
+    );
+    const weeklyMinutes = weeklySessions.reduce((sum, session) => sum + session.duration, 0);
+
+    const monthlySessions = getReadingSessionsByDate(
+      startOfMonth.toISOString(),
+      today.toISOString()
+    );
+    const monthlyMinutes = monthlySessions.reduce((sum, session) => sum + session.duration, 0);
+
+    // Mock genre distribution (실제로는 데이터베이스에서 가져와야 함)
+    const genreDistribution = [
+      { genre: '소설', percentage: 40, color: '#FF9500' },
+      { genre: '자기계발', percentage: 25, color: '#34C759' },
+      { genre: '역사', percentage: 20, color: '#007AFF' },
+      { genre: '과학', percentage: 15, color: '#AF52DE' },
+    ];
+
+    // Mock reading time distribution (실제로는 데이터베이스에서 가져와야 함)
+    const readingTimeDistribution = Array.from({ length: 24 }, (_, i) => ({
+      hour: i,
+      minutes: Math.floor(Math.random() * 60),
+    }));
+
+    return {
+      dailyMinutes,
+      weeklyMinutes,
+      monthlyMinutes,
+      genreDistribution,
+      readingTimeDistribution,
+    };
+  };
+
   return (
     <ReadingContext.Provider
       value={{
@@ -317,6 +400,8 @@ export const ReadingProvider: React.FC<{ children: React.ReactNode }> = ({ child
         getReadingStreak,
         getRecentHighlights,
         refreshGoals,
+        getReadingSessionsByDate,
+        getReadingStats,
       }}
     >
       {children}

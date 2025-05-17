@@ -15,7 +15,7 @@ import {
   Switch,
   Modal
 } from 'react-native';
-import { saveReadingGoal, getCurrentReadingGoal, updateReadingGoal } from '../database/goalOperations';
+import { saveReadingGoal, getCurrentReadingGoal, updateReadingGoal, UpdateReadingGoal } from '../database/goalOperations';
 import type { ReadingGoal } from '../database/types';
 import { MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
@@ -97,15 +97,15 @@ export default function GoalSettingScreen() {
       const goal = await getCurrentReadingGoal();
       if (goal) {
         setCurrentGoal(goal);
-        setYearlyBooks(goal.yearly_books.toString());
-        setMonthlyBooks(goal.monthly_books.toString());
-        setYearlyPages(goal.yearly_pages.toString());
-        setMonthlyPages(goal.monthly_pages.toString());
-        setStartDate(new Date(goal.start_date));
-        setEndDate(new Date(goal.end_date));
-        setIsPublic(goal.is_public || false);
-        setNotificationsEnabled(goal.notifications_enabled || false);
-        setNotificationTime(goal.notification_time || '09:00');
+        setYearlyBooks(goal.yearly_books?.toString() || '');
+        setMonthlyBooks(goal.monthly_books?.toString() || '');
+        setYearlyPages(goal.yearly_pages?.toString() || '');
+        setMonthlyPages(goal.monthly_pages?.toString() || '');
+        setStartDate(new Date(goal.startDate));
+        setEndDate(new Date(goal.endDate));
+        setIsPublic(goal.isPublic || false);
+        setNotificationsEnabled(goal.notificationsEnabled || false);
+        setNotificationTime(goal.notificationTime || '09:00');
       }
     } catch (error) {
       console.error('목표 로딩 중 오류 발생:', error);
@@ -374,19 +374,24 @@ export default function GoalSettingScreen() {
       const endDate = new Date(new Date().getFullYear(), 11, 31).toISOString().split('T')[0];
 
       const goal: ReadingGoal = {
-        yearly_books: parseInt(yearlyBooks),
-        monthly_books: parseInt(monthlyBooks),
-        yearly_pages: parseInt(yearlyPages),
-        monthly_pages: parseInt(monthlyPages),
-        start_date: startDate,
-        end_date: endDate,
-        is_public: isPublic,
-        notifications_enabled: notificationsEnabled,
-        notification_time: notificationsEnabled ? notificationTime : undefined
+        id: currentGoal?.id || 0,
+        target: parseInt(yearlyBooks) || 0,
+        progress: 0,
+        completed: false,
+        period: 'yearly',
+        startDate: startDate,
+        endDate: endDate,
+        isPublic: isPublic,
+        notificationsEnabled: notificationsEnabled,
+        notificationTime: notificationsEnabled ? notificationTime : undefined,
+        yearly_books: parseInt(yearlyBooks) || 0,
+        monthly_books: parseInt(monthlyBooks) || 0,
+        yearly_pages: parseInt(yearlyPages) || 0,
+        monthly_pages: parseInt(monthlyPages) || 0
       };
 
       if (currentGoal?.id) {
-        await updateReadingGoal({ ...goal, id: currentGoal.id });
+        await updateReadingGoal(goal as UpdateReadingGoal);
         Alert.alert('성공', '목표가 업데이트되었습니다.', [
           { 
             text: '확인', 

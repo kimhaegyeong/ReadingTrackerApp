@@ -3,10 +3,41 @@ import { View, Text, StyleSheet, Button, ScrollView, Image, TouchableOpacity, Sh
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Rating } from 'react-native-ratings';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, RouteProp } from '@react-navigation/native';
+
+interface Book {
+  title: string;
+  authors?: string[];
+  thumbnail?: string;
+  rating?: number;
+  publisher?: string;
+  publishedDate?: string;
+  isbn?: string;
+  description?: string;
+  categories?: string[];
+  memos?: Array<{
+    date: string;
+    content: string;
+  }>;
+  readPages?: number;
+  totalPages?: number;
+  readingSpeed?: number;
+}
+
+type RootStackParamList = {
+  BookDetail: {
+    book: Book;
+  };
+};
+
+type BookDetailScreenRouteProp = RouteProp<RootStackParamList, 'BookDetail'>;
+
+interface TabProps {
+  book: Book;
+}
 
 // 탭 컴포넌트들
-const InfoTab = ({ book }) => (
+const InfoTab: React.FC<TabProps> = ({ book }) => (
   <ScrollView style={styles.tabContent}>
     <View style={styles.infoSection}>
       <Text style={styles.sectionTitle}>출판 정보</Text>
@@ -31,7 +62,7 @@ const InfoTab = ({ book }) => (
   </ScrollView>
 );
 
-const MemoTab = ({ book }) => (
+const MemoTab: React.FC<TabProps> = ({ book }) => (
   <ScrollView style={styles.tabContent}>
     <View style={styles.memoSection}>
       <Text style={styles.sectionTitle}>메모 목록</Text>
@@ -48,7 +79,7 @@ const MemoTab = ({ book }) => (
   </ScrollView>
 );
 
-const StatsTab = ({ book }) => (
+const StatsTab: React.FC<TabProps> = ({ book }) => (
   <ScrollView style={styles.tabContent}>
     <View style={styles.statsSection}>
       <Text style={styles.sectionTitle}>독서 통계</Text>
@@ -65,7 +96,7 @@ const StatsTab = ({ book }) => (
 );
 
 export default function BookDetailScreen() {
-  const route = useRoute();
+  const route = useRoute<BookDetailScreenRouteProp>();
   const { book } = route.params;
   const [index, setIndex] = useState(0);
   const [rating, setRating] = useState(book.rating || 0);
@@ -80,6 +111,16 @@ export default function BookDetailScreen() {
     memo: () => <MemoTab book={book} />,
     stats: () => <StatsTab book={book} />,
   });
+
+  const renderTabBar = (props: any) => (
+    <TabBar
+      {...props}
+      style={styles.tabBar}
+      indicatorStyle={styles.tabIndicator}
+      activeColor="#007AFF"
+      inactiveColor="#666"
+    />
+  );
 
   const handleShare = async () => {
     try {
@@ -130,14 +171,7 @@ export default function BookDetailScreen() {
           navigationState={{ index, routes }}
           renderScene={renderScene}
           onIndexChange={setIndex}
-          renderTabBar={props => (
-            <TabBar
-              {...props}
-              style={styles.tabBar}
-              indicatorStyle={styles.tabIndicator}
-              labelStyle={styles.tabLabel}
-            />
-          )}
+          renderTabBar={renderTabBar}
         />
       </ScrollView>
     </View>
