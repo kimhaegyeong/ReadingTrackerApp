@@ -597,6 +597,18 @@ export default function HomeScreen() {
     );
   };
 
+  const handleStartTimer = (bookId: string) => {
+    navigation.navigate('RecordEdit', { bookId });
+  };
+
+  const handleAddMemo = () => {
+    navigation.navigate('MemoManage', { mode: 'add' });
+  };
+
+  const handleAddRecord = () => {
+    navigation.navigate('RecordEdit', { bookId: '' });
+  };
+
   const renderWidget = (widgetId: string) => {
     switch (widgetId) {
       case 'bookCarousel':
@@ -699,7 +711,11 @@ export default function HomeScreen() {
             style={[styles.fabActionButton, { backgroundColor: '#FF9500' }]}
             onPress={() => {
               toggleFab();
-              navigation.navigate('RecordEdit', { bookId: '' });
+              if (currentBooks.length > 0) {
+                handleStartTimer(currentBooks[0].id);
+              } else {
+                handleAddRecord();
+              }
             }}
           >
             <MaterialIcons name="timer" size={20} color="#fff" />
@@ -722,7 +738,7 @@ export default function HomeScreen() {
             style={[styles.fabActionButton, { backgroundColor: '#34C759' }]}
             onPress={() => {
               toggleFab();
-              navigation.navigate('MemoManage', { mode: 'add' });
+              handleAddMemo();
             }}
           >
             <MaterialIcons name="note-add" size={20} color="#fff" />
@@ -745,7 +761,7 @@ export default function HomeScreen() {
             style={[styles.fabActionButton, { backgroundColor: '#007AFF' }]}
             onPress={() => {
               toggleFab();
-              navigation.navigate('RecordEdit', { bookId: '' });
+              handleAddRecord();
             }}
           >
             <MaterialIcons name="edit" size={20} color="#fff" />
