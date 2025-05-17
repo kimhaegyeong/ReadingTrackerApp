@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import * as Crypto from 'expo-crypto';
 
 export default function StartLoginScreen({ navigation }: any) {
   const { 
@@ -158,10 +159,31 @@ export default function StartLoginScreen({ navigation }: any) {
 
   const handleGuestLogin = async () => {
     try {
-      const success = await loginAsGuest();
-      if (success) {
-        navigation.replace('MainTabs');
-      }
+      Alert.alert(
+        '비회원으로 시작',
+        '비회원으로 시작하면 모든 데이터는 이 기기에만 저장됩니다. 다른 기기에서는 데이터를 확인할 수 없습니다.',
+        [
+          {
+            text: '취소',
+            style: 'cancel'
+          },
+          {
+            text: '시작하기',
+            onPress: async () => {
+              const success = await loginAsGuest();
+              if (success) {
+                Alert.alert(
+                  '환영합니다!',
+                  '비회원으로 시작했습니다. 나중에 회원가입을 하시면 모든 데이터를 그대로 가져갈 수 있습니다.',
+                  [{ text: '확인', onPress: () => navigation.replace('MainTabs') }]
+                );
+              } else {
+                Alert.alert('오류', '비회원 로그인 중 오류가 발생했습니다');
+              }
+            }
+          }
+        ]
+      );
     } catch (error) {
       Alert.alert('오류', '비회원 로그인 중 오류가 발생했습니다');
     }
@@ -316,6 +338,10 @@ export default function StartLoginScreen({ navigation }: any) {
               <Ionicons name="person-outline" size={20} color="#333" style={styles.buttonIcon} />
               <Text style={[styles.buttonText, { color: '#333' }]}>비회원으로 시작</Text>
             </TouchableOpacity>
+
+            <Text style={[styles.guestInfoText, isDarkMode && styles.darkText]}>
+              비회원으로 시작하면 모든 데이터는 이 기기에만 저장됩니다.
+            </Text>
           </Animated.View>
         </View>
       </ScrollView>
@@ -455,5 +481,12 @@ const styles = StyleSheet.create({
   dividerText: {
     paddingHorizontal: 10,
     color: '#999'
+  },
+  guestInfoText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 16
   }
 });

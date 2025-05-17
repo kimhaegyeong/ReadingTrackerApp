@@ -277,69 +277,67 @@ const ReadingSummary = ({ isDarkMode, todayTime, yesterdayTime, streak, weeklyRe
   streak: number;
   weeklyReadingData: ReadingData[];
 }) => {
-  const timeDiff = todayTime - yesterdayTime;
-  const timeDiffColor = timeDiff >= 0 ? '#34C759' : '#FF3B30';
-
-  const chartData = {
-    labels: weeklyReadingData.map(data => data.date),
-    datasets: [{
-      data: weeklyReadingData.map(data => data.minutes),
-    }],
-  };
+  const hasReadingData = weeklyReadingData.some(data => data.minutes > 0);
 
   return (
-    <View style={[styles.summaryCard, isDarkMode && styles.darkCard]}>
-      <Text style={[styles.cardTitle, isDarkMode && styles.darkText]}>오늘의 독서</Text>
-      <View style={styles.summaryContent}>
-        <View style={styles.summaryItem}>
-          <MaterialIcons name="timer" size={24} color={isDarkMode ? '#fff' : '#007AFF'} />
-          <Text style={[styles.summaryValue, isDarkMode && styles.darkText]}>
-            {formatTime(todayTime)}
-          </Text>
-          <Text style={[styles.summaryLabel, isDarkMode && styles.darkSubText]}>독서 시간</Text>
-          {timeDiff !== 0 && (
-            <Text style={[styles.timeDiffText, { color: timeDiffColor }]}>
-              {timeDiff > 0 ? '+' : ''}{formatTime(timeDiff)}
-            </Text>
-          )}
+    <View style={[styles.widget, isDarkMode && styles.darkWidget]}>
+      <View style={styles.widgetHeader}>
+        <Text style={[styles.widgetTitle, isDarkMode && styles.darkText]}>주간 독서 요약</Text>
+      </View>
+      <View style={styles.statsContainer}>
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>{formatTime(todayTime)}</Text>
+          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>오늘</Text>
         </View>
-
-        <View style={styles.summaryDivider} />
-
-        <View style={styles.summaryItem}>
-          <MaterialIcons name="local-fire-department" size={24} color={isDarkMode ? '#fff' : '#FF9500'} />
-          <Text style={[styles.summaryValue, isDarkMode && styles.darkText]}>
-            {streak}일
-          </Text>
-          <Text style={[styles.summaryLabel, isDarkMode && styles.darkSubText]}>연속 독서</Text>
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>{formatTime(yesterdayTime)}</Text>
+          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>어제</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>{streak}일</Text>
+          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>연속</Text>
         </View>
       </View>
-
-      <View style={styles.chartContainer}>
-        <LineChart
-          data={chartData}
-          width={width - 80}
-          height={180}
-          chartConfig={{
-            backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
-            backgroundGradientFrom: isDarkMode ? '#1e1e1e' : '#ffffff',
-            backgroundGradientTo: isDarkMode ? '#1e1e1e' : '#ffffff',
-            decimalPlaces: 0,
-            color: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 122, 255, ${opacity})`,
-            labelColor: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
-            style: {
-              borderRadius: 16,
-            },
-            propsForDots: {
-              r: 6,
-              strokeWidth: 2,
-              stroke: isDarkMode ? '#ffffff' : '#007AFF',
-            },
-          }}
-          bezier
-          style={styles.chart}
-        />
-      </View>
+      {hasReadingData ? (
+        <View style={styles.chartContainer}>
+          <LineChart
+            data={{
+              labels: weeklyReadingData.map(data => data.date),
+              datasets: [{
+                data: weeklyReadingData.map(data => Math.max(0, data.minutes || 0)),
+              }],
+            }}
+            width={width - 80}
+            height={180}
+            chartConfig={{
+              backgroundColor: isDarkMode ? '#1e1e1e' : '#ffffff',
+              backgroundGradientFrom: isDarkMode ? '#1e1e1e' : '#ffffff',
+              backgroundGradientTo: isDarkMode ? '#1e1e1e' : '#ffffff',
+              decimalPlaces: 0,
+              color: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 122, 255, ${opacity})`,
+              labelColor: (opacity = 1) => isDarkMode ? `rgba(255, 255, 255, ${opacity})` : `rgba(0, 0, 0, ${opacity})`,
+              style: {
+                borderRadius: 16,
+              },
+              propsForDots: {
+                r: 6,
+                strokeWidth: 2,
+                stroke: isDarkMode ? '#ffffff' : '#007AFF',
+              },
+            }}
+            bezier
+            style={styles.chart}
+            fromZero={true}
+          />
+        </View>
+      ) : (
+        <View style={[styles.emptyChartContainer, isDarkMode && styles.darkEmptyChartContainer]}>
+          <MaterialIcons name="show-chart" size={48} color={isDarkMode ? '#444' : '#ccc'} />
+          <Text style={[styles.emptyChartText, isDarkMode && styles.darkText]}>
+            아직 독서 기록이 없어요
+          </Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -367,44 +365,34 @@ const getProgressColor = (progress: number): readonly [string, string] => {
 
 const ReadingStats = ({ isDarkMode, readingStats }: { isDarkMode: boolean; readingStats: ReadingStats }) => {
   const pieData: PieChartData = {
-    data: readingStats.genreDistribution.map(item => ({
-      name: item.genre,
-      population: item.percentage,
-      color: item.color,
-      legendFontColor: isDarkMode ? '#fff' : '#000',
-      legendFontSize: 12,
-    }))
+    data: readingStats.genreDistribution
+      .filter(item => item.percentage > 0)
+      .map(item => ({
+        name: item.genre,
+        population: Math.max(0, item.percentage),
+        color: item.color,
+        legendFontColor: isDarkMode ? '#fff' : '#000',
+        legendFontSize: 12,
+      }))
   };
 
   return (
-    <View style={[styles.statsCard, isDarkMode && styles.darkCard]}>
-      <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
-        독서 통계
-      </Text>
-      <View style={styles.statsGrid}>
+    <View style={[styles.widget, isDarkMode && styles.darkWidget]}>
+      <View style={styles.widgetHeader}>
+        <Text style={[styles.widgetTitle, isDarkMode && styles.darkText]}>독서 통계</Text>
+      </View>
+      <View style={styles.statsContainer}>
         <View style={styles.statItem}>
-          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>
-            {readingStats.dailyMinutes}분
-          </Text>
-          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>
-            오늘
-          </Text>
+          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>{readingStats.dailyMinutes}분</Text>
+          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>오늘</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>
-            {readingStats.weeklyMinutes}분
-          </Text>
-          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>
-            이번 주
-          </Text>
+          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>{readingStats.weeklyMinutes}분</Text>
+          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>이번 주</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>
-            {readingStats.monthlyMinutes}분
-          </Text>
-          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>
-            이번 달
-          </Text>
+          <Text style={[styles.statValue, isDarkMode && styles.darkText]}>{readingStats.monthlyMinutes}분</Text>
+          <Text style={[styles.statLabel, isDarkMode && styles.darkText]}>이번 달</Text>
         </View>
       </View>
       <View style={styles.chartContainer}>
@@ -427,6 +415,7 @@ const ReadingStats = ({ isDarkMode, readingStats }: { isDarkMode: boolean; readi
           backgroundColor="transparent"
           paddingLeft="15"
           absolute
+          avoidFalseZero={true}
         />
       </View>
     </View>
@@ -1409,5 +1398,52 @@ const styles = StyleSheet.create({
   },
   header: {
     padding: 20,
+  },
+  widget: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  darkWidget: {
+    backgroundColor: '#1e1e1e',
+  },
+  widgetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  widgetTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  emptyChartContainer: {
+    height: 180,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f8f8',
+    borderRadius: 16,
+    marginTop: 20,
+  },
+  darkEmptyChartContainer: {
+    backgroundColor: '#2c2c2c',
+  },
+  emptyChartText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
 });

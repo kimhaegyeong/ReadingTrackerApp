@@ -1,10 +1,26 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Button, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TextInput, Button, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import Slider from '@react-native-community/slider';
+import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { saveReadingRecord, updateReadingRecord, getReadingRecord } from '../database/recordOperations';
+import { ReadingRecord, UpdateReadingRecord } from '../types';
+
+type RootStackParamList = {
+  RecordEdit: {
+    bookId?: string;
+    recordId?: number;
+  };
+};
+
+type RecordEditScreenRouteProp = RouteProp<RootStackParamList, 'RecordEdit'>;
 
 export default function RecordEditScreen() {
+  const route = useRoute<RecordEditScreenRouteProp>();
+  const navigation = useNavigation();
+  const { bookId, recordId } = route.params;
+
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pageRange, setPageRange] = useState('');
@@ -14,8 +30,32 @@ export default function RecordEditScreen() {
   const [satisfaction, setSatisfaction] = useState(3);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const emotions = ['😊', '😢', '😡', '😴', '🤔', '😮', '😍', '😱', '😭', '😤'];
+
+  useEffect(() => {
+    if (recordId) {
+      loadRecord();
+    }
+  }, [recordId]);
+
+  const loadRecord = async () => {
+    try {
+      const record = await getReadingRecord(recordId!);
+      if (record) {
+        setDate(new Date(record.date));
+        setPageRange(`${record.startPage}-${record.endPage}`);
+        setReadingTime(record.readingTime.toString());
+        setEmotion(record.emotion);
+        setSatisfaction(record.satisfaction);
+        setMemo(record.memo);
+        setTags(record.tags);
+      }
+    } catch (error) {
+      Alert.alert('오류', '기록을 불러오는데 실패했습니다.');
+    }
+  };
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
@@ -31,9 +71,71 @@ export default function RecordEditScreen() {
     }
   };
 
+  const validateInputs = (): boolean => {
+    if (!pageRange) {
+      Alert.alert('오류', '읽은 페이지 범위를 입력해주세요.');
+      return false;
+    }
+
+    if (!readingTime) {
+      Alert.alert('오류', '독서 시간을 입력해주세요.');
+      return false;
+    }
+
+    const pageRangeRegex = /^\d+-\d+$/;
+    if (!pageRangeRegex.test(pageRange)) {
+      Alert.alert('오류', '페이지 범위는 "시작-끝" 형식으로 입력해주세요.');
+      return false;
+    }
+
+    const [startPage, endPage] = pageRange.split('-').map(Number);
+    if (startPage >= endPage) {
+      Alert.alert('오류', '시작 페이지는 끝 페이지보다 작아야 합니다.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSave = async () => {
+    if (!validateInputs()) return;
+
+    try {
+      setIsLoading(true);
+      const [startPage, endPage] = pageRange.split('-').map(Number);
+      
+      const record: ReadingRecord = {
+        bookId: bookId || '',
+        date: date.toISOString(),
+        startPage,
+        endPage,
+        readingTime: parseInt(readingTime),
+        emotion,
+        satisfaction,
+        memo,
+        tags
+      };
+
+      if (recordId) {
+        record.id = recordId;
+        await updateReadingRecord(record as UpdateReadingRecord);
+      } else {
+        await saveReadingRecord(record);
+      }
+
+      Alert.alert('성공', '독서 기록이 저장되었습니다.', [
+        { text: '확인', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error) {
+      Alert.alert('오류', '기록 저장에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>독서 기록 추가/수정</Text>
+      <Text style={styles.title}>독서 기록 {recordId ? '수정' : '추가'}</Text>
       
       <Text style={styles.label}>날짜</Text>
       <TouchableOpacity onPress={() => setShowDatePicker(true)}>
@@ -121,7 +223,11 @@ export default function RecordEditScreen() {
         onChangeText={setMemo}
       />
 
-      <Button title="저장" onPress={() => {}} />
+      <Button 
+        title={isLoading ? "저장 중..." : "저장"} 
+        onPress={handleSave}
+        disabled={isLoading}
+      />
     </ScrollView>
   );
 }

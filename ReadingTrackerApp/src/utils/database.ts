@@ -106,7 +106,7 @@ export async function getFilters(): Promise<SearchFilter[]> {
   if (!database) throw new Error('Database not available');
 
   const rows = await database.getAllAsync('SELECT * FROM search_filters ORDER BY name ASC');
-  return rows.map(row => ({
+  return rows.map((row: SearchFilter) => ({
     ...row,
     isActive: Boolean(row.isActive)
   }));

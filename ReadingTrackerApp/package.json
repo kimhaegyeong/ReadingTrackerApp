@@ -48,7 +48,9 @@
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
-    "undefined": "@react-native-community/"
+    "undefined": "@react-native-community/",
+    "react-native-get-random-values": "~1.11.0",
+    "expo-crypto": "~14.1.4"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

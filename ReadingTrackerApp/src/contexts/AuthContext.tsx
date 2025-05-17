@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Google from 'expo-auth-session/providers/google';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { Alert } from 'react-native';
+import * as Crypto from 'expo-crypto';
 
 export interface User {
   id: string;
@@ -13,9 +14,14 @@ export interface User {
 }
 
 interface AuthContextType {
-  user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  user: {
+    id: string;
+    type: 'guest' | 'user';
+    email?: string;
+    name?: string;
+  } | null;
   login: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<boolean>;
   loginWithApple: () => Promise<boolean>;
@@ -28,27 +34,12 @@ interface AuthContextType {
   resetLoginAttempts: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  isLoading: true,
-  isAuthenticated: false,
-  login: async () => false,
-  loginWithGoogle: async () => false,
-  loginWithApple: async () => false,
-  loginAsGuest: async () => false,
-  logout: async () => {},
-  register: async () => false,
-  validateEmail: () => false,
-  validatePassword: () => ({ isValid: false, message: '' }),
-  loginAttempts: 0,
-  resetLoginAttempts: () => {},
-});
-
-export const useAuth = () => useContext(AuthContext);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<AuthContextType['user']>(null);
   const [loginAttempts, setLoginAttempts] = useState(0);
 
   // Google OAuth configuration
@@ -59,24 +50,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     webClientId: 'YOUR_WEB_CLIENT_ID',
   });
 
-  // Check for existing user session on app start
   useEffect(() => {
-    const checkUserSession = async () => {
-      try {
-        const userJson = await AsyncStorage.getItem('user');
-        if (userJson) {
-          const userData = JSON.parse(userJson);
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error('Error checking user session:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkUserSession();
+    checkAuthStatus();
   }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Auth status check failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Handle Google Auth response
   useEffect(() => {
@@ -185,28 +176,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginAsGuest = async (): Promise<boolean> => {
     try {
-      const guestId = `guest_${Date.now()}`;
-      const user: User = {
+      // 16바이트 랜덤값을 생성하고 hex string으로 변환
+      const randomBytes = await Crypto.getRandomBytesAsync(16);
+      const guestId = Array.from(randomBytes)
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+
+      const guestUser = {
         id: guestId,
-        email: `guest_${guestId}@example.com`,
-        authProvider: 'guest',
+        type: 'guest' as const,
+        createdAt: new Date().toISOString()
       };
-      
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-      setUser(user);
+
+      await AsyncStorage.setItem('user', JSON.stringify(guestUser));
+      setUser(guestUser);
+      setIsAuthenticated(true);
       return true;
     } catch (error) {
-      console.error('Guest login error:', error);
+      console.error('Guest login failed:', error);
       return false;
     }
   };
 
-  const logout = async (): Promise<void> => {
+  const logout = async () => {
     try {
       await AsyncStorage.removeItem('user');
       setUser(null);
+      setIsAuthenticated(false);
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Logout failed:', error);
     }
   };
 
@@ -263,24 +261,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        login,
-        loginWithGoogle,
-        loginWithApple,
-        loginAsGuest,
-        logout,
-        register,
-        validateEmail,
-        validatePassword,
-        loginAttempts,
-        resetLoginAttempts,
-      }}
-    >
+    <AuthContext.Provider value={{
+      isLoading,
+      isAuthenticated,
+      user,
+      login,
+      loginWithGoogle,
+      loginWithApple,
+      loginAsGuest,
+      logout,
+      register,
+      validateEmail,
+      validatePassword,
+      loginAttempts,
+      resetLoginAttempts
+    }}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

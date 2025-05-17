@@ -63,19 +63,11 @@ const initDatabase = async () => {
   `);
 };
 
-export const getDBConnection = async () => {
-  try {
-    const dbPath = await getDatabasePath();
-    const dbInfo = await FileSystem.getInfoAsync(dbPath);
+let db: SQLite.SQLiteDatabase | null = null;
 
-    if (!dbInfo.exists) {
-      console.log('Database file not found, initializing new database');
-      await initDatabase();
-    }
-  } catch (error) {
-    console.log('Failed to initialize database:', error);
-    await initDatabase();
+export const getDBConnection = async (): Promise<SQLite.SQLiteDatabase> => {
+  if (!db) {
+    db = await SQLite.openDatabaseAsync('reading_tracker.db');
   }
-  
-  return SQLite.openDatabaseAsync(DATABASE_NAME);
+  return db;
 }; 
