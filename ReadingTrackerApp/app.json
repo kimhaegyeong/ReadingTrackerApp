@@ -4,7 +4,16 @@
     "slug": "ReadingTrackerApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "newArchEnabled": true,
     "scheme": "readingtrackerapp",
     "ios": {
@@ -13,13 +22,17 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff",
+        "edgeToEdgeEnabled": true,
+        "jsEngine": "hermes"
       },
       "edgeToEdgeEnabled": true,
       "jsEngine": "hermes"
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-web-browser",
