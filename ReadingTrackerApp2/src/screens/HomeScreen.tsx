@@ -7,7 +7,7 @@ import { HomeStackParamList } from '@/navigation/HomeStack';
 import { useAppSelector } from '@/store/hooks';
 import { Book } from '@/store/slices/booksSlice';
 
-type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
+type HomeScreenNavigationProp = NativeStackNavigationProp<HomeStackParamList, 'LibraryHome'>;
 
 export const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -28,7 +28,7 @@ export const HomeScreen = () => {
       CommonActions.navigate({
         name: 'Search',
         params: {
-          screen: 'SearchBooks',
+          screen: 'SearchHome',
         },
       })
     );

@@ -45,3 +45,5 @@ ReadingTrackerApp2/src/config/api.ts
 
 expo-env.d.ts
 # @end expo-cli
+
+ReadingTrackerApp2/src/services/api.ts

@@ -1,11 +1,11 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatsScreen } from '@/screens/StatsScreen';
-import ReadingGoalsScreen from '@/screens/ReadingGoalsScreen';
-import ReadingSessionsScreen from '@/screens/ReadingSessionsScreen';
+import { ReadingGoalsScreen } from '@/screens/ReadingGoalsScreen';
+import { ReadingSessionsScreen } from '@/screens/ReadingSessionsScreen';
 
 export type StatsStackParamList = {
-  Stats: undefined;
+  StatsHome: undefined;
   ReadingGoals: undefined;
   ReadingSessions: undefined;
 };
@@ -20,7 +20,7 @@ export const StatsStack = () => {
       }}
     >
       <Stack.Screen
-        name="Stats"
+        name="StatsHome"
         component={StatsScreen}
         options={{
           title: '통계',

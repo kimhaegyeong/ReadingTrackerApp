@@ -1,40 +1,40 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Card, Title, Text, useTheme } from 'react-native-paper';
+import { Text, Card, useTheme } from 'react-native-paper';
 import { useAppSelector } from '@/store/hooks';
 
-const StatsScreen = () => {
+export const StatsScreen = () => {
   const theme = useTheme();
-  const stats = useAppSelector((state) => state.stats);
+  const books = useAppSelector((state) => state.books.books);
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return '없음';
-    return new Date(dateString).toLocaleDateString('ko-KR');
-  };
+  const totalBooks = books.length;
+  const completedBooks = books.filter(book => book.status === 'completed').length;
+  const readingBooks = books.filter(book => book.status === 'reading').length;
+  const plannedBooks = books.filter(book => book.status === 'planned').length;
+
+  const totalPages = books.reduce((sum, book) => sum + (book.currentPage || 0), 0);
 
   return (
     <ScrollView style={styles.container}>
       <Card style={styles.card}>
         <Card.Content>
-          <Title>전체 통계</Title>
-          <View style={styles.statsRow}>
+          <Text style={styles.title}>독서 통계</Text>
+          <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>읽은 책</Text>
-              <Text style={styles.statValue}>{stats.totalBooksRead}권</Text>
+              <Text style={styles.statValue}>{totalBooks}</Text>
+              <Text style={styles.statLabel}>전체 도서</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>읽은 페이지</Text>
-              <Text style={styles.statValue}>{stats.totalPagesRead}페이지</Text>
-            </View>
-          </View>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>평균 평점</Text>
-              <Text style={styles.statValue}>{stats.averageRating.toFixed(1)}점</Text>
+              <Text style={styles.statValue}>{completedBooks}</Text>
+              <Text style={styles.statLabel}>완독</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>연속 독서</Text>
-              <Text style={styles.statValue}>{stats.readingStreak}일</Text>
+              <Text style={styles.statValue}>{readingBooks}</Text>
+              <Text style={styles.statLabel}>읽는 중</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{plannedBooks}</Text>
+              <Text style={styles.statLabel}>읽을 예정</Text>
             </View>
           </View>
         </Card.Content>
@@ -42,50 +42,13 @@ const StatsScreen = () => {
 
       <Card style={styles.card}>
         <Card.Content>
-          <Title>이번 달 통계</Title>
-          <View style={styles.statsRow}>
+          <Text style={styles.title}>페이지 통계</Text>
+          <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>읽은 책</Text>
-              <Text style={styles.statValue}>
-                {stats.monthlyStats[new Date().toISOString().slice(0, 7)]?.booksRead || 0}권
-              </Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>읽은 페이지</Text>
-              <Text style={styles.statValue}>
-                {stats.monthlyStats[new Date().toISOString().slice(0, 7)]?.pagesRead || 0}페이지
-              </Text>
+              <Text style={styles.statValue}>{totalPages}</Text>
+              <Text style={styles.statLabel}>총 읽은 페이지</Text>
             </View>
           </View>
-        </Card.Content>
-      </Card>
-
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title>올해 통계</Title>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>읽은 책</Text>
-              <Text style={styles.statValue}>
-                {stats.yearlyStats[new Date().getFullYear().toString()]?.booksRead || 0}권
-              </Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statLabel}>읽은 페이지</Text>
-              <Text style={styles.statValue}>
-                {stats.yearlyStats[new Date().getFullYear().toString()]?.pagesRead || 0}페이지
-              </Text>
-            </View>
-          </View>
-        </Card.Content>
-      </Card>
-
-      <Card style={styles.card}>
-        <Card.Content>
-          <Title>마지막 독서</Title>
-          <Text style={styles.lastReadDate}>
-            {formatDate(stats.lastReadDate)}
-          </Text>
         </Card.Content>
       </Card>
     </ScrollView>
@@ -96,33 +59,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: '#f5f5f5',
   },
   card: {
     marginBottom: 16,
   },
-  statsRow: {
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  statsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginTop: 8,
   },
   statItem: {
-    flex: 1,
+    width: '48%',
+    marginBottom: 16,
     alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 4,
   },
-  statValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  lastReadDate: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-});
-
-export default StatsScreen; 
+}); 

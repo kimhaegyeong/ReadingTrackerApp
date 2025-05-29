@@ -66,12 +66,14 @@ interface BooksState {
   books: Book[];
   loading: boolean;
   error: string | null;
+  currentBook: Book | null;
 }
 
 const initialState: BooksState = {
   books: [],
   loading: false,
   error: null,
+  currentBook: null,
 };
 
 const booksSlice = createSlice({
@@ -96,10 +98,31 @@ const booksSlice = createSlice({
         book.bookmarks.push(action.payload.bookmark);
       }
     },
+    updateBookmark: (state, action: PayloadAction<{ bookId: string; bookmark: Bookmark }>) => {
+      const book = state.books.find(b => b.id === action.payload.bookId);
+      if (book) {
+        const idx = book.bookmarks.findIndex(bm => bm.id === action.payload.bookmark.id);
+        if (idx !== -1) {
+          book.bookmarks[idx] = action.payload.bookmark;
+        }
+      }
+    },
+    deleteBookmark: (state, action: PayloadAction<{ bookId: string; bookmarkId: string }>) => {
+      const book = state.books.find(b => b.id === action.payload.bookId);
+      if (book) {
+        book.bookmarks = book.bookmarks.filter(bm => bm.id !== action.payload.bookmarkId);
+      }
+    },
     addReview: (state, action: PayloadAction<{ bookId: string; review: Review }>) => {
       const book = state.books.find(b => b.id === action.payload.bookId);
       if (book) {
         book.reviews.push(action.payload.review);
+      }
+    },
+    deleteReview: (state, action: PayloadAction<{ bookId: string; reviewId: string }>) => {
+      const book = state.books.find(b => b.id === action.payload.bookId);
+      if (book) {
+        book.reviews = book.reviews.filter(rv => rv.id !== action.payload.reviewId);
       }
     },
     addReadingSession: (state, action: PayloadAction<{ bookId: string; session: ReadingSession }>) => {
@@ -113,6 +136,9 @@ const booksSlice = createSlice({
         }
       }
     },
+    setCurrentBook: (state, action: PayloadAction<Book | null>) => {
+      state.currentBook = action.payload;
+    },
   },
 });
 
@@ -121,8 +147,12 @@ export const {
   updateBook,
   deleteBook,
   addBookmark,
+  updateBookmark,
+  deleteBookmark,
   addReview,
+  deleteReview,
   addReadingSession,
+  setCurrentBook,
 } = booksSlice.actions;
 
 export default booksSlice.reducer; 

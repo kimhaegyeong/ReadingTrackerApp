@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Card, Button, TextInput, ProgressBar, IconButton } from 'react-native-paper';
+import { Text, Card, Button, TextInput, ProgressBar, IconButton, Portal, Dialog } from 'react-native-paper';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { colors, spacing } from '@/theme';
 import { addReadingTime, addPagesRead, addActivity } from '@/store/slices/statsSlice';
+import { addReadingSession } from '@/store/slices/booksSlice';
 import { Book } from '@/store/slices/booksSlice';
 
 export const ReadingSessionScreen: React.FC = () => {
@@ -15,6 +16,7 @@ export const ReadingSessionScreen: React.FC = () => {
   const [startPage, setStartPage] = useState('');
   const [endPage, setEndPage] = useState('');
   const [notes, setNotes] = useState('');
+  const [showSummary, setShowSummary] = useState(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -26,6 +28,13 @@ export const ReadingSessionScreen: React.FC = () => {
     return () => clearInterval(timer);
   }, [isPaused]);
 
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handlePause = () => {
     setIsPaused(true);
     setPausedTime(duration);
@@ -36,75 +45,81 @@ export const ReadingSessionScreen: React.FC = () => {
   };
 
   const handleEndSession = () => {
-    if (!currentBook) {
-      Alert.alert('오류', '현재 읽고 있는 책이 없습니다.');
+    if (!startPage || !endPage) {
+      Alert.alert('오류', '시작 페이지와 마지막 페이지를 입력해주세요.');
       return;
     }
 
     const start = parseInt(startPage);
     const end = parseInt(endPage);
+    const pagesRead = end - start;
 
-    if (isNaN(start) || isNaN(end) || start < 0 || end > currentBook.pageCount || start >= end) {
-      Alert.alert('오류', '올바른 페이지 범위를 입력해주세요.');
+    if (isNaN(start) || isNaN(end) || pagesRead < 0) {
+      Alert.alert('오류', '올바른 페이지 번호를 입력해주세요.');
       return;
     }
 
-    const pagesRead = end - start;
-    const minutesRead = Math.floor(duration / 60);
+    if (currentBook && pagesRead > 0) {
+      const session = {
+        id: Date.now().toString(),
+        startTime: new Date(Date.now() - duration * 1000).toISOString(),
+        endTime: new Date().toISOString(),
+        pagesRead,
+        notes,
+      };
 
-    dispatch(addReadingTime(minutesRead));
-    dispatch(addPagesRead(pagesRead));
-    dispatch(addActivity({
-      id: Date.now().toString(),
-      type: 'reading_session',
-      description: `${currentBook.title} ${pagesRead}페이지 읽음`,
-      timestamp: Date.now(),
-      bookId: currentBook.id,
-    }));
+      dispatch(addReadingSession({ bookId: currentBook.id, session }));
+      dispatch(addReadingTime(Math.floor(duration / 60)));
+      dispatch(addPagesRead(pagesRead));
+      dispatch(addActivity({
+        id: Date.now().toString(),
+        type: 'reading_session',
+        description: `${currentBook.title} ${pagesRead}페이지 읽음`,
+        timestamp: Date.now(),
+        bookId: currentBook.id,
+      }));
 
-    Alert.alert('독서 세션 종료', `${minutesRead}분 동안 ${pagesRead}페이지를 읽었습니다.`);
+      setShowSummary(true);
+    }
   };
 
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  const handleCloseSummary = () => {
+    setShowSummary(false);
+    setDuration(0);
+    setStartPage('');
+    setEndPage('');
+    setNotes('');
   };
 
   if (!currentBook) {
     return (
       <View style={styles.container}>
-        <Card style={styles.card}>
-          <Card.Content>
-            <Text style={styles.message}>현재 읽고 있는 책이 없습니다.</Text>
-            <Text style={styles.subMessage}>책을 선택하고 독서를 시작해보세요.</Text>
-          </Card.Content>
-        </Card>
+        <Text style={styles.message}>현재 읽고 있는 책이 없습니다.</Text>
+        <Text style={styles.subMessage}>내 서재에서 책을 선택해주세요.</Text>
       </View>
     );
   }
 
+  const progress = (currentBook.currentPage / currentBook.pageCount) * 100;
+
   return (
     <ScrollView style={styles.container}>
       <Card style={styles.card}>
-        <Card.Title title="현재 읽는 책" />
         <Card.Content>
           <Text style={styles.bookTitle}>{currentBook.title}</Text>
           <Text style={styles.bookAuthor}>{currentBook.authors.join(', ')}</Text>
           <ProgressBar
-            progress={currentBook.userSpecificData.currentPage / currentBook.pageCount}
-            color={colors.primary}
+            progress={progress / 100}
             style={styles.progressBar}
+            color={colors.primary}
           />
           <Text style={styles.progressText}>
-            {currentBook.userSpecificData.currentPage} / {currentBook.pageCount} 페이지
+            {currentBook.currentPage} / {currentBook.pageCount} 페이지
           </Text>
         </Card.Content>
       </Card>
 
       <Card style={styles.card}>
-        <Card.Title title="독서 시간" />
         <Card.Content>
           <View style={styles.timerContainer}>
             <Text style={styles.timer}>{formatTime(duration)}</Text>
@@ -122,14 +137,14 @@ export const ReadingSessionScreen: React.FC = () => {
                   onPress={handlePause}
                 />
               )}
+              <IconButton
+                icon="stop"
+                size={30}
+                onPress={handleEndSession}
+              />
             </View>
           </View>
-        </Card.Content>
-      </Card>
 
-      <Card style={styles.card}>
-        <Card.Title title="독서 기록" />
-        <Card.Content>
           <TextInput
             label="시작 페이지"
             value={startPage}
@@ -138,7 +153,7 @@ export const ReadingSessionScreen: React.FC = () => {
             style={styles.input}
           />
           <TextInput
-            label="종료 페이지"
+            label="마지막 페이지"
             value={endPage}
             onChangeText={setEndPage}
             keyboardType="numeric"
@@ -152,15 +167,30 @@ export const ReadingSessionScreen: React.FC = () => {
             numberOfLines={4}
             style={styles.input}
           />
-          <Button
-            mode="contained"
-            onPress={handleEndSession}
-            style={styles.button}
-          >
-            독서 세션 종료
-          </Button>
         </Card.Content>
       </Card>
+
+      <Portal>
+        <Dialog visible={showSummary} onDismiss={handleCloseSummary}>
+          <Dialog.Title>독서 세션 완료</Dialog.Title>
+          <Dialog.Content>
+            <Text style={styles.summaryText}>
+              독서 시간: {formatTime(duration)}
+            </Text>
+            <Text style={styles.summaryText}>
+              읽은 페이지: {parseInt(endPage) - parseInt(startPage)} 페이지
+            </Text>
+            {notes && (
+              <Text style={styles.summaryText}>
+                메모: {notes}
+              </Text>
+            )}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={handleCloseSummary}>확인</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </ScrollView>
   );
 };
@@ -208,9 +238,6 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: spacing.small,
   },
-  button: {
-    marginTop: spacing.small,
-  },
   message: {
     fontSize: 18,
     textAlign: 'center',
@@ -220,5 +247,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     color: colors.textSecondary,
+  },
+  summaryText: {
+    fontSize: 16,
+    marginBottom: spacing.small,
   },
 }); 
