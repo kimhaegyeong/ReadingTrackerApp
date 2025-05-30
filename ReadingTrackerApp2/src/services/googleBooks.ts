@@ -1,6 +1,7 @@
 import { Book } from '@/store/slices/booksSlice';
 import { API_KEYS } from '@/config/api';
 import NetInfo from '@react-native-community/netinfo';
+import Constants from 'expo-constants';
 
 const TIMEOUT_DURATION = 30000; // 30초로 증가
 
@@ -94,8 +95,13 @@ export class GoogleBooksService {
 
   static async searchBooks(query: string, maxResults: number = 20): Promise<any> {
     try {
+      const apiKey = Constants.expoConfig?.extra?.GOOGLE_BOOKS_API_KEY;
+      if (!apiKey) {
+        throw new Error('Google Books API 키가 설정되지 않았습니다.');
+      }
+
       const encodedQuery = encodeURIComponent(query);
-      const url = `${this.BASE_URL}?q=${encodedQuery}&maxResults=${maxResults}&key=${API_KEYS.GOOGLE_BOOKS}`;
+      const url = `${this.BASE_URL}?q=${encodedQuery}&maxResults=${maxResults}&key=${apiKey}`;
       
       console.log('API 요청 URL:', url);
       
@@ -113,7 +119,12 @@ export class GoogleBooksService {
 
   static async getBookDetails(bookId: string): Promise<any> {
     try {
-      const url = `${this.BASE_URL}/${bookId}?key=${API_KEYS.GOOGLE_BOOKS}`;
+      const apiKey = Constants.expoConfig?.extra?.GOOGLE_BOOKS_API_KEY;
+      if (!apiKey) {
+        throw new Error('Google Books API 키가 설정되지 않았습니다.');
+      }
+
+      const url = `${this.BASE_URL}/${bookId}?key=${apiKey}`;
       
       console.log('책 상세 정보 요청 URL:', url);
       
