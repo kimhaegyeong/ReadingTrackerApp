@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Card, Button, TextInput, IconButton } from 'react-native-paper';
+import { Text, Card, Button, TextInput, IconButton, ActivityIndicator } from 'react-native-paper';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { Book } from '@/store/slices/booksSlice';
 import { colors, spacing } from '@/theme';
 import { Rating } from '@/components/Rating';
+import * as database from '@/services/database';
 
 interface Bookmark {
   id: string;
@@ -24,121 +25,122 @@ export const BookDetailScreen: React.FC<{ route: { params: { bookId: string } } 
   const { bookId } = route.params;
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.user.currentUser);
-  const book = useAppSelector((state) => 
-    state.books.books.find((b: Book) => b.id === bookId)
-  );
-
+  const [book, setBook] = useState<Book | null>(null);
+  const [loading, setLoading] = useState(true);
   const [bookmarkPage, setBookmarkPage] = useState('');
   const [bookmarkNote, setBookmarkNote] = useState('');
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
+  const [userData, setUserData] = useState<any>(null);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
-  if (!book) {
-    return (
-      <View style={styles.container}>
-        <Text>책을 찾을 수 없습니다.</Text>
-      </View>
-    );
-  }
+  useEffect(() => {
+    loadBookData();
+  }, [bookId]);
 
-  const userData = book.userSpecificData?.[user?.id || ''];
+  const loadBookData = async () => {
+    try {
+      setLoading(true);
+      const bookData = await database.loadBook(bookId);
+      if (!bookData) {
+        Alert.alert('오류', '책 정보를 찾을 수 없습니다.');
+        return;
+      }
+      setBook(bookData);
 
-  const handleAddBookmark = () => {
-    if (!user || !book) return;
+      if (user) {
+        const userBookData = await database.loadUserBookData(bookId, user.id);
+        const userBookmarks = await database.loadBookmarks(bookId, user.id);
+        const userReviews = await database.loadReviews(bookId, user.id);
+
+        setUserData(userBookData);
+        setBookmarks(userBookmarks);
+        setReviews(userReviews);
+      }
+    } catch (error) {
+      console.error('데이터 로드 중 오류 발생:', error);
+      Alert.alert('오류', '데이터를 불러오는 중 문제가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddBookmark = async () => {
+    if (!book || !user) return;
 
     const page = parseInt(bookmarkPage);
-    if (isNaN(page) || page < 0 || page > book.pageCount) {
+    if (isNaN(page) || page <= 0) {
       Alert.alert('오류', '유효한 페이지 번호를 입력해주세요.');
       return;
     }
 
-    const bookmark: Bookmark = {
-      id: Date.now().toString(),
-      page,
-      note: bookmarkNote,
-      createdAt: new Date().toISOString(),
-    };
+    if (book.pageCount > 0 && page > book.pageCount) {
+      Alert.alert('오류', `페이지 번호는 ${book.pageCount} 이하여야 합니다.`);
+      return;
+    }
 
-    dispatch({
-      type: 'books/updateBook',
-      payload: {
-        ...book,
-        userSpecificData: {
-          ...book.userSpecificData,
-          [user.id]: {
-            ...book.userSpecificData?.[user.id],
-            bookmarks: [
-              ...(book.userSpecificData?.[user.id]?.bookmarks || []),
-              bookmark,
-            ],
-          },
-        },
-      },
-    });
-
-    // 활동 추가
-    dispatch({
-      type: 'stats/addActivity',
-      payload: {
+    try {
+      const bookmark: Bookmark = {
         id: Date.now().toString(),
-        type: 'bookmark',
-        description: `${book.title} ${page}페이지 북마크 추가`,
-        timestamp: new Date().toISOString(),
-        bookId: book.id,
-      },
-    });
+        page,
+        note: bookmarkNote,
+        createdAt: new Date().toISOString()
+      };
 
-    setBookmarkPage('');
-    setBookmarkNote('');
+      await database.saveBookmark(bookId, user.id, bookmark);
+      setBookmarks([...bookmarks, bookmark]);
+      setBookmarkPage('');
+      setBookmarkNote('');
+      Alert.alert('성공', '북마크가 추가되었습니다.');
+    } catch (error) {
+      console.error('북마크 추가 중 오류 발생:', error);
+      Alert.alert('오류', '북마크 추가 중 문제가 발생했습니다.');
+    }
   };
 
-  const handleAddReview = () => {
-    if (!user || !book) return;
+  const handleAddReview = async () => {
+    if (!book || !user) return;
 
     if (reviewRating === 0) {
       Alert.alert('오류', '평점을 선택해주세요.');
       return;
     }
 
-    const review: Review = {
-      id: Date.now().toString(),
-      rating: reviewRating,
-      text: reviewText,
-      createdAt: new Date().toISOString(),
-    };
-
-    dispatch({
-      type: 'books/updateBook',
-      payload: {
-        ...book,
-        userSpecificData: {
-          ...book.userSpecificData,
-          [user.id]: {
-            ...book.userSpecificData?.[user.id],
-            reviews: [
-              ...(book.userSpecificData?.[user.id]?.reviews || []),
-              review,
-            ],
-          },
-        },
-      },
-    });
-
-    // 활동 추가
-    dispatch({
-      type: 'stats/addActivity',
-      payload: {
+    try {
+      const review: Review = {
         id: Date.now().toString(),
-        type: 'review',
-        description: `${book.title} 리뷰 작성 (${reviewRating}점)`,
-        timestamp: new Date().toISOString(),
-        bookId: book.id,
-      },
-    });
+        rating: reviewRating,
+        text: reviewText,
+        createdAt: new Date().toISOString()
+      };
 
-    setReviewRating(0);
-    setReviewText('');
+      await database.saveReview(bookId, user.id, review);
+      setReviews([...reviews, review]);
+      setReviewRating(0);
+      setReviewText('');
+      Alert.alert('성공', '리뷰가 등록되었습니다.');
+    } catch (error) {
+      console.error('리뷰 등록 중 오류 발생:', error);
+      Alert.alert('오류', '리뷰 등록 중 문제가 발생했습니다.');
+    }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!book) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>책 정보를 찾을 수 없습니다.</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -201,40 +203,15 @@ export const BookDetailScreen: React.FC<{ route: { params: { bookId: string } } 
         </Card.Content>
       </Card>
 
-      <Card style={styles.sectionCard}>
-        <Card.Content>
-          <Text style={styles.sectionTitle}>리뷰 작성</Text>
-          <Rating
-            value={reviewRating}
-            onValueChange={setReviewRating}
-            style={styles.rating}
-          />
-          <TextInput
-            mode="outlined"
-            label="리뷰"
-            value={reviewText}
-            onChangeText={setReviewText}
-            multiline
-            numberOfLines={4}
-            style={styles.input}
-          />
-          <Button
-            mode="contained"
-            onPress={handleAddReview}
-            style={styles.button}
-          >
-            리뷰 작성
-          </Button>
-        </Card.Content>
-      </Card>
-
-      {userData?.bookmarks && userData.bookmarks.length > 0 && (
+      {bookmarks.length > 0 && (
         <Card style={styles.sectionCard}>
           <Card.Content>
             <Text style={styles.sectionTitle}>북마크 목록</Text>
-            {userData.bookmarks.map((bookmark: Bookmark) => (
+            {bookmarks.map((bookmark) => (
               <View key={bookmark.id} style={styles.bookmarkItem}>
-                <Text style={styles.bookmarkPage}>{bookmark.page}페이지</Text>
+                <Text style={styles.bookmarkPage}>
+                  {bookmark.page} 페이지
+                </Text>
                 {bookmark.note && (
                   <Text style={styles.bookmarkNote}>{bookmark.note}</Text>
                 )}
@@ -247,11 +224,38 @@ export const BookDetailScreen: React.FC<{ route: { params: { bookId: string } } 
         </Card>
       )}
 
-      {userData?.reviews && userData.reviews.length > 0 && (
+      <Card style={styles.sectionCard}>
+        <Card.Content>
+          <Text style={styles.sectionTitle}>리뷰 작성</Text>
+          <Rating
+            value={reviewRating}
+            onValueChange={setReviewRating}
+            style={styles.rating}
+          />
+          <TextInput
+            mode="outlined"
+            label="리뷰 내용"
+            value={reviewText}
+            onChangeText={setReviewText}
+            multiline
+            numberOfLines={4}
+            style={styles.input}
+          />
+          <Button
+            mode="contained"
+            onPress={handleAddReview}
+            style={styles.button}
+          >
+            리뷰 등록
+          </Button>
+        </Card.Content>
+      </Card>
+
+      {reviews.length > 0 && (
         <Card style={styles.sectionCard}>
           <Card.Content>
             <Text style={styles.sectionTitle}>리뷰 목록</Text>
-            {userData.reviews.map((review: Review) => (
+            {reviews.map((review) => (
               <View key={review.id} style={styles.reviewItem}>
                 <Rating
                   value={review.rating}
@@ -277,6 +281,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  errorText: {
+    fontSize: 16,
+    color: colors.error,
   },
   bookCard: {
     margin: spacing.medium,

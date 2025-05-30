@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
-import { Searchbar, Card, Text, Button } from 'react-native-paper';
+import { Searchbar, Card, Text, Button, FAB } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SearchStackParamList } from '@/navigation/SearchStack';
@@ -75,6 +75,10 @@ export const SearchBooksScreen = () => {
     }));
   };
 
+  const handleManualEntry = () => {
+    navigation.navigate('ManualBookEntry');
+  };
+
   const renderBookItem = ({ item }: { item: SearchResult }) => (
     <Card style={styles.card}>
       <Card.Cover source={{ uri: item.thumbnail }} />
@@ -116,6 +120,12 @@ export const SearchBooksScreen = () => {
           }
         />
       )}
+      <FAB
+        style={styles.fab}
+        icon="plus"
+        onPress={handleManualEntry}
+        label="수동 등록"
+      />
     </View>
   );
 };
@@ -153,5 +163,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
     color: '#666',
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
   },
 }); 
