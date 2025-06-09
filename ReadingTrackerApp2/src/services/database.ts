@@ -440,4 +440,71 @@ export const loadBook = async (bookId: string): Promise<Book | null> => {
     console.error('책 로드 중 오류 발생:', error);
     return null;
   }
+};
+
+// 독서 세션 저장
+export const saveReadingSession = async (bookId: string, userId: string, session: {
+  id: string;
+  startTime: string;
+  endTime: string;
+  duration: number;
+  pagesRead: number;
+}) => {
+  if (!isInitialized) {
+    await initDatabase();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const database = getDatabase();
+    if (!database) {
+      reject(new Error('데이터베이스 연결이 없습니다'));
+      return;
+    }
+
+    database.transaction(tx => {
+      tx.executeSql(
+        `INSERT INTO reading_sessions (id, bookId, userId, startTime, endTime, pagesRead)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          session.id,
+          bookId,
+          userId,
+          session.startTime,
+          session.endTime,
+          session.pagesRead
+        ]
+      );
+    }, reject, resolve);
+  });
+};
+
+// 독서 세션 로드
+export const loadReadingSessions = async (bookId: string, userId: string) => {
+  if (!isInitialized) {
+    await initDatabase();
+  }
+
+  return new Promise<any[]>((resolve, reject) => {
+    const database = getDatabase();
+    if (!database) {
+      reject(new Error('데이터베이스 연결이 없습니다'));
+      return;
+    }
+
+    database.transaction(tx => {
+      tx.executeSql(
+        `SELECT * FROM reading_sessions 
+         WHERE bookId = ? AND userId = ? 
+         ORDER BY startTime DESC`,
+        [bookId, userId],
+        (_, { rows: { _array } }) => {
+          resolve(_array);
+        },
+        (_, error) => {
+          reject(error);
+          return false;
+        }
+      );
+    });
+  });
 }; 

@@ -21,6 +21,14 @@ interface Review {
   createdAt: string;
 }
 
+interface ReadingSession {
+  id: string;
+  startTime: string;
+  endTime: string;
+  duration: number; // 분 단위
+  pagesRead: number;
+}
+
 export const BookDetailScreen: React.FC<{ route: { params: { bookId: string } } }> = ({ route }) => {
   const { bookId } = route.params;
   const dispatch = useAppDispatch();
@@ -34,6 +42,10 @@ export const BookDetailScreen: React.FC<{ route: { params: { bookId: string } } 
   const [userData, setUserData] = useState<any>(null);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [readingSessions, setReadingSessions] = useState<ReadingSession[]>([]);
+  const [isReading, setIsReading] = useState(false);
+  const [readingStartTime, setReadingStartTime] = useState<Date | null>(null);
+  const [currentPage, setCurrentPage] = useState('');
 
   useEffect(() => {
     loadBookData();
@@ -53,10 +65,12 @@ export const BookDetailScreen: React.FC<{ route: { params: { bookId: string } } 
         const userBookData = await database.loadUserBookData(bookId, user.id);
         const userBookmarks = await database.loadBookmarks(bookId, user.id);
         const userReviews = await database.loadReviews(bookId, user.id);
+        const userReadingSessions = await database.loadReadingSessions(bookId, user.id);
 
         setUserData(userBookData);
         setBookmarks(userBookmarks);
         setReviews(userReviews);
+        setReadingSessions(userReadingSessions);
       }
     } catch (error) {
       console.error('데이터 로드 중 오류 발생:', error);
@@ -126,6 +140,46 @@ export const BookDetailScreen: React.FC<{ route: { params: { bookId: string } } 
     }
   };
 
+  const handleStartReading = () => {
+    if (!book || !user) return;
+
+    const page = parseInt(currentPage);
+    if (isNaN(page) || page <= 0 || (book.pageCount > 0 && page > book.pageCount)) {
+      Alert.alert('오류', '유효한 페이지 번호를 입력해주세요.');
+      return;
+    }
+
+    setIsReading(true);
+    setReadingStartTime(new Date());
+  };
+
+  const handleStopReading = async () => {
+    if (!book || !user || !readingStartTime) return;
+
+    const endTime = new Date();
+    const duration = Math.round((endTime.getTime() - readingStartTime.getTime()) / (1000 * 60)); // 분 단위로 변환
+
+    const session: ReadingSession = {
+      id: Date.now().toString(),
+      startTime: readingStartTime.toISOString(),
+      endTime: endTime.toISOString(),
+      duration,
+      pagesRead: 0 // TODO: 페이지 수 계산 로직 추가
+    };
+
+    try {
+      await database.saveReadingSession(bookId, user.id, session);
+      setReadingSessions([...readingSessions, session]);
+      setIsReading(false);
+      setReadingStartTime(null);
+      setCurrentPage('');
+      Alert.alert('성공', `${duration}분 동안 독서를 완료했습니다.`);
+    } catch (error) {
+      console.error('독서 세션 저장 중 오류 발생:', error);
+      Alert.alert('오류', '독서 세션 저장 중 문제가 발생했습니다.');
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -172,6 +226,62 @@ export const BookDetailScreen: React.FC<{ route: { params: { bookId: string } } 
           </View>
         </Card.Content>
       </Card>
+
+      <Card style={styles.sectionCard}>
+        <Card.Content>
+          <Text style={styles.sectionTitle}>독서 시간 기록</Text>
+          {!isReading ? (
+            <>
+              <TextInput
+                mode="outlined"
+                label="현재 페이지"
+                value={currentPage}
+                onChangeText={setCurrentPage}
+                keyboardType="numeric"
+                style={styles.input}
+              />
+              <Button
+                mode="contained"
+                onPress={handleStartReading}
+                style={styles.button}
+              >
+                독서 시작
+              </Button>
+            </>
+          ) : (
+            <Button
+              mode="contained"
+              onPress={handleStopReading}
+              style={[styles.button, styles.stopButton]}
+            >
+              독서 종료
+            </Button>
+          )}
+        </Card.Content>
+      </Card>
+
+      {readingSessions.length > 0 && (
+        <Card style={styles.sectionCard}>
+          <Card.Content>
+            <Text style={styles.sectionTitle}>독서 기록</Text>
+            {readingSessions.map((session) => (
+              <View key={session.id} style={styles.sessionItem}>
+                <Text style={styles.sessionDate}>
+                  {new Date(session.startTime).toLocaleDateString()}
+                </Text>
+                <Text style={styles.sessionDuration}>
+                  {session.duration}분
+                </Text>
+                {session.pagesRead > 0 && (
+                  <Text style={styles.sessionPages}>
+                    {session.pagesRead}페이지 읽음
+                  </Text>
+                )}
+              </View>
+            ))}
+          </Card.Content>
+        </Card>
+      )}
 
       <Card style={styles.sectionCard}>
         <Card.Content>
@@ -378,6 +488,29 @@ const styles = StyleSheet.create({
   },
   reviewDate: {
     fontSize: 12,
+    color: colors.textSecondary,
+  },
+  stopButton: {
+    backgroundColor: colors.error,
+  },
+  sessionItem: {
+    marginBottom: spacing.medium,
+    padding: spacing.small,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+  },
+  sessionDate: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: spacing.xsmall,
+  },
+  sessionDuration: {
+    fontSize: 16,
+    color: colors.primary,
+    marginBottom: spacing.xsmall,
+  },
+  sessionPages: {
+    fontSize: 14,
     color: colors.textSecondary,
   },
 }); 
