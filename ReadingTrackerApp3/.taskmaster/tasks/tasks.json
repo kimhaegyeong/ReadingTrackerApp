@@ -1,0 +1,292 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Setup Project Repository",
+        "description": "Initialize React Native project with TypeScript and Redux Toolkit",
+        "details": "Create new React Native project using expo init, configure TypeScript, install Redux Toolkit for state management, and set up ESLint and Prettier for code quality",
+        "testStrategy": "Verify project structure, check TypeScript compilation, and confirm Redux store initialization",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "completedAt": "2025-06-17T10:14:18+09:00",
+        "subtasks": [
+          {
+            "id": "1.1",
+            "title": "Create new Expo project with TypeScript",
+            "description": "Initialize a new Expo project with TypeScript template",
+            "details": "Run 'npx create-expo-app -t expo-template-blank-typescript' to create a new project with TypeScript support.",
+            "status": "done"
+          },
+          {
+            "id": "1.2",
+            "title": "Set up Redux Toolkit",
+            "description": "Install and configure Redux Toolkit with TypeScript",
+            "details": "Install @reduxjs/toolkit and react-redux, set up store configuration with TypeScript types.",
+            "status": "done"
+          },
+          {
+            "id": "1.3",
+            "title": "Configure ESLint and Prettier",
+            "description": "Set up code quality tools",
+            "details": "Install and configure ESLint with TypeScript and React Native rules, set up Prettier for code formatting.",
+            "status": "done"
+          },
+          {
+            "id": "1.4",
+            "title": "Set up project structure",
+            "description": "Create initial folder structure and basic navigation",
+            "details": "Set up src/ directory with components, screens, navigation, and store folders. Implement basic tab navigation.",
+            "status": "done"
+          },
+          {
+            "id": "1.5",
+            "title": "Initialize Git repository",
+            "description": "Set up version control",
+            "details": "Initialize Git, create .gitignore, make initial commit with project setup.",
+            "status": "done"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Setup Automated Tests",
+        "description": "Set up Jest and React Testing Library for unit and integration tests",
+        "details": "Configure Jest with TypeScript, add test scripts, and create basic test files for components and Redux slices",
+        "testStrategy": "Ensure all components and state management have test coverage",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2
+        ],
+        "status": "done",
+        "completedAt": "2025-06-17T10:13:19+09:00",
+        "subtasks": [
+          {
+            "id": "2.1",
+            "title": "Create Book Form Component",
+            "description": "Design and implement the book registration form UI",
+            "details": "Create form with fields for title, author, description, ISBN, and page count. Include proper input types and labels.",
+            "status": "pending"
+          },
+          {
+            "id": "2.2",
+            "title": "Implement Form Validation",
+            "description": "Add client-side validation to the book form",
+            "details": "Use Formik and Yup to validate required fields, format validation for ISBN, and proper error messages.",
+            "status": "pending"
+          },
+          {
+            "id": "2.3",
+            "title": "Add Cover Image Upload",
+            "description": "Implement image picker for book covers",
+            "details": "Integrate expo-image-picker to allow users to select or take photos of book covers. Add image preview and remove functionality.",
+            "status": "pending"
+          },
+          {
+            "id": "2.4",
+            "title": "Create Book Redux Slice",
+            "description": "Set up Redux state management for books",
+            "details": "Create book slice with actions for add, update, and delete operations. Define proper TypeScript types.",
+            "status": "pending"
+          },
+          {
+            "id": "2.5",
+            "title": "Connect Form to Redux",
+            "description": "Handle form submission and Redux state updates",
+            "details": "Connect the book form to dispatch actions to the Redux store. Handle loading states and success/error feedback.",
+            "status": "pending"
+          },
+          {
+            "id": "2.6",
+            "title": "Add Form Reset and Navigation",
+            "description": "Handle form reset and navigation after submission",
+            "details": "Clear form after successful submission and navigate back to book list. Add confirmation before leaving unsaved changes.",
+            "status": "pending"
+          },
+          {
+            "id": "2.7",
+            "title": "Write Unit Tests",
+            "description": "Test book registration functionality",
+            "details": "Write tests for form validation, Redux actions/reducers, and component rendering. Test edge cases and error states.",
+            "status": "pending"
+          },
+          {
+            "id": "2.8",
+            "title": "UI Polish and Responsiveness",
+            "description": "Ensure form looks good on all device sizes",
+            "details": "Add proper spacing, typography, and responsive design. Test on different screen sizes and orientations.",
+            "status": "pending"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Develop Reading Log and Annotation System",
+        "description": "Implement annotation UI and version control for annotations, building on existing data models and Redux state management",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "medium",
+        "details": "Create UI components for adding/editing/deleting annotations with rich text formatting. Implement version history for annotations with timestamps and UI to view version history. Ensure integration with existing Redux state management for annotations and BookProgress entities",
+        "testStrategy": "Validate annotation CRUD operations, rich text formatting, version history functionality, and data integrity with existing Redux state",
+        "subtasks": [
+          {
+            "id": "3.3.1",
+            "title": "Test Reading Session Management",
+            "description": "Verify session management functionality",
+            "details": "Test session creation, pause/resume, and state persistence with existing Redux implementation",
+            "testStrategy": "End-to-end testing of session management workflow",
+            "priority": "medium",
+            "status": "pending"
+          },
+          {
+            "id": "3.4",
+            "title": "Add Annotation Features",
+            "description": "Implement annotation UI components",
+            "details": "Create UI for adding/editing/deleting annotations with rich text formatting. Integrate with BookProgress entities in Redux state",
+            "testStrategy": "Validate annotation creation, editing, and deletion with rich text formatting",
+            "priority": "high",
+            "status": "pending"
+          },
+          {
+            "id": "3.5",
+            "title": "Implement Annotation Versioning",
+            "description": "Add version history for annotations",
+            "details": "Implement timestamped version history for annotations with UI to view historical changes. Integrate with existing Redux state management",
+            "testStrategy": "Validate version history tracking and UI display of annotation changes",
+            "priority": "high",
+            "status": "pending"
+          },
+          {
+            "id": "3.6",
+            "title": "Enhance UI Responsiveness",
+            "description": "Improve overall UI responsiveness",
+            "details": "Ensure annotation UI and session form are responsive across device sizes",
+            "testStrategy": "Cross-device testing of UI components",
+            "priority": "low",
+            "status": "pending"
+          },
+          {
+            "id": "3.1",
+            "title": "Design Reading Log Data Model",
+            "description": "Define TypeScript interfaces for reading sessions and annotations",
+            "details": "Create interfaces for ReadingSession and Annotation types, including fields like date, duration, pagesRead, and notes",
+            "testStrategy": "Verify type definitions and data structure validation",
+            "priority": "high",
+            "status": "done",
+            "completedAt": "2025-06-17T10:21:10+09:00"
+          },
+          {
+            "id": "3.2",
+            "title": "Create Reading Log Form Component",
+            "description": "Build a form to log reading sessions",
+            "details": "Include date picker, duration input, pages read counter, and notes field. Implement form validation.",
+            "testStrategy": "Test form validation, input handling, and submission",
+            "priority": "high",
+            "status": "done",
+            "completedAt": "2025-06-17T02:15:00Z",
+            "dependencies": [
+              "3.1"
+            ]
+          },
+          {
+            "id": "3.3",
+            "title": "Implement Reading Session Management",
+            "description": "Develop functionality to start, pause, resume, and end reading sessions with proper state management.",
+            "status": "done",
+            "completedAt": "2025-06-17T11:55:42+09:00",
+            "dependencies": [
+              "3.2"
+            ],
+            "details": "Implemented CRUD operations for reading sessions with pause/resume functionality. Added proper state management for tracking active reading time and session state.",
+            "testStrategy": "Test all Redux actions and state updates for reading sessions",
+            "priority": "high"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Create Book List and Detail Views",
+        "description": "Implement UI for displaying registered books and their annotations",
+        "details": "Design list view with book covers, implement detail view with annotations, and add navigation between views",
+        "testStrategy": "Verify UI rendering, navigation, and data display accuracy",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Implement Local Data Persistence",
+        "description": "Ensure data is saved locally when offline",
+        "details": "Use SQLite with React Native's SQLite library for persistent storage, implement sync mechanism for offline data",
+        "testStrategy": "Test data retention after app restart and offline functionality",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Integrate OCR for Book Information",
+        "description": "Add OCR functionality for automatic book information extraction",
+        "details": "Implement barcode scanning using react-native-camera, integrate AWS Textract for OCR, and create data mapping between scanned results and book metadata",
+        "testStrategy": "Verify OCR accuracy, barcode scanning, and data mapping validation",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Develop AI Summarization Feature",
+        "description": "Implement AI-powered text summarization and sentiment analysis",
+        "details": "Integrate OpenAI GPT API for text summarization, implement sentiment analysis using NLP libraries, and create UI for displaying results",
+        "testStrategy": "Test summarization accuracy, sentiment analysis, and UI display",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Implement Search and Filter Functionality",
+        "description": "Create search and filter system for annotations",
+        "details": "Develop search bar with keyword filtering, implement tag-based filtering, and add sentiment-based filtering options",
+        "testStrategy": "Verify search accuracy, filter functionality, and performance metrics",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Add Social Sharing Integration",
+        "description": "Implement social media sharing for annotations",
+        "details": "Integrate Share API for social media sharing, create card-based UI for sharing, and implement link sharing functionality",
+        "testStrategy": "Test sharing functionality across platforms and verify link generation",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement Dark Mode and UI Enhancements",
+        "description": "Add dark mode and improve user interface",
+        "details": "Create theme switching functionality, implement accessibility features, and enhance UI/UX for better user experience",
+        "testStrategy": "Verify theme switching, accessibility compliance, and overall UI improvements",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-06-16T01:39:40.974Z",
+      "updated": "2025-06-16T01:40:42.925Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

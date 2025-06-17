@@ -1,0 +1,130 @@
+# Product Requirements Document
+
+## 1. Executive Summary  
+본 프로젝트는 React Native 기반의 모바일 독서 기록 앱(가칭 “리브노트”)이다. 사용자는 책 정보를 빠르게 입력·저장하고, 읽은 후 감상·메모를 체계적으로 관리할 수 있다. AI OCR과 자연어 처리(NLP)를 통해 책 표지·문장을 촬영하면 자동으로 서지 정보·인용문·감상 요약이 생성된다. 핵심 가치는 “손쉬운 기록, 빠른 회상, 지식 공유”이다.
+
+## 2. Problem Statement  
+- 독서 후 느낀 인사이트가 흩어져 기억이 어렵다.  
+- 수동 입력 방식이 번거로워 기록 유지율이 낮다.  
+- 기존 앱은 데이터 검색·분석 기능이 부족해 과거 감상을 찾기 힘들다.
+
+## 3. Goals and Objectives  
+- Primary Goal: 독서 기록 과정을 최소 클릭으로 자동화해 기록률 50% ↑.  
+- Secondary Goals:  
+  - AI OCR 정확도 95% 이상.  
+  - 감상 검색(키워드·감정) 평균 응답 1초 이하.  
+  - 첫 6개월 내 MAU 10만 달성.  
+- Success Metrics: DAU/MAU, 기록 완료율, 검색 속도, App Store 평점 ≥4.5.
+
+## 4. Target Audience  
+### Primary Users  
+- 20~40대 활발한 독서가, 대학생, 직장인.  
+- 목표: 독서 관리, 인사이트 축적, SNS 공유.  
+### Secondary Users  
+- 교육 기관·도서관(독서 활동 분석), 출판사(독자 피드백).
+
+## 5. User Stories  
+- “독서가”로서 책 표지를 찍어 자동으로 서지 정보를 받고 싶다 → 입력 시간을 절약하기 위해.  
+- “학생”으로서 특정 주제의 과거 감상을 검색하고 싶다 → 레포트 작성에 활용하기 위해.  
+- “직장인”으로서 하이라이트한 문장을 SNS로 공유하고 싶다 → 인사이트를 나누기 위해.  
+- “연구자”로서 여러 버전의 감상 기록을 비교하고 싶다 → 생각 변화 추적을 위해.
+
+## 6. Functional Requirements  
+### Core Features  
+1. 책 등록  
+   - OCR/바코드 스캔 → ISBN 조회 → 제목·저자·표지 자동 입력.  
+   - 수동 입력 fallback.  
+   - 수락 기준: 3초 이내 결과, 오류율 ≤5%.  
+2. 독서 기록 & 감상  
+   - 페이지·읽은 날짜·평점·메모 입력.  
+   - AI 요약: 메모 ≤500자 시 요약 150자 제공.  
+   - 버전 관리: 감상 수정 시 자동 히스토리.  
+   - 수락 기준: 저장 성공률 99%.  
+3. 검색·필터  
+   - 키워드, 태그, 감정(긍정/부정 등), 날짜별.  
+   - 응답 ≤1초, 정확도 ≥90%.  
+4. 인사이트 공유  
+   - 하이라이트 문장·감상을 카드 형식으로 SNS 공유.  
+   - 링크 클릭 시 앱/웹 뷰로 이동.
+
+### Supporting Features  
+- 다크모드, 오프라인 임시 저장, 캘린더 뷰, 독서 목표 달성 배지, iCloud/Google Drive 백업.
+
+## 7. Non-Functional Requirements  
+- Performance: 메인 화면 렌더 1 초, 이미지 업로드 5 MB ≤3 초.  
+- Security: OAuth2, 데이터 암호화(AES-256), GDPR 준수.  
+- Usability: iOS/Android HIG, 접근성 레벨 AA.  
+- Scalability: 100만 MAU까지 무 Downtime.  
+- Compatibility: iOS 14+, Android 9+.
+
+## 8. Technical Considerations  
+- Architecture: React Native + TypeScript, Redux Toolkit 상태 관리.  
+- Backend: Node.js, NestJS, PostgreSQL, Redis 캐시.  
+- AI: AWS Textract(OCR), OpenAI GPT API(NLP 요약/태깅).  
+- Storage: S3(이미지), CloudFront CDN.  
+- CI/CD: GitHub Actions, Fastlane 배포.  
+- 3rd-party: ISBNdb, Share API(SNS).
+
+## 9. Success Metrics and KPIs  
+- 사용자 지표: DAU/MAU ≥30%, 세션당 기록수 1.5+.  
+- 비즈니스 지표: 구독 전환율 4%, LTV/CAC >3.  
+- 기술 지표: Crash Free Rate ≥99.5%, p95 API latency ≤300 ms.
+
+## 10. Timeline and Milestones
+
+### MVP 범위 재정의
+
+#### 1. Must-have (핵심 기능)
+- **책 등록**  
+  - 수동 입력(제목, 저자, 표지 이미지 첨부)
+- **독서 기록 및 감상 저장**  
+  - 읽은 날짜, 간단 메모 입력 및 저장
+- **기본 목록/상세 보기**  
+  - 등록한 책과 감상 목록, 상세 정보 확인
+- **로컬 데이터 저장**  
+  - 기기 내 데이터 저장(클라우드 동기화 없음)
+
+#### 2. Nice-to-have (후속 단계 기능)
+- OCR/바코드 스캔을 통한 자동 입력
+- AI 요약 및 감정 태깅
+- 검색 및 필터(키워드, 태그, 감정)
+- SNS 공유(카드 형식)
+- 다크모드, 캘린더 뷰, 독서 목표 배지, 백업 등
+
+#### 3. 단계별 학습 목표
+- **Phase 1 (M0–M1) 단순 MVP**  
+  - Must-have 기능만 구현  
+  - 사용자 입력 플로우, 기본 UX 검증  
+  - 로컬 저장 안정성 및 UI/UX 피드백 수집
+- **Phase 2 (M1–M3) 확장 MVP**  
+  - OCR/바코드, AI 요약, 검색 등 Nice-to-have 기능 추가  
+  - 클라우드 동기화, SNS 공유, 고급 분석 도입  
+  - 사용자 행동 데이터 기반 개선
+- **Phase 3 (M3–M6) 고도화 및 글로벌**  
+  - 버전 관리, 감정/주제 분석, 글로벌 출시  
+  - 확장성, 접근성, 안정성 강화
+
+#### 4. 전체 마일스톤
+- Phase 1 (M0–M1):  
+  - 책 수동 등록  
+  - 독서 기록/감상 저장  
+  - 목록/상세 보기  
+  - 로컬 저장  
+- Phase 2 (M1–M3):  
+  - OCR/바코드, AI 요약  
+  - 검색/필터, SNS 공유  
+  - 클라우드 동기화  
+- Phase 3 (M3–M6):  
+  - 버전 관리, 고급 분석, 글로벌 출시  
+  - 베타 시작: M3, GA: M6
+
+## 11. Risks and Mitigation  
+- OCR 부정확 → 다중 엔진 대비·수동 교정 UI.  
+- AI 요약 품질 저하 → 사용자 피드백 학습 루프.  
+- 개인정보 규정 위반 → 법률 검토·데이터 지역 분리.  
+- 사용자 확보 실패 → 북클럽 파트너십·인플루언서 캠페인.
+
+## 12. Future Considerations  
+- 음성 독서 기록(녹음 → STT).  
+- GPT 기반 개인 독서 코치 챗봇.  
+- Web app, 스마트워치 독서 타이머 연동.
