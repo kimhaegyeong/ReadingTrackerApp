@@ -1,0 +1,75 @@
+# 📚 리브노트(ReadingTrackerApp) 개발 규칙 - .cursorrules
+
+## 1. 프로젝트 구조 및 네이밍
+- 소스코드는 모두 `lovable/src` 하위에 작성한다.
+- **React Native 스타일 폴더 구조/네이밍 가이드**
+    - 주요 폴더 구조 예시:
+      ```
+      src/
+      ├── assets/           # 이미지, 폰트, 아이콘 등 정적 리소스
+      ├── components/       # 재사용 가능한 UI/도메인 컴포넌트
+      │   └── ui/           # 버튼, 카드 등 순수 UI 컴포넌트
+      ├── screens/          # 각 주요 화면(페이지) 단위 컴포넌트
+      ├── navigations/      # 네비게이션(Stack, Tab 등) 관련 설정
+      ├── hooks/            # 커스텀 훅
+      ├── lib/              # 유틸리티, API, 서비스, 데이터 관리 등
+      ├── contexts/         # 글로벌 상태/컨텍스트 관리
+      ├── constants/        # 상수, 타입, 더미데이터 등
+      ├── theme/            # 테마, 스타일, 색상 팔레트 등
+      └── App.tsx           # 앱 진입점
+      ```
+    - 네이밍 컨벤션:
+      - 폴더/파일명: 카멜케이스 또는 파스칼케이스 (예: BookLibrary.tsx, useBookSearch.ts)
+      - 컴포넌트명: 파스칼케이스 (예: ReadingStats)
+      - 훅/유틸: use로 시작 (예: useReadingTimer, useIsMobile)
+      - 상수/타입: 대문자/파스칼케이스 (예: BOOK_STATUS, BookType)
+    - 폴더별 역할:
+      - assets/: 이미지, 폰트, SVG 등 정적 리소스
+      - components/: 재사용 가능한 UI/도메인 컴포넌트(웹의 shadcn-ui → RN의 커스텀 컴포넌트로 대체)
+      - screens/: 각 화면 단위(예: HomeScreen, BookDetailScreen 등)
+      - navigations/: React Navigation 등 네비게이션 관련 설정/컴포넌트
+      - hooks/: 커스텀 훅
+      - lib/: API, 유틸, 서비스, 데이터 관리 등
+      - contexts/: Context API 기반 글로벌 상태 관리
+      - constants/: 상수, 타입, 더미데이터 등
+      - theme/: 색상, 폰트, 스타일 등 테마 관련
+- 주요 도메인 컴포넌트는 `components/`, UI 컴포넌트는 `components/ui/`, 페이지는 `pages/`, 커스텀 훅은 `hooks/`, 유틸리티는 `lib/`에 위치한다. (기존 웹 구조에서 RN 스타일로 점진적 전환 권장)
+- 경로 alias는 `@/`로 시작하며, 예시: `@/components/BookLibrary`.
+- 파일명, 컴포넌트명, 변수명은 카멜케이스를 사용한다.
+
+## 2. 기술스택 및 빌드
+- React + TypeScript + Vite + Tailwind CSS + shadcn-ui 기반으로 개발한다.
+- UI 라이브러리는 shadcn-ui, Radix UI, Lucide 아이콘을 사용한다.
+- 스타일은 Tailwind CSS 유틸리티 클래스를 우선 사용한다.
+- 상태관리는 React 내장 훅과 필요시 react-query를 사용한다.
+- 개발 서버 실행: `npm run dev`
+
+## 3. 주요 기능 및 구현 원칙
+- 책 검색/등록, 독서 상태 관리, 인용문/OCR, 감상 메모, 독서 시간 기록, 통합 서재, 통계/차트, 태그, 온보딩, 다크모드, 데이터 백업/복원 등 PRD의 마일스톤1~2 기능을 우선 구현한다.
+- 모든 입력 폼은 유효성 검증을 반드시 포함한다.
+- 책, 인용문, 메모, 독서기록 등은 mock data로 시작하되, 확장성을 고려해 상태/props로 관리한다.
+- 컴포넌트는 최대한 재사용 가능하게 설계한다.
+- UI/UX는 모바일 우선 반응형으로 구현한다. (useIsMobile 훅 활용)
+- 다이얼로그, 토스트, 알림 등은 shadcn-ui 컴포넌트로 통일한다.
+- 다크모드 지원은 tailwind.config.ts의 darkMode 설정(class) 기준으로 구현한다.
+
+## 4. UI/UX 규칙
+- 버튼, 입력, 카드, 탭, 뱃지, 토스트 등은 반드시 `components/ui/`의 컴포넌트를 사용한다.
+- 모든 주요 액션(등록/삭제/오류 등)은 토스트 또는 알림으로 사용자에게 피드백한다.
+- 폼, 다이얼로그, 모달, 드로어 등은 접근성(aria, 키보드 네비게이션 등)을 고려한다.
+- 색상, 폰트, 여백 등은 tailwind.config.ts 및 shadcn-ui 기본값을 따른다.
+- 네비게이션/탭/사이드바 등은 모바일/데스크탑 모두 자연스럽게 동작해야 한다.
+- 404 등 예외 상황은 NotFound 페이지로 graceful하게 처리한다.
+
+## 5. 코드 품질 및 기타
+- 타입스크립트 strict 옵션은 완전 엄격하지 않으나, 타입 명시를 권장한다.
+- 불필요한 any, unused 변수/파라미터는 지양한다.
+- 커스텀 훅, 유틸 함수는 hooks/, lib/에 분리해 작성한다.
+- README.md의 개발/실행/배포 방법을 따른다.
+- 외부 API 연동은 mock 또는 주석으로 대체하고, 실제 연동시 별도 명시한다.
+
+## 6. 문서 및 참고
+- 요구사항 및 기능 정의는 `/docs/prd.txt`를 최우선으로 참고한다.
+- 추가 규칙/변경사항은 이 파일(.cursorrules)에 반드시 기록한다.
+
+# 끝. 
