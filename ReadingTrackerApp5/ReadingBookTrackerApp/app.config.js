@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 module.exports = {
   expo: {
     name: "ReadingBookTrackerApp",
@@ -33,10 +31,6 @@ module.exports = {
     ],
     experiments: {
       "typedRoutes": true
-    },
-    extra: {
-      aladinApiKey: process.env.VITE_ALADIN_API_KEY,
-      googleBooksApiKey: process.env.VITE_GOOGLE_BOOKS_API_KEY,
     },
   },
 }; 

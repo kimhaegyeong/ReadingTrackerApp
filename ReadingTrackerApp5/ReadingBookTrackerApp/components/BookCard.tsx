@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Book, useBookContext, BookStatus } from '@/contexts/BookContext';
-import { Badge } from '@/components/ui/Badge';
+import { Book, useBookContext, BookStatus } from '../contexts/BookContext';
+import Badge from './ui/Badge';
 
 const statusColorMap: Record<BookStatus, string> = {
   '읽는 중': '#FACC15',

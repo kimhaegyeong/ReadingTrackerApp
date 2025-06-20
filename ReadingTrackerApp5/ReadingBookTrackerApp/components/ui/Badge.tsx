@@ -8,7 +8,7 @@ interface BadgeProps {
   onPress?: () => void;
 }
 
-export const Badge = ({ children, style, textStyle, onPress }: BadgeProps) => {
+const Badge = ({ children, style, textStyle, onPress }: BadgeProps) => {
   const Component = onPress ? TouchableOpacity : View;
   
   return (
@@ -17,6 +17,8 @@ export const Badge = ({ children, style, textStyle, onPress }: BadgeProps) => {
     </Component>
   );
 };
+
+export default Badge;
 
 const styles = StyleSheet.create({
   badge: {

@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { StyleSheet, View, Text, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
-import { useBookContext, BookStatus } from '@/contexts/BookContext';
-import BookList from '@/components/BookList';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import BookSearchInput from '@/components/BookSearchInput';
-import AddBookModal from '@/components/AddBookModal';
+import { useBookContext, Book, BookStatus } from '../../contexts/BookContext';
+import BookList from '../../components/BookList';
+import { Button } from '../../components/ui/Button';
+import Badge from '../../components/ui/Badge';
+import BookSearchInput from '../../components/BookSearchInput';
+import AddBookModal from '../../components/AddBookModal';
 import { useRouter } from 'expo-router';
 
 // Re-evaluating file to fix linter errors

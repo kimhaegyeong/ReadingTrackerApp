@@ -6,6 +6,7 @@ export type BookStatus = '읽고 싶은' | '읽는 중' | '다 읽은';
 
 export type Quote = { id: string; text: string; tags: string[] };
 export type Note = { id: string; text: string; tags: string[] };
+export type ReadingRecord = { date: string; readingTimeInSeconds: number };
 
 export type Book = {
   id: string;
@@ -14,12 +15,13 @@ export type Book = {
   status: BookStatus;
   quotes: Quote[];
   notes: Note[];
+  readingRecords: ReadingRecord[];
   coverImage?: string; // Add cover image for search results
 };
 
 interface BookContextType {
   books: Book[];
-  addBook: (book: Omit<Book, 'id' | 'quotes' | 'notes'>) => void;
+  addBook: (book: Omit<Book, 'id' | 'quotes' | 'notes' | 'readingRecords'>) => void;
   removeBook: (id:string) => void;
   updateStatus: (id: string, status: BookStatus) => void;
   addQuote: (bookId: string, quote: Omit<Quote, "id">) => void;
@@ -28,21 +30,23 @@ interface BookContextType {
   removeNote: (bookId: string, noteId: string) => void;
   updateQuoteTags: (bookId: string, quoteId: string, tags: string[]) => void;
   updateNoteTags: (bookId: string, noteId: string, tags: string[]) => void;
+  addReadingTime: (bookId: string, readingTimeInSeconds: number) => void;
 }
 
 const BookContext = createContext<BookContextType | undefined>(undefined);
 
 export const BookProvider = ({ children }: { children: ReactNode }) => {
   const [books, setBooks] = useState<Book[]>(
-    dummyBooks.map(b => ({ ...b, quotes: [], notes: [] }))
+    dummyBooks.map(b => ({ ...b, quotes: [], notes: [], readingRecords: [] }))
   );
 
-  const addBook = (book: Omit<Book, 'id' | 'quotes' | 'notes'>) => {
+  const addBook = (book: Omit<Book, 'id' | 'quotes' | 'notes' | 'readingRecords'>) => {
     const newBook: Book = {
       ...book,
       id: `${Date.now()}-${Math.random()}`,
       quotes: [],
       notes: [],
+      readingRecords: [],
     };
     setBooks((prev) => [...prev, newBook]);
   };
@@ -72,9 +76,29 @@ export const BookProvider = ({ children }: { children: ReactNode }) => {
   const removeNote = (bookId: string, noteId: string) => setBooks(prev => prev.map(b => b.id === bookId ? { ...b, notes: b.notes.filter(n => n.id !== noteId) } : b));
   const updateQuoteTags = (bookId: string, quoteId: string, tags: string[]) => setBooks(prev => prev.map(b => b.id === bookId ? { ...b, quotes: b.quotes.map(q => q.id === quoteId ? { ...q, tags } : q) } : b));
   const updateNoteTags = (bookId: string, noteId: string, tags: string[]) => setBooks(prev => prev.map(b => b.id === bookId ? { ...b, notes: b.notes.map(n => n.id === noteId ? { ...n, tags } : n) } : b));
+  const addReadingTime = (bookId: string, readingTimeInSeconds: number) => {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    setBooks(prev => prev.map(b => {
+      if (b.id !== bookId) return b;
+      
+      const newRecords = [...b.readingRecords];
+      const todayRecordIndex = newRecords.findIndex(r => r.date === today);
+
+      if (todayRecordIndex > -1) {
+        newRecords[todayRecordIndex] = {
+          ...newRecords[todayRecordIndex],
+          readingTimeInSeconds: newRecords[todayRecordIndex].readingTimeInSeconds + readingTimeInSeconds
+        };
+      } else {
+        newRecords.push({ date: today, readingTimeInSeconds });
+      }
+      
+      return { ...b, readingRecords: newRecords };
+    }));
+  };
 
   return (
-    <BookContext.Provider value={{ books, addBook, removeBook, updateStatus, addQuote, addNote, removeQuote, removeNote, updateQuoteTags, updateNoteTags }}>
+    <BookContext.Provider value={{ books, addBook, removeBook, updateStatus, addQuote, addNote, removeQuote, removeNote, updateQuoteTags, updateNoteTags, addReadingTime }}>
       {children}
     </BookContext.Provider>
   );

@@ -2,6 +2,10 @@
 export const ALADIN_API_KEY = process.env.EXPO_PUBLIC_ALADIN_API_KEY;
 export const GOOGLE_BOOKS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY;
 
+// 디버깅용 로그 (개발 완료 후 제거)
+console.log('ALADIN_API_KEY:', ALADIN_API_KEY ? '설정됨' : '설정되지 않음');
+console.log('GOOGLE_BOOKS_API_KEY:', GOOGLE_BOOKS_API_KEY ? '설정됨' : '설정되지 않음');
+
 export type ExternalBook = {
   id: string;
   title: string;
@@ -20,6 +24,7 @@ export async function searchAladinBooks(query: string): Promise<ExternalBook[]> 
     const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${ALADIN_API_KEY}&Query=${encodeURIComponent(query)}&QueryType=Keyword&MaxResults=10&start=1&SearchTarget=Book&output=JS&Version=20131101`;
     const res = await fetch(url);
     const data = await res.json();
+    console.log('Aladin API response:', JSON.stringify(data, null, 2)); // 응답 데이터를 예쁘게 출력
     if (!data.item) return [];
     return data.item.map((item: any) => ({
       id: item.isbn13 || item.isbn,
