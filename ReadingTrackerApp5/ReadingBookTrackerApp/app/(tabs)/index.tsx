@@ -1,75 +1,129 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { StyleSheet, View, Text, SafeAreaView, TouchableOpacity } from 'react-native';
+import { useBookContext, BookStatus } from '@/contexts/BookContext';
+import BookList from '@/components/BookList';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { useRouter } from 'expo-router';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const statusList: BookStatus[] = ['읽고 싶은', '읽는 중', '다 읽은'];
+const sortList = ['최신순', '제목순', '저자순'];
 
 export default function HomeScreen() {
+  const { books } = useBookContext();
+  const router = useRouter();
+
+  const [filter, setFilter] = useState<BookStatus | '전체'>('전체');
+  const [sort, setSort] = useState('최신순');
+
+  const filteredBooks = useMemo(() => {
+    let filtered = filter === '전체' ? books : books.filter(b => b.status === filter);
+
+    if (sort === '제목순') {
+      return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
+    }
+    if (sort === '저자순') {
+      return [...filtered].sort((a, b) => a.author.localeCompare(b.author));
+    }
+    // '최신순'
+    return [...filtered].sort((a, b) => Number(b.id) - Number(a.id));
+  }, [books, filter, sort]);
+
+  const renderListHeader = () => (
+    <>
+      <Text style={styles.headerTitle}>내 서재</Text>
+      <View style={styles.actionButtons}>
+        <Button onPress={() => router.push('/explore' as any)}>책 검색</Button>
+      </View>
+      <View style={styles.filterContainer}>
+        <TouchableOpacity onPress={() => setFilter('전체')}>
+          <Badge style={filter === '전체' ? styles.activeFilter : styles.filter}>
+            <Text style={filter === '전체' ? styles.activeFilterText : styles.filterText}>전체</Text>
+          </Badge>
+        </TouchableOpacity>
+        {statusList.map(s => (
+          <TouchableOpacity key={s} onPress={() => setFilter(s)}>
+            <Badge style={filter === s ? styles.activeFilter : styles.filter}>
+              <Text style={filter === s ? styles.activeFilterText : styles.filterText}>{s}</Text>
+            </Badge>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <View style={styles.sortContainer}>
+        {sortList.map(s => (
+          <TouchableOpacity key={s} onPress={() => setSort(s)}>
+            <Text style={[styles.sortText, sort === s && styles.activeSortText]}>{s}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </>
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <SafeAreaView style={styles.container}>
+      <BookList
+        books={filteredBooks}
+        ListHeaderComponent={renderListHeader}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
   },
-  stepContainer: {
-    gap: 8,
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    color: '#1F2937',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginTop: 16,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginTop: 16,
+    flexWrap: 'wrap',
+  },
+  filter: {
+    backgroundColor: '#E5E7EB',
+    marginRight: 8,
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  activeFilter: {
+    backgroundColor: '#4F46E5',
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  filterText: {
+    color: '#374151',
+  },
+  activeFilterText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  sortContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginTop: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    paddingBottom: 12,
+  },
+  sortText: {
+    marginRight: 16,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  activeSortText: {
+    color: '#4F46E5',
+    fontWeight: 'bold',
   },
 });

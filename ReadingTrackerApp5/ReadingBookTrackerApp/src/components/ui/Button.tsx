@@ -1,30 +1,45 @@
-import React from "react";
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 type ButtonProps = {
   children: React.ReactNode;
-  onClick?: (e?: any) => void;
-  style?: React.CSSProperties;
+  onPress?: (e?: any) => void;
+  style?: ViewStyle;
+  textStyle?: TextStyle;
   disabled?: boolean;
 };
 
-export const Button = ({ children, onClick, style, disabled }: ButtonProps) => {
+export const Button = ({ children, onPress, style, textStyle, disabled }: ButtonProps) => {
   return (
-    <button
-      style={{
-        padding: 12,
-        borderRadius: 8,
-        background: disabled ? "#E5E7EB" : "#4F46E5",
-        color: disabled ? "#A3A3A3" : "#fff",
-        border: "none",
-        fontWeight: 600,
-        fontSize: 16,
-        cursor: disabled ? "not-allowed" : "pointer",
-        ...style,
-      }}
-      onClick={disabled ? undefined : onClick}
+    <TouchableOpacity
+      style={[styles.button, disabled ? styles.disabledButton : {}, style]}
+      onPress={disabled ? undefined : onPress}
       disabled={disabled}
+      activeOpacity={0.7}
     >
-      {children}
-    </button>
+      <Text style={[styles.text, disabled ? styles.disabledText : {}, textStyle]}>{children}</Text>
+    </TouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: '#4F46E5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#E5E7EB',
+  },
+  text: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  disabledText: {
+    color: '#A3A3A3',
+  },
+});
