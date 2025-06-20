@@ -22,7 +22,7 @@ const BookSearchInput = (props: BookSearchInputProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // flex: 1, // This was causing the issue by taking up all vertical space.
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF',
