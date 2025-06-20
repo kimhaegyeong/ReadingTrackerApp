@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, SafeAreaView, FlatList, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useBookContext, Book } from '@/contexts/BookContext';
 import { searchAladinBooks, searchGoogleBooks, ExternalBook } from '@/lib/apis';
 import BookSearchInput from '@/components/BookSearchInput';
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 
 export default function BookSearchScreen() {
   const { books, addBook } = useBookContext();
+  const router = useRouter();
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ExternalBook[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,6 +46,7 @@ export default function BookSearchScreen() {
       status: '읽고 싶은',
       coverImage: book.thumbnail,
     });
+    router.push('/');
   };
 
   const renderItem = ({ item }: { item: ExternalBook }) => {
@@ -123,6 +126,7 @@ export default function BookSearchScreen() {
         onAddBook={(book) => {
             addBook(book);
             setAddModalOpen(false);
+            router.push('/');
         }}
       />
       
