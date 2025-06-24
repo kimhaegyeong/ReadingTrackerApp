@@ -119,12 +119,29 @@ const BookDetailScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Feather name="arrow-left" size={24} color="#6366F1" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">{book.title}</Text>
+      </View>
       <Stack.Screen options={{ title: book.title }} />
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <View ref={bookInfoRef} collapsable={false} style={styles.bookInfoCard}>
-          <Text style={styles.title}>{book.title}</Text>
-          <Text style={styles.author}>{book.author}</Text>
-          <View style={styles.statusContainer}>
+          <View style={styles.bookInfoTopRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">{book.title}</Text>
+              <View style={styles.authorRow}>
+                <Feather name="user" size={16} color="#6B7280" style={{ marginRight: 4 }} />
+                <Text style={styles.author} numberOfLines={1} ellipsizeMode="tail">{book.author}</Text>
+              </View>
+            </View>
+            <Button onPress={handleShareBookInfo} style={styles.shareBookButton}>
+              <Feather name="share-2" size={18} color="#fff" />
+            </Button>
+          </View>
+          <View style={styles.statusTimeRow}>
+            <Feather name="book-open" size={16} color="#818CF8" style={{ marginRight: 2 }} />
             {statusOptions.map(s => (
               <TouchableOpacity key={s} onPress={() => handleStatusChange(s)}>
                 <Badge style={book.status === s ? styles.activeStatus : styles.status}>
@@ -132,28 +149,15 @@ const BookDetailScreen = () => {
                 </Badge>
               </TouchableOpacity>
             ))}
+            <Feather name="clock" size={16} color="#818CF8" style={{ marginLeft: 10, marginRight: 2 }} />
+            <Text style={styles.readingTime}>{formatTime(totalReadingTime)}</Text>
           </View>
-          <Card>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>저자</Text>
-              <Text style={styles.detailValue}>{book.author}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>총 독서 시간</Text>
-              <Text style={styles.detailValue}>{formatTime(totalReadingTime)}</Text>
-            </View>
-          </Card>
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 16 }}>
-          <Button onPress={handleShareBookInfo} style={{ backgroundColor: '#6366F1' }}>
-            <Feather name="share-2" size={16} color="#fff" /> <Text style={{ color: '#fff', marginLeft: 4 }}>공유</Text>
-          </Button>
         </View>
 
         <View style={styles.buttonRow}>
-            <Button onPress={() => removeBook(book.id)} style={styles.deleteButton}>
-              <Text style={styles.deleteButtonText}>삭제</Text>
-            </Button>
+          <Button onPress={() => removeBook(book.id)} style={styles.deleteButton}>
+            <Text style={styles.deleteButtonText}>삭제</Text>
+          </Button>
         </View>
 
         {book.status === '읽는 중' && (
@@ -162,14 +166,16 @@ const BookDetailScreen = () => {
 
         <View style={styles.tabContainer}>
           <TouchableOpacity 
-            style={[styles.tab, activeTab === 'quotes' && styles.activeTab]} 
+            style={[styles.tab, activeTab === 'quotes' && styles.activeTab]}
             onPress={() => setActiveTab('quotes')}
+            activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === 'quotes' && styles.activeTabText]}>인용</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.tab, activeTab === 'notes' && styles.activeTab]} 
+            style={[styles.tab, activeTab === 'notes' && styles.activeTab]}
             onPress={() => setActiveTab('notes')}
+            activeOpacity={0.7}
           >
             <Text style={[styles.tabText, activeTab === 'notes' && styles.activeTabText]}>메모</Text>
           </TouchableOpacity>
@@ -224,6 +230,10 @@ const BookDetailScreen = () => {
               value={activeTab === 'quotes' ? newQuote : newNote}
               onChangeText={activeTab === 'quotes' ? setNewQuote : setNewNote}
               placeholder={`${activeTab === 'quotes' ? '인용' : '메모'} 추가...`}
+              multiline
+              numberOfLines={2}
+              maxLength={300}
+              textAlignVertical="top"
             />
             <Button onPress={handleAddItem} style={styles.addButton}>
               추가
@@ -254,35 +264,40 @@ const BookDetailScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
   contentContainer: { padding: 16 },
-  title: { fontSize: 24, fontWeight: 'bold', color: '#1F2937' },
-  author: { fontSize: 16, color: '#6B7280', marginBottom: 16 },
-  statusContainer: { flexDirection: 'row', marginBottom: 16, flexWrap: 'wrap' },
-  status: { backgroundColor: '#E5E7EB', marginRight: 8, marginBottom: 8 },
-  activeStatus: { backgroundColor: '#4F46E5', marginRight: 8, marginBottom: 8 },
-  statusText: { color: '#374151' },
-  activeStatusText: { color: '#FFFFFF', fontWeight: 'bold' },
-  buttonRow: { flexDirection: 'row', marginBottom: 24 },
-  deleteButton: { backgroundColor: '#EF4444' },
-  deleteButtonText: { color: '#fff', fontWeight: 'bold' },
-  tabContainer: { flexDirection: 'row', marginBottom: 16, borderBottomWidth: 1, borderColor: '#E5E7EB' },
-  tab: { paddingVertical: 12, paddingHorizontal: 16 },
-  activeTab: { borderBottomWidth: 2, borderColor: '#4F46E5' },
-  tabText: { color: '#6B7280', fontWeight: '500' },
-  activeTabText: { color: '#4F46E5', fontWeight: 'bold' },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  input: { flex: 1, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 10, marginRight: 8, minHeight: 44 },
-  addContentButton: { backgroundColor: '#4F46E5' },
-  addContentButtonText: { color: '#fff', fontWeight: 'bold' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: 8, marginBottom: 2 },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginLeft: 4, flex: 1 },
+  backButton: { padding: 8, marginRight: 2 },
+  bookInfoCard: { backgroundColor: 'white', borderRadius: 16, padding: 16, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 4 },
+  bookInfoTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 },
+  authorRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2, marginBottom: 6 },
+  statusTimeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 2, gap: 6, flexWrap: 'wrap' },
+  title: { fontSize: 20, fontWeight: 'bold', color: '#1F2937', marginBottom: 2 },
+  author: { fontSize: 14, color: '#6B7280', fontWeight: '500', flexShrink: 1 },
+  statusContainer: { flexDirection: 'row', marginBottom: 0, flexWrap: 'wrap' },
+  status: { backgroundColor: '#E5E7EB', marginRight: 6, marginBottom: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  activeStatus: { backgroundColor: '#4F46E5', marginRight: 6, marginBottom: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  statusText: { color: '#374151', fontSize: 13 },
+  activeStatusText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 13 },
+  shareBookButton: { backgroundColor: '#6366F1', borderRadius: 8, padding: 8, minWidth: 36, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+  readingTime: { color: '#374151', fontWeight: '500', fontSize: 14 },
+  buttonRow: { flexDirection: 'row', marginBottom: 18, paddingHorizontal: 2 },
+  deleteButton: { backgroundColor: '#EF4444', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 },
+  deleteButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 15 },
+  tabContainer: { flexDirection: 'row', marginBottom: 10, borderBottomWidth: 1, borderColor: '#E5E7EB', paddingHorizontal: 2 },
+  tab: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 8 },
+  activeTab: { backgroundColor: '#EEF2FF' },
+  tabText: { color: '#6B7280', fontWeight: '500', fontSize: 15 },
+  activeTabText: { color: '#4F46E5', fontWeight: 'bold', fontSize: 15 },
+  contentArea: { padding: 2 },
   itemCard: { backgroundColor: 'white', borderRadius: 10, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   itemText: { fontSize: 15, color: '#374151', marginBottom: 12 },
-  deleteItemButton: { position: 'absolute', top: 8, right: 10, padding: 4 },
-  deleteItemButtonText: { fontSize: 18, color: '#EF4444', fontWeight: 'bold' },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  detailLabel: { fontWeight: 'bold' },
-  detailValue: { fontWeight: 'normal' },
-  contentArea: { padding: 16 },
-  textInput: { flex: 1, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 12, backgroundColor: '#fff' },
-  addButton: { backgroundColor: '#818CF8' },
+  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 },
+  tagBadge: { backgroundColor: '#DBEAFE', marginRight: 6, marginBottom: 6 },
+  editTagsButton: { marginLeft: 8, padding: 4 },
+  shareButton: { marginLeft: 8, padding: 4 },
+  inputContainer: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, gap: 6 },
+  textInput: { flex: 1, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 12, backgroundColor: '#fff', fontSize: 15, minHeight: 44, maxHeight: 80 },
+  addButton: { backgroundColor: '#818CF8', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, minWidth: 56 },
   centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
   modalView: { backgroundColor: 'white', borderRadius: 12, padding: 24, alignItems: 'center', width: '80%' },
   modalText: { marginBottom: 24, textAlign: 'center', fontSize: 18, fontWeight: '600' },
@@ -294,14 +309,11 @@ const styles = StyleSheet.create({
   statusOption: { paddingVertical: 12, alignItems: 'center' },
   statusTextModal: { fontSize: 18, color: '#374151' },
   activeStatusTextModal: { fontSize: 18, color: '#818CF8', fontWeight: 'bold' },
-  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 },
-  tagBadge: { backgroundColor: '#DBEAFE', marginRight: 6, marginBottom: 6 },
-  editTagsButton: { marginLeft: 8, padding: 4 },
   tagEditContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 8 },
   tagInput: { flex: 1, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, padding: 8 },
   saveTagButton: { backgroundColor: '#10B981', paddingHorizontal: 12 },
-  shareButton: { marginLeft: 8, padding: 4 },
-  bookInfoCard: { backgroundColor: 'white', borderRadius: 12, padding: 18, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, elevation: 3 },
+  deleteItemButton: { position: 'absolute', top: 8, right: 10, padding: 4 },
+  deleteItemButtonText: { fontSize: 18, color: '#EF4444', fontWeight: 'bold' },
 });
 
 export default BookDetailScreen; 
