@@ -1,5 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { BookProvider } from '@/contexts/BookContext';
@@ -8,11 +8,15 @@ import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator, View } from 'react-native';
 
+// 환경변수 로드 (expo 환경에서는 process.env 자동 주입, node 환경은 dotenv 필요)
+// import 'dotenv/config'; // expo에서는 별도 필요 없음
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  // const router = useRouter(); // 사용하지 않으므로 주석 처리
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  // 환경변수 기반 자동 showTabs
+  const showTabs = false; // 탭을 아예 표시하지 않음
 
   useEffect(() => {
     (async () => {
@@ -42,9 +46,7 @@ export default function RootLayout() {
         <Stack>
           {showOnboarding ? (
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          ) : (
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          )}
+          ) : null}
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />

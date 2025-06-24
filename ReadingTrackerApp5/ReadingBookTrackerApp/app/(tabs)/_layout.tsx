@@ -33,14 +33,14 @@ export default function TabLayout() {
         name="index"
         options={{
           title: '내 서재',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" colors={[color]} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: '책 검색',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="magnifyingglass" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="magnifyingglass" colors={[color]} />,
         }}
       />
     </Tabs>
