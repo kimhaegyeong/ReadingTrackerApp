@@ -30,6 +30,7 @@ const BookDetailScreen = () => {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingTags, setEditingTags] = useState<string>('');
   const cardRefs = useRef<Record<string, any>>({});
+  const bookInfoRef = useRef<any>(null);
 
   if (!book) {
     return (
@@ -104,21 +105,49 @@ const BookDetailScreen = () => {
     }
   };
 
+  const handleShareBookInfo = async () => {
+    try {
+      const uri = await captureRef(bookInfoRef.current, {
+        format: 'png',
+        quality: 1,
+      });
+      await Sharing.shareAsync(uri);
+    } catch (e) {
+      alert('이미지 공유에 실패했습니다.');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: book.title }} />
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <Text style={styles.title}>{book.title}</Text>
-        <Text style={styles.author}>{book.author}</Text>
-        
-        <View style={styles.statusContainer}>
-          {statusOptions.map(s => (
-            <TouchableOpacity key={s} onPress={() => handleStatusChange(s)}>
-              <Badge style={book.status === s ? styles.activeStatus : styles.status}>
-                <Text style={book.status === s ? styles.activeStatusText : styles.statusText}>{s}</Text>
-              </Badge>
-            </TouchableOpacity>
-          ))}
+        <View ref={bookInfoRef} collapsable={false} style={styles.bookInfoCard}>
+          <Text style={styles.title}>{book.title}</Text>
+          <Text style={styles.author}>{book.author}</Text>
+          <View style={styles.statusContainer}>
+            {statusOptions.map(s => (
+              <TouchableOpacity key={s} onPress={() => handleStatusChange(s)}>
+                <Badge style={book.status === s ? styles.activeStatus : styles.status}>
+                  <Text style={book.status === s ? styles.activeStatusText : styles.statusText}>{s}</Text>
+                </Badge>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Card>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>저자</Text>
+              <Text style={styles.detailValue}>{book.author}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>총 독서 시간</Text>
+              <Text style={styles.detailValue}>{formatTime(totalReadingTime)}</Text>
+            </View>
+          </Card>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 16 }}>
+          <Button onPress={handleShareBookInfo} style={{ backgroundColor: '#6366F1' }}>
+            <Feather name="share-2" size={16} color="#fff" /> <Text style={{ color: '#fff', marginLeft: 4 }}>공유</Text>
+          </Button>
         </View>
 
         <View style={styles.buttonRow}>
@@ -126,17 +155,6 @@ const BookDetailScreen = () => {
               <Text style={styles.deleteButtonText}>삭제</Text>
             </Button>
         </View>
-
-        <Card>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>저자</Text>
-            <Text style={styles.detailValue}>{book.author}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>총 독서 시간</Text>
-            <Text style={styles.detailValue}>{formatTime(totalReadingTime)}</Text>
-          </View>
-        </Card>
 
         {book.status === '읽는 중' && (
           <ReadingTimerWidget onSave={(seconds) => addReadingTime(book.id, seconds)} />
@@ -173,6 +191,7 @@ const BookDetailScreen = () => {
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => handleShare(item.id)} style={styles.shareButton}>
                     <Feather name="share-2" size={16} color="#6366F1" />
+                    <Text style={{ color: '#6366F1', marginLeft: 2, fontSize: 13 }}>공유</Text>
                   </TouchableOpacity>
                 </View>
                 {editingItemId === item.id && (
@@ -282,6 +301,7 @@ const styles = StyleSheet.create({
   tagInput: { flex: 1, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, padding: 8 },
   saveTagButton: { backgroundColor: '#10B981', paddingHorizontal: 12 },
   shareButton: { marginLeft: 8, padding: 4 },
+  bookInfoCard: { backgroundColor: 'white', borderRadius: 12, padding: 18, marginBottom: 16, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, elevation: 3 },
 });
 
 export default BookDetailScreen; 
