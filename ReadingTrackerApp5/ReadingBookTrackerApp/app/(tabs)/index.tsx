@@ -71,13 +71,19 @@ export default function HomeScreen() {
       </View>
       
       <View style={styles.controlsContainer}>
-        <BookSearchInput
-          value={search}
-          onChangeText={setSearch}
-          placeholder="내 서재에서 검색..."
-        />
-         <Button onPress={() => setModalOpen(true)} style={{ marginLeft: 8 }}>
-            <Text style={{color: 'white', fontWeight: 'bold'}}>+ 추가</Text>
+        <View style={{ flex: 1 }}>
+          <BookSearchInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="내 서재에서 검색..."
+            style={styles.searchInput}
+          />
+        </View>
+        <Button
+          onPress={() => setModalOpen(true)}
+          style={styles.addButton}
+        >
+          <Text style={styles.addButtonText}>+ 추가</Text>
         </Button>
       </View>
       
@@ -151,8 +157,36 @@ const styles = StyleSheet.create({
   },
   controlsContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
+    width: '100%',
+    maxWidth: '100%',
+    alignSelf: 'center',
+    overflow: 'hidden',
+  },
+  searchInput: {
+    flex: 1,
+    minHeight: 44,
+    maxHeight: 48,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 16,
+  },
+  addButton: {
+    marginLeft: 8,
+    height: 44,
+    width: 72,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 8,
+    flexShrink: 0,
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

@@ -14,7 +14,6 @@ export default function TabLayout() {
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
         tabBarStyle: {
-          position: 'absolute',
           backgroundColor: '#fff',
           ...Platform.select({
             ios: {
