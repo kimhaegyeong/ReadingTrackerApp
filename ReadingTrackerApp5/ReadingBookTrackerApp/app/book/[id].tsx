@@ -27,10 +27,11 @@ const BookDetailScreen = () => {
   const [newQuote, setNewQuote] = useState('');
   const [newNote, setNewNote] = useState('');
   const [isStatusSelectorVisible, setStatusSelectorVisible] = useState(false);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingTags, setEditingTags] = useState<string>('');
+  const [newTag, setNewTag] = useState('');
   const cardRefs = useRef<Record<string, any>>({});
   const bookInfoRef = useRef<any>(null);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingTags, setEditingTags] = useState<string[]>([]);
 
   if (!book) {
     return (
@@ -90,18 +91,31 @@ const BookDetailScreen = () => {
 
   const handleEditTags = (item: {id: string, tags: string[]}) => {
     setEditingItemId(item.id);
-    setEditingTags(item.tags.join(', '));
+    setEditingTags(item.tags);
+    setNewTag('');
+  };
+
+  const handleAddTag = () => {
+    const tag = newTag.trim();
+    if (tag && !editingTags.includes(tag)) {
+      setEditingTags([...editingTags, tag]);
+    }
+    setNewTag('');
+  };
+
+  const handleRemoveTag = (tag: string) => {
+    setEditingTags(editingTags.filter(t => t !== tag));
   };
 
   const handleSaveTags = (itemId: string) => {
-    const tags = editingTags.split(',').map(t => t.trim()).filter(Boolean);
     if (activeTab === 'quotes') {
-      updateQuoteTags(book!.id, itemId, tags);
+      updateQuoteTags(book!.id, itemId, editingTags);
     } else {
-      updateNoteTags(book!.id, itemId, tags);
+      updateNoteTags(book!.id, itemId, editingTags);
     }
     setEditingItemId(null);
-    setEditingTags('');
+    setEditingTags([]);
+    setNewTag('');
   };
 
   const handleShare = async (itemId: string) => {
@@ -160,9 +174,10 @@ const BookDetailScreen = () => {
                 </Badge>
               </TouchableOpacity>
             ))}
-            <Feather name="clock" size={16} color="#818CF8" style={{ marginLeft: 10, marginRight: 2 }} />
-            <Text style={styles.readingTime}>{formatTime(totalReadingTime)}</Text>
           </View>
+          <Feather name="clock" size={16} color="#818CF8" style={{ marginLeft: 10, marginRight: 2 }} />
+
+          <Text style={[styles.readingTime, { marginTop: 4, marginLeft: 18 }]}>{formatTime(totalReadingTime)}</Text>
         </View>
 
         <View style={styles.buttonRow}>
@@ -203,7 +218,43 @@ const BookDetailScreen = () => {
                 <Text style={styles.itemText}>{item.text}</Text>
                 
                 <View style={styles.tagsContainer}>
-                  {item.tags.map((tag, index) => <Badge key={index} style={styles.tagBadge}>{tag}</Badge>)}
+                  {editingItemId === item.id ? (
+                    <View style={[styles.tagEditContainer, { backgroundColor: '#F8FAFC', borderRadius: 12, padding: 14, marginTop: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 2 }]}> 
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', minHeight: 40, marginBottom: 10, gap: 8 }}>
+                        {editingTags.map((tag, idx) => (
+                          <View key={tag} style={styles.tagChipEdit}>
+                            <Text style={styles.tagChipText}>{tag}</Text>
+                            <TouchableOpacity onPress={() => handleRemoveTag(tag)} style={styles.tagChipRemoveBtn}>
+                              <Text style={styles.tagChipRemoveText}>×</Text>
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, width: '100%' }}>
+                        <TextInput
+                          value={newTag}
+                          onChangeText={setNewTag}
+                          placeholder="새 태그 입력"
+                          style={{ flex: 1, backgroundColor: '#fff', borderColor: '#D1D5DB', borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, fontSize: 15, marginRight: 8 }}
+                          onSubmitEditing={handleAddTag}
+                          returnKeyType="done"
+                        />
+                        <Button onPress={handleAddTag} style={{ height: 36, paddingHorizontal: 16, borderRadius: 8, backgroundColor: '#6366F1', minWidth: 60 }} textStyle={{ fontSize: 15 }}>추가</Button>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
+                        <Button onPress={() => handleSaveTags(item.id)} style={{ flex: 1, height: 40, borderRadius: 8, backgroundColor: '#10B981' }} textStyle={{ fontSize: 16 }}>저장</Button>
+                        <Button onPress={() => { setEditingItemId(null); setEditingTags([]); setNewTag(''); }} style={{ flex: 1, height: 40, borderRadius: 8, backgroundColor: '#E5E7EB' }} textStyle={{ fontSize: 16, color: '#374151' }}>취소</Button>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, minHeight: 40 }}>
+                      {item.tags.map((tag, index) => (
+                        <View key={tag} style={styles.tagChipEdit}>
+                          <Text style={styles.tagChipText}>{tag}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
                 
                 <View style={styles.bottomActionsContainer}>
@@ -215,17 +266,6 @@ const BookDetailScreen = () => {
                   </TouchableOpacity>
                 </View>
                 
-                {editingItemId === item.id && (
-                  <View style={styles.tagEditContainer}>
-                    <TextInput
-                      value={editingTags}
-                      onChangeText={setEditingTags}
-                      placeholder="태그 (쉼표로 구분)"
-                      style={styles.tagInput}
-                    />
-                    <Button onPress={() => handleSaveTags(item.id)} style={styles.saveTagButton}>저장</Button>
-                  </View>
-                )}
                 <TouchableOpacity
                   style={styles.deleteItemButton}
                   onPress={() => {
@@ -331,13 +371,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6'
   },
-  tagBadge: { 
-    backgroundColor: '#DBEAFE', 
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 4
-  },
+  tagChipEdit: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E0E7FF', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 7, marginBottom: 4, shadowColor: '#6366F1', shadowOpacity: 0.08, shadowRadius: 4, elevation: 1 },
+  tagChipText: { fontSize: 15, color: '#374151', fontWeight: '500' },
+  tagChipRemoveBtn: { marginLeft: 8, padding: 2, borderRadius: 12 },
+  tagChipRemoveText: { color: '#EF4444', fontWeight: 'bold', fontSize: 16, opacity: 0.7 },
   bottomActionsContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -369,7 +406,7 @@ const styles = StyleSheet.create({
   statusOption: { paddingVertical: 12, alignItems: 'center' },
   statusTextModal: { fontSize: 18, color: '#374151' },
   activeStatusTextModal: { fontSize: 18, color: '#818CF8', fontWeight: 'bold' },
-  tagEditContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 8 },
+  tagEditContainer: { flexDirection: 'column', alignItems: 'stretch', marginTop: 8, gap: 8, width: '100%' },
   tagInput: { flex: 1, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, padding: 8 },
   saveTagButton: { backgroundColor: '#10B981', paddingHorizontal: 12 },
   deleteItemButton: { position: 'absolute', top: 8, right: 10, padding: 4 },
