@@ -1,15 +1,17 @@
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity } from 'react-native';
 import { useBookContext, Quote, Note } from '../../contexts/BookContext';
 import { Card } from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
+import { Feather } from '@expo/vector-icons';
 
 type TaggedItem = (Quote | Note) & { bookTitle: string; bookId: string; type: 'quote' | 'note' };
 
 export default function TagDetailScreen() {
   const { tag } = useLocalSearchParams<{ tag: string }>();
   const { books } = useBookContext();
+  const router = useRouter();
   const decodedTag = tag ? decodeURIComponent(tag) : '';
 
   const taggedItems: TaggedItem[] = [];
@@ -36,6 +38,14 @@ export default function TagDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Feather name="arrow-left" size={24} color="#6366F1" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
+          #{decodedTag}
+        </Text>
+      </View>
       <Stack.Screen options={{ title: `#${decodedTag}` }} />
       <FlatList
         data={taggedItems}
@@ -43,7 +53,7 @@ export default function TagDetailScreen() {
         keyExtractor={(item, index) => `${item.id}-${index}`}
         contentContainerStyle={styles.listContainer}
         ListHeaderComponent={() => (
-          <Text style={styles.header}>'{decodedTag}' 태그가 포함된 기록</Text>
+          <Text style={styles.sectionHeader}>'{decodedTag}' 태그가 포함된 기록</Text>
         )}
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
@@ -57,8 +67,27 @@ export default function TagDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 12,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
+  },
   listContainer: { padding: 16 },
-  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#1F2937' },
+  sectionHeader: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#1F2937' },
   itemCard: { marginBottom: 12, padding: 16 },
   itemText: { fontSize: 16, color: '#374151', marginBottom: 12 },
   itemFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
