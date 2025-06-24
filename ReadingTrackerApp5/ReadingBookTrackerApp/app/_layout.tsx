@@ -8,15 +8,10 @@ import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator, View } from 'react-native';
 
-// 환경변수 로드 (expo 환경에서는 process.env 자동 주입, node 환경은 dotenv 필요)
-// import 'dotenv/config'; // expo에서는 별도 필요 없음
-
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  // 환경변수 기반 자동 showTabs
-  const showTabs = false; // 탭을 아예 표시하지 않음
 
   useEffect(() => {
     (async () => {
@@ -46,7 +41,13 @@ export default function RootLayout() {
         <Stack>
           {showOnboarding ? (
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          ) : null}
+          ) : (
+            <>
+              {/* <Stack.Screen name="(tabs)" options={{ headerShown: false }} /> */}
+              <Stack.Screen name="book/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="tag/[tag]" options={{ headerShown: false }} />
+            </>
+          )}
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />

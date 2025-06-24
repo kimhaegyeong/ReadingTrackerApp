@@ -1,10 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
-
-// import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-// import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 
@@ -16,14 +13,12 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        // tabBarButton: HapticTab,
-        // tabBarBackground: TabBarBackground,
         tabBarStyle: {
           position: 'absolute',
+          backgroundColor: '#fff',
           ...Platform.select({
             ios: {
-              // Use a transparent background on iOS to show the blur effect
-              backgroundColor: 'transparent',
+              backgroundColor: '#fff',
             },
             default: {},
           }),
@@ -41,6 +36,13 @@ export default function TabLayout() {
         options={{
           title: '책 검색',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="magnifyingglass" colors={[color]} />,
+        }}
+      />
+      <Tabs.Screen
+        name="stats"
+        options={{
+          title: '통계',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.bar.fill" colors={[color]} />,
         }}
       />
     </Tabs>
