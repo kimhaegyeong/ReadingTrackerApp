@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, Dimensions, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import { Button } from '../components/ui/Button';
+import { Button } from '../../components/ui/Button';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
