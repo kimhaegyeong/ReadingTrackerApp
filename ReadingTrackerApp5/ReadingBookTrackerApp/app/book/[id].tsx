@@ -55,10 +55,21 @@ const BookDetailScreen = () => {
   };
 
   const handleAddItem = () => {
-    if (activeTab === 'quotes' && newQuote.trim()) {
+    const currentText = activeTab === 'quotes' ? newQuote : newNote;
+    
+    if (!currentText.trim()) {
+      Alert.alert(
+        '입력 오류',
+        `${activeTab === 'quotes' ? '인용문' : '메모'}을 입력해주세요.`,
+        [{ text: '확인', style: 'default' }]
+      );
+      return;
+    }
+
+    if (activeTab === 'quotes') {
       addQuote(book.id, { text: newQuote, tags: [] });
       setNewQuote('');
-    } else if (activeTab === 'notes' && newNote.trim()) {
+    } else if (activeTab === 'notes') {
       addNote(book.id, { text: newNote, tags: [] });
       setNewNote('');
     }
@@ -190,16 +201,20 @@ const BookDetailScreen = () => {
             >
               <Card style={styles.itemCard}>
                 <Text style={styles.itemText}>{item.text}</Text>
+                
                 <View style={styles.tagsContainer}>
                   {item.tags.map((tag, index) => <Badge key={index} style={styles.tagBadge}>{tag}</Badge>)}
+                </View>
+                
+                <View style={styles.bottomActionsContainer}>
                   <TouchableOpacity onPress={() => handleEditTags(item)} style={styles.editTagsButton}>
                     <Feather name="edit-2" size={16} color="#6B7280" />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => handleShare(item.id)} style={styles.shareButton}>
                     <Feather name="share-2" size={16} color="#6366F1" />
-                    <Text style={{ color: '#6366F1', marginLeft: 2, fontSize: 13 }}>공유</Text>
                   </TouchableOpacity>
                 </View>
+                
                 {editingItemId === item.id && (
                   <View style={styles.tagEditContainer}>
                     <TextInput
@@ -289,12 +304,57 @@ const styles = StyleSheet.create({
   tabText: { color: '#6B7280', fontWeight: '500', fontSize: 15 },
   activeTabText: { color: '#4F46E5', fontWeight: 'bold', fontSize: 15 },
   contentArea: { padding: 2 },
-  itemCard: { backgroundColor: 'white', borderRadius: 10, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  itemText: { fontSize: 15, color: '#374151', marginBottom: 12 },
-  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 },
-  tagBadge: { backgroundColor: '#DBEAFE', marginRight: 6, marginBottom: 6 },
-  editTagsButton: { marginLeft: 8, padding: 4 },
-  shareButton: { marginLeft: 8, padding: 4 },
+  itemCard: { 
+    backgroundColor: 'white', 
+    borderRadius: 10, 
+    padding: 14, 
+    marginBottom: 10, 
+    shadowColor: '#000', 
+    shadowOpacity: 0.05, 
+    shadowRadius: 4, 
+    elevation: 2,
+    position: 'relative'
+  },
+  itemText: { 
+    fontSize: 15, 
+    color: '#374151', 
+    marginBottom: 12 
+  },
+  tagsContainer: { 
+    flexDirection: 'row', 
+    flexWrap: 'wrap', 
+    justifyContent: 'flex-start',
+    alignItems: 'center', 
+    marginBottom: 8,
+    gap: 6,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6'
+  },
+  tagBadge: { 
+    backgroundColor: '#DBEAFE', 
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 4
+  },
+  bottomActionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8
+  },
+  editTagsButton: { 
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#F9FAFB'
+  },
+  shareButton: { 
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: '#F9FAFB'
+  },
   inputContainer: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16, gap: 6 },
   textInput: { flex: 1, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 12, backgroundColor: '#fff', fontSize: 15, minHeight: 44, maxHeight: 80 },
   addButton: { backgroundColor: '#818CF8', borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, minWidth: 56 },
