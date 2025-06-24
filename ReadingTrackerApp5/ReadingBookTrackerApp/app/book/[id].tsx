@@ -208,7 +208,22 @@ const BookDetailScreen = () => {
         </View>
 
         <View style={styles.contentArea}>
-          {(activeTab === 'quotes' ? book.quotes : book.notes).map(item => (
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.textInput}
+              value={activeTab === 'quotes' ? newQuote : newNote}
+              onChangeText={activeTab === 'quotes' ? setNewQuote : setNewNote}
+              placeholder={`${activeTab === 'quotes' ? '인용' : '메모'} 추가...`}
+              multiline
+              numberOfLines={2}
+              maxLength={300}
+              textAlignVertical="top"
+            />
+            <Button onPress={handleAddItem} style={styles.addButton}>
+              추가
+            </Button>
+          </View>
+          {(activeTab === 'quotes' ? book.quotes.slice().reverse() : book.notes.slice().reverse()).map(item => (
             <View
               key={item.id}
               ref={ref => { if (ref) cardRefs.current[item.id] = ref; }}
@@ -242,8 +257,8 @@ const BookDetailScreen = () => {
                         <Button onPress={handleAddTag} style={{ height: 36, paddingHorizontal: 16, borderRadius: 8, backgroundColor: '#6366F1', minWidth: 60 }} textStyle={{ fontSize: 15 }}>추가</Button>
                       </View>
                       <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
-                        <Button onPress={() => handleSaveTags(item.id)} style={{ flex: 1, height: 40, borderRadius: 8, backgroundColor: '#10B981' }} textStyle={{ fontSize: 16 }}>저장</Button>
                         <Button onPress={() => { setEditingItemId(null); setEditingTags([]); setNewTag(''); }} style={{ flex: 1, height: 40, borderRadius: 8, backgroundColor: '#E5E7EB' }} textStyle={{ fontSize: 16, color: '#374151' }}>취소</Button>
+                        <Button onPress={() => handleSaveTags(item.id)} style={{ flex: 1, height: 40, borderRadius: 8, backgroundColor: '#10B981' }} textStyle={{ fontSize: 16 }}>저장</Button>
                       </View>
                     </View>
                   ) : (
@@ -279,21 +294,6 @@ const BookDetailScreen = () => {
               </Card>
             </View>
           ))}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.textInput}
-              value={activeTab === 'quotes' ? newQuote : newNote}
-              onChangeText={activeTab === 'quotes' ? setNewQuote : setNewNote}
-              placeholder={`${activeTab === 'quotes' ? '인용' : '메모'} 추가...`}
-              multiline
-              numberOfLines={2}
-              maxLength={300}
-              textAlignVertical="top"
-            />
-            <Button onPress={handleAddItem} style={styles.addButton}>
-              추가
-            </Button>
-          </View>
         </View>
       </ScrollView>
 
