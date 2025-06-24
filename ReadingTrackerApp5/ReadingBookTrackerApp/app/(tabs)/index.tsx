@@ -83,7 +83,7 @@ export default function HomeScreen() {
           onPress={() => setModalOpen(true)}
           style={styles.addButton}
         >
-          <Text style={styles.addButtonText}>+ 추가</Text>
+          <Text style={styles.addButtonText}>추가</Text>
         </Button>
       </View>
       

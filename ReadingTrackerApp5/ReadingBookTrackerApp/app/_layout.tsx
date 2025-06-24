@@ -8,11 +8,11 @@ import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator, View } from 'react-native';
 import { useSegments } from 'expo-router';
+import { ShareProvider } from '@/contexts/ShareContext';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const segments = useSegments();
-  console.log('expo-router segments:', segments);
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -20,7 +20,6 @@ export default function RootLayout() {
     (async () => {
       try {
         const done = await AsyncStorage.getItem('onboardingDone');
-        console.log('onboardingDone:', done);
         if (!done) {
           setShowOnboarding(true);
         }
@@ -41,19 +40,21 @@ export default function RootLayout() {
 
   return (
     <BookProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack screenOptions={{ headerShown: false }}>
-          {showOnboarding ? (
-            <Stack.Screen name="root/onboarding" options={{ headerShown: false }} />
-          ) : (
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          )}
-          <Stack.Screen name="book/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="tag/[tag]" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <ShareProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack screenOptions={{ headerShown: false }}>
+            {showOnboarding ? (
+              <Stack.Screen name="root/onboarding" options={{ headerShown: false }} />
+            ) : (
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            )}
+            <Stack.Screen name="book/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="tag/[tag]" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </ShareProvider>
     </BookProvider>
   );
 }

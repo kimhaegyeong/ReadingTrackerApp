@@ -206,7 +206,7 @@ const BookDetailScreen = () => {
                   {item.tags.map((tag, index) => <Badge key={index} style={styles.tagBadge}>{tag}</Badge>)}
                 </View>
                 
-                <View style={styles.ㄱㄱ}>
+                <View style={styles.bottomActionsContainer}>
                   <TouchableOpacity onPress={() => handleEditTags(item)} style={styles.editTagsButton}>
                     <Feather name="edit-2" size={16} color="#6B7280" />
                   </TouchableOpacity>

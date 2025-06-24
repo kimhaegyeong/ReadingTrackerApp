@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    height: 48,
+    height: 40,
     width: '100%',
   },
   icon: {
@@ -41,9 +41,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#1F2937',
-    height: '100%',
+    height: 40,
     minWidth: 0,
     minHeight: 40,
+    paddingVertical: 0,
   },
 });
 

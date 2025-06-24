@@ -76,7 +76,7 @@ const ReadingTimerWidget = ({ onSave }: ReadingTimerWidgetProps) => {
           초기화
         </Button>
       </View>
-      <Button onPress={handleSave} style={[styles.button, styles.saveButton]} disabled={seconds === 0}>
+      <Button onPress={handleSave} style={[styles.button, styles.saveButton, { backgroundColor: '#6366F1' }]} disabled={seconds === 0} textStyle={{ fontWeight: 'normal', fontSize: 16, color: '#fff' }}>
         기록 저장
       </Button>
     </View>

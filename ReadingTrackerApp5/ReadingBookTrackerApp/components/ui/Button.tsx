@@ -31,10 +31,12 @@ export const Button = ({ children, style, textStyle, disabled, ...props }: Butto
 
 const styles = StyleSheet.create({
   button: {
-    padding: 12,
+    height: 40,
+    paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
   },
   enabledButton: {
     backgroundColor: '#4F46E5',

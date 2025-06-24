@@ -23,7 +23,11 @@ export default Badge;
 const styles = StyleSheet.create({
   badge: {
     display: 'flex',
-    paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 28,
+    lineHeight: 28,
+    paddingVertical: 0,
     paddingHorizontal: 12,
     borderRadius: 12,
     backgroundColor: '#E5E7EB', // default color
