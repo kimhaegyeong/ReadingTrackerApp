@@ -1,18 +1,23 @@
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
 import { useBookContext, Book, BookStatus, Quote, Note } from '../../contexts/BookContext';
 import { Button } from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
 import ReadingTimerWidget from '../../components/ReadingTimerWidget';
+import { Feather } from '@expo/vector-icons';
+import { captureRef } from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 
 const statusOptions: BookStatus[] = ['읽고 싶은', '읽는 중', '다 읽은'];
 
 const BookDetailScreen = () => {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { books, updateStatus, addQuote, addNote, removeBook, removeQuote, removeNote, addReadingTime } = useBookContext();
+  const { 
+    books, updateStatus, addQuote, addNote, removeBook, removeQuote, removeNote, addReadingTime, updateQuoteTags, updateNoteTags 
+  } = useBookContext();
   
   const book = books.find((b: Book) => b.id === id);
 
@@ -22,6 +27,9 @@ const BookDetailScreen = () => {
   const [newQuote, setNewQuote] = useState('');
   const [newNote, setNewNote] = useState('');
   const [isStatusSelectorVisible, setStatusSelectorVisible] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingTags, setEditingTags] = useState<string>('');
+  const cardRefs = useRef<Record<string, any>>({});
 
   if (!book) {
     return (
@@ -66,6 +74,34 @@ const BookDetailScreen = () => {
     }
     setModalVisible(false);
     setItemToRemove(null);
+  };
+
+  const handleEditTags = (item: {id: string, tags: string[]}) => {
+    setEditingItemId(item.id);
+    setEditingTags(item.tags.join(', '));
+  };
+
+  const handleSaveTags = (itemId: string) => {
+    const tags = editingTags.split(',').map(t => t.trim()).filter(Boolean);
+    if (activeTab === 'quotes') {
+      updateQuoteTags(book!.id, itemId, tags);
+    } else {
+      updateNoteTags(book!.id, itemId, tags);
+    }
+    setEditingItemId(null);
+    setEditingTags('');
+  };
+
+  const handleShare = async (itemId: string) => {
+    try {
+      const uri = await captureRef(cardRefs.current[itemId], {
+        format: 'png',
+        quality: 1,
+      });
+      await Sharing.shareAsync(uri);
+    } catch (e) {
+      alert('이미지 공유에 실패했습니다.');
+    }
   };
 
   return (
@@ -123,19 +159,45 @@ const BookDetailScreen = () => {
 
         <View style={styles.contentArea}>
           {(activeTab === 'quotes' ? book.quotes : book.notes).map(item => (
-            <Card key={item.id} style={styles.itemCard}>
-              <Text>{item.text}</Text>
-              <TouchableOpacity
-                style={styles.deleteItemButton}
-                onPress={() => {
-                  const type = activeTab === 'quotes' ? 'quote' : 'note';
-                  setItemToRemove({ type, id: item.id });
-                  setModalVisible(true);
-                }}
-              >
-                <Text style={styles.deleteItemButtonText}>×</Text>
-              </TouchableOpacity>
-            </Card>
+            <View
+              key={item.id}
+              ref={ref => { if (ref) cardRefs.current[item.id] = ref; }}
+              collapsable={false}
+            >
+              <Card style={styles.itemCard}>
+                <Text style={styles.itemText}>{item.text}</Text>
+                <View style={styles.tagsContainer}>
+                  {item.tags.map((tag, index) => <Badge key={index} style={styles.tagBadge}>{tag}</Badge>)}
+                  <TouchableOpacity onPress={() => handleEditTags(item)} style={styles.editTagsButton}>
+                    <Feather name="edit-2" size={16} color="#6B7280" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleShare(item.id)} style={styles.shareButton}>
+                    <Feather name="share-2" size={16} color="#6366F1" />
+                  </TouchableOpacity>
+                </View>
+                {editingItemId === item.id && (
+                  <View style={styles.tagEditContainer}>
+                    <TextInput
+                      value={editingTags}
+                      onChangeText={setEditingTags}
+                      placeholder="태그 (쉼표로 구분)"
+                      style={styles.tagInput}
+                    />
+                    <Button onPress={() => handleSaveTags(item.id)} style={styles.saveTagButton}>저장</Button>
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={styles.deleteItemButton}
+                  onPress={() => {
+                    const type = activeTab === 'quotes' ? 'quote' : 'note';
+                    setItemToRemove({ type, id: item.id });
+                    setModalVisible(true);
+                  }}
+                >
+                  <Text style={styles.deleteItemButtonText}>×</Text>
+                </TouchableOpacity>
+              </Card>
+            </View>
           ))}
           <View style={styles.inputContainer}>
             <TextInput
@@ -193,7 +255,7 @@ const styles = StyleSheet.create({
   addContentButton: { backgroundColor: '#4F46E5' },
   addContentButtonText: { color: '#fff', fontWeight: 'bold' },
   itemCard: { backgroundColor: 'white', borderRadius: 10, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  itemText: { fontSize: 15, color: '#374151' },
+  itemText: { fontSize: 15, color: '#374151', marginBottom: 12 },
   deleteItemButton: { position: 'absolute', top: 8, right: 10, padding: 4 },
   deleteItemButtonText: { fontSize: 18, color: '#EF4444', fontWeight: 'bold' },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
@@ -213,6 +275,13 @@ const styles = StyleSheet.create({
   statusOption: { paddingVertical: 12, alignItems: 'center' },
   statusTextModal: { fontSize: 18, color: '#374151' },
   activeStatusTextModal: { fontSize: 18, color: '#818CF8', fontWeight: 'bold' },
+  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 },
+  tagBadge: { backgroundColor: '#DBEAFE', marginRight: 6, marginBottom: 6 },
+  editTagsButton: { marginLeft: 8, padding: 4 },
+  tagEditContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 8 },
+  tagInput: { flex: 1, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 6, padding: 8 },
+  saveTagButton: { backgroundColor: '#10B981', paddingHorizontal: 12 },
+  shareButton: { marginLeft: 8, padding: 4 },
 });
 
 export default BookDetailScreen; 

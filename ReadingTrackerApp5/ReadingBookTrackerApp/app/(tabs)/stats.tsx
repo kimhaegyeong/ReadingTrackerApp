@@ -1,93 +1,168 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
-import { useBookContext, Book } from '@/contexts/BookContext';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from 'react-native';
+import { useBookContext, Book } from '../../contexts/BookContext';
+import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import Badge from '../../components/ui/Badge';
 
-const sampleMonthly = [
-  { month: '1월', count: 2 }, { month: '2월', count: 3 }, { month: '3월', count: 1 },
-  { month: '4월', count: 4 }, { month: '5월', count: 2 }, { month: '6월', count: 5 },
-];
-const sampleTags = [
-  { tag: '철학', count: 3 }, { tag: '명언', count: 2 }, { tag: '감상', count: 4 },
-];
+const StatCard = ({ icon, label, value, unit }: { icon: any, label: string, value: string | number, unit?: string }) => (
+  <View style={styles.statCard}>
+    <Feather name={icon} size={24} color="#6B7280" />
+    <Text style={styles.statLabel}>{label}</Text>
+    <View style={styles.statValueContainer}>
+      <Text style={styles.statValue}>{value}</Text>
+      {unit && <Text style={styles.statUnit}> {unit}</Text>}
+    </View>
+  </View>
+);
 
 export default function ReadingStatsScreen() {
   const { books } = useBookContext();
-  const total = books.length;
+  const router = useRouter();
+  
+  const totalBooks = books.length;
   const statusCounts = {
     '읽고 싶은': books.filter((b: Book) => b.status === '읽고 싶은').length,
     '읽는 중': books.filter((b: Book) => b.status === '읽는 중').length,
     '다 읽은': books.filter((b: Book) => b.status === '다 읽은').length,
   };
 
+  const totalReadingTimeInSeconds = books.reduce((total, book) => {
+    return total + (book.readingRecords?.reduce((bookTotal, record) => bookTotal + record.readingTimeInSeconds, 0) || 0);
+  }, 0);
+
+  const hours = Math.floor(totalReadingTimeInSeconds / 3600);
+  const minutes = Math.floor((totalReadingTimeInSeconds % 3600) / 60);
+
+  const allTags = books.flatMap(book => 
+    [...book.quotes.flatMap(q => q.tags), ...book.notes.flatMap(n => n.tags)]
+  );
+
+  const tagCounts = allTags.reduce((acc, tag) => {
+    acc[tag] = (acc[tag] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const sortedTags = Object.entries(tagCounts).sort((a, b) => b[1] - a[1]);
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <Text style={styles.header}>통계 대시보드</Text>
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryBox}>
-            <Text style={styles.summaryLabel}>전체 등록 도서</Text>
-            <Text style={styles.summaryValue}>{total}</Text>
-          </View>
-        </View>
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryBox}>
-            <Text style={styles.summaryLabel}>읽고 싶은</Text>
-            <Text style={styles.summaryValue}>{statusCounts['읽고 싶은']}</Text>
-          </View>
-          <View style={styles.summaryBox}>
-            <Text style={styles.summaryLabel}>읽는 중</Text>
-            <Text style={styles.summaryValue}>{statusCounts['읽는 중']}</Text>
-          </View>
-          <View style={styles.summaryBox}>
-            <Text style={styles.summaryLabel}>다 읽은</Text>
-            <Text style={styles.summaryValue}>{statusCounts['다 읽은']}</Text>
-          </View>
+        <Text style={styles.header}>나의 독서 기록</Text>
+        
+        <View style={styles.mainStatsContainer}>
+          <StatCard icon="book-open" label="총 등록 도서" value={totalBooks} unit="권" />
+          <StatCard icon="clock" label="총 독서 시간" value={`${hours}시간 ${minutes}`} unit="분" />
         </View>
 
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>월별 독서량 (샘플)</Text>
-          <View style={styles.barChart}>
-            {sampleMonthly.map(m => (
-              <View key={m.month} style={styles.barWrapper}>
-                <View style={[styles.bar, { height: m.count * 20 }]} />
-                <Text style={styles.barLabel}>{m.month}</Text>
-              </View>
-            ))}
-          </View>
+        <Text style={styles.subHeader}>상태별 도서</Text>
+        <View style={styles.statusGrid}>
+          <StatCard icon="bookmark" label="읽고 싶은" value={statusCounts['읽고 싶은']} unit="권" />
+          <StatCard icon="book" label="읽는 중" value={statusCounts['읽는 중']} unit="권" />
+          <StatCard icon="check-square" label="다 읽은" value={statusCounts['다 읽은']} unit="권" />
         </View>
 
-        <View style={styles.chartContainer}>
-          <Text style={styles.chartTitle}>태그별 통계 (샘플)</Text>
-          <View style={styles.tagGrid}>
-            {sampleTags.map(t => (
-              <View key={t.tag} style={styles.tagBox}>
-                <Text style={styles.tagText}>{t.tag}</Text>
-                <Text style={styles.tagCount}>{t.count}</Text>
-              </View>
-            ))}
-          </View>
+        <Text style={styles.subHeader}>태그 클라우드</Text>
+        <View style={styles.tagCloudContainer}>
+          {sortedTags.map(([tag, count]) => (
+            <TouchableOpacity key={tag} onPress={() => router.push(`/tag/${encodeURIComponent(tag)}` as any)}>
+              <Badge style={styles.tagBadge}>
+                <Text style={styles.tagBadgeText}>{tag} ({count})</Text>
+              </Badge>
+            </TouchableOpacity>
+          ))}
+          {sortedTags.length === 0 && <Text style={styles.noTagsText}>기록된 태그가 없습니다.</Text>}
         </View>
+
+        {/* TODO: Add charts for monthly reading and tags */}
+
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
-  contentContainer: { padding: 16 },
-  header: { fontSize: 28, fontWeight: 'bold', marginBottom: 24, color: '#1F2937' },
-  summaryGrid: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },
-  summaryBox: { flex: 1, backgroundColor: '#F3F4F6', borderRadius: 12, padding: 16, alignItems: 'center', marginHorizontal: 4 },
-  summaryLabel: { fontSize: 14, color: '#6B7280', marginBottom: 6 },
-  summaryValue: { fontSize: 24, fontWeight: 'bold', color: '#1F2937' },
-  chartContainer: { marginBottom: 32 },
-  chartTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12, color: '#1F2937' },
-  barChart: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 150, borderBottomWidth: 1, borderColor: '#E5E7EB', paddingBottom: 8 },
-  barWrapper: { flex: 1, alignItems: 'center' },
-  bar: { width: '50%', backgroundColor: '#818CF8', borderRadius: 4 },
-  barLabel: { fontSize: 12, color: '#6B7280', marginTop: 6 },
-  tagGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
-  tagBox: { backgroundColor: '#F472B6', borderRadius: 8, padding: 16, marginRight: 12, marginBottom: 12, alignItems: 'center' },
-  tagText: { color: 'white', fontSize: 15 },
-  tagCount: { color: 'white', fontSize: 20, fontWeight: 'bold', marginTop: 4 },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#F9FAFB' 
+  },
+  contentContainer: { 
+    padding: 24 
+  },
+  header: { 
+    fontSize: 28, 
+    fontWeight: 'bold', 
+    marginBottom: 24, 
+    color: '#1F2937' 
+  },
+  subHeader: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginTop: 32,
+    marginBottom: 16,
+    color: '#374151',
+  },
+  mainStatsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: 16,
+  },
+  statusGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+    minWidth: '45%', // Ensure at least two cards per row
+    marginBottom: 16,
+  },
+  statLabel: { 
+    fontSize: 14, 
+    color: '#6B7280', 
+    marginTop: 8, 
+    marginBottom: 4 
+  },
+  statValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  statValue: { 
+    fontSize: 26, 
+    fontWeight: 'bold', 
+    color: '#1F2937' 
+  },
+  statUnit: {
+    fontSize: 14,
+    color: '#374151',
+    marginLeft: 4,
+    marginBottom: 4,
+  },
+  tagCloudContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  tagBadge: {
+    backgroundColor: '#E0E7FF',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  tagBadgeText: {
+    color: '#4338CA',
+    fontWeight: '600',
+  },
+  noTagsText: {
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+  }
 }); 
