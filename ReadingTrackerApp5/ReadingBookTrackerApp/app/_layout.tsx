@@ -42,7 +42,7 @@ export default function RootLayout() {
   return (
     <BookProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
+        <Stack screenOptions={{ headerShown: false }}>
           {showOnboarding ? (
             <Stack.Screen name="root/onboarding" options={{ headerShown: false }} />
           ) : (
