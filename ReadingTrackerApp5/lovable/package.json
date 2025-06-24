@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "format": "prettier --write .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "vite"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
