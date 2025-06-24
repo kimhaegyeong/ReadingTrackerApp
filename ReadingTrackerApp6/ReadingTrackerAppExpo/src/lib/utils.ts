@@ -1,2 +1,6 @@
-// Expo용 유틸 함수 (필요시 확장)
-export function noop() {} 
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
