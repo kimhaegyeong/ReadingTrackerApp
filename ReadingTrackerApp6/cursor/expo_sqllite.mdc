@@ -1,0 +1,155 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+아래는 최신 Expo 공식 문서([expo-sqlite 공식 문서](https://docs.expo.dev/versions/latest/sdk/sqlite/)) 기준으로 작성한  
+**expo-sqlite 사용법 요약 및 실전 예시 문서**입니다.
+
+---
+
+# 📄 @expo_sqlite.mdc — Expo SQLite 사용법 가이드
+
+## 1. 설치
+
+```sh
+npx expo install expo-sqlite
+```
+
+---
+
+## 2. 기본 사용법
+
+### 2.1. 모듈 임포트
+
+```ts
+import * as SQLite from 'expo-sqlite';
+```
+
+### 2.2. 데이터베이스 열기
+
+```ts
+const db = await SQLite.openDatabaseAsync('mydb.db');
+```
+- `openDatabaseAsync`는 Promise를 반환합니다.
+- 기존 방식(`SQLite.openDatabase`)은 deprecated이며, 최신 Expo에서는 async 방식 권장.
+
+---
+
+## 3. 테이블 생성 및 쿼리 실행
+
+### 3.1. 테이블 생성
+
+```ts
+await db.execAsync(`
+  CREATE TABLE IF NOT EXISTS books (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    author TEXT
+  );
+`);
+```
+
+### 3.2. 데이터 삽입
+
+```ts
+await db.runAsync(
+  'INSERT INTO books (title, author) VALUES (?, ?)',
+  '모비딕',
+  '허먼 멜빌'
+);
+```
+
+### 3.3. 데이터 조회
+
+#### 3.3.1. 한 행만 조회
+
+```ts
+const row = await db.getFirstAsync('SELECT * FROM books WHERE id = ?', 1);
+console.log(row?.title, row?.author);
+```
+
+#### 3.3.2. 여러 행 조회
+
+```ts
+const rows = await db.getAllAsync('SELECT * FROM books');
+rows.forEach(row => {
+  console.log(row.id, row.title, row.author);
+});
+```
+
+---
+
+## 4. Prepared Statement (준비된 쿼리)
+
+```ts
+const statement = await db.prepareAsync(
+  'INSERT INTO books (title, author) VALUES ($title, $author)'
+);
+try {
+  await statement.executeAsync({ $title: '데미안', $author: '헤르만 헤세' });
+  await statement.executeAsync({ $title: '1984', $author: '조지 오웰' });
+} finally {
+  await statement.finalizeAsync();
+}
+```
+
+---
+
+## 5. 트랜잭션
+
+```ts
+await db.execAsync('BEGIN TRANSACTION;');
+// 여러 쿼리 실행
+await db.execAsync('COMMIT;');
+```
+
+---
+
+## 6. React Context에서 사용 예시
+
+```tsx
+import * as SQLite from 'expo-sqlite';
+import { createContext, useContext, useEffect, useState } from 'react';
+
+const DB_NAME = 'mydb.db';
+const SQLiteContext = createContext(null);
+
+export function SQLiteProvider({ children }) {
+  const [db, setDb] = useState(null);
+
+  useEffect(() => {
+    SQLite.openDatabaseAsync(DB_NAME).then(setDb);
+  }, []);
+
+  if (!db) return null; // 로딩 중
+
+  return (
+    <SQLiteContext.Provider value={db}>
+      {children}
+    </SQLiteContext.Provider>
+  );
+}
+
+export function useDb() {
+  return useContext(SQLiteContext);
+}
+```
+
+---
+
+## 7. 참고
+
+- [공식 Expo SQLite 문서](https://docs.expo.dev/versions/latest/sdk/sqlite/)
+- [API Reference](https://docs.expo.dev/versions/latest/sdk/sqlite/#api)
+
+---
+
+**Tip:**  
+- 웹 지원은 실험적입니다. 네이티브(iOS/Android)에서 주로 사용하세요.
+- 쿼리 실행 시 항상 async/await 패턴을 사용하세요.
+
+---
+
+이 문서를 프로젝트 내 `@expo_sqlite.mdc` 등으로 저장해두면,  
+팀원 누구나 최신 Expo SQLite 사용법을 빠르게 참고할 수 있습니다.
