@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, SafeAreaView } from 'react-native';
-import { Card, Title, Paragraph, Button, TextInput, Chip } from 'react-native-paper';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  SafeAreaView,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, RouteProp } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { RouteProp } from '@react-navigation/native';
 
 interface Quote {
   id: number;
@@ -39,6 +48,39 @@ type RootStackParamList = {
 interface BookDetailScreenProps {
   route: RouteProp<RootStackParamList, 'BookDetail'>;
 }
+
+// 커스텀 카드
+const CustomCard = ({ children, style }: any) => {
+  // children이 문자열인 경우 <Text>로 감싸기
+  if (typeof children === 'string') {
+    return (
+      <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>
+        <Text>{children}</Text>
+      </View>
+    );
+  }
+  
+  // children이 배열인 경우 문자열들을 <Text>로 감싸기
+  if (Array.isArray(children)) {
+    const processedChildren = children.map((child, index) => {
+      if (typeof child === 'string' && child.trim() !== '') {
+        return <Text key={index}>{child}</Text>;
+      }
+      return child;
+    });
+    return <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>{processedChildren}</View>;
+  }
+  
+  // 그 외의 경우는 그대로 렌더링
+  return <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>{children}</View>;
+};
+
+// 커스텀 칩
+const CustomChip = ({ title, onPress, style, textStyle }: any) => (
+  <TouchableOpacity onPress={onPress} style={[styles.tagChip, style]}>
+    <Text style={[styles.tagText, textStyle]}>{title}</Text>
+  </TouchableOpacity>
+);
 
 const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
   const navigation = useNavigation();
@@ -163,7 +205,9 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
         break;
     }
     return (
-      <View style={[styles.badge, { backgroundColor: color }]}> <Text style={styles.badgeText}>{label}</Text> </View>
+      <View style={[styles.badge, { backgroundColor: color }]}>
+        <Text style={styles.badgeText}>{label}</Text>
+      </View>
     );
   };
 
@@ -188,13 +232,15 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
         </View>
 
         {/* Book Info Card */}
-        <Card style={styles.bookCard}>
-          <Card.Content style={styles.bookCardContent}>
+        <CustomCard style={styles.bookCard}>
+          <View style={styles.bookCardContent}>
             <View style={styles.bookInfo}>
-              <View style={[styles.bookCover, { backgroundColor: book.coverColor }]}> <Ionicons name="book" size={48} color="white" /> </View>
+              <View style={[styles.bookCover, { backgroundColor: book.coverColor }]}>
+                <Ionicons name="book" size={48} color="white" />
+              </View>
               <View style={styles.bookDetails}>
-                <Title style={styles.bookTitle}><Text style={styles.bookTitle}>{book.title}</Text></Title>
-                <Paragraph style={styles.bookAuthor}><Text style={styles.bookAuthor}>{book.author}</Text></Paragraph>
+                <Text style={styles.bookTitle}>{book.title}</Text>
+                <Text style={styles.bookAuthor}>{book.author}</Text>
                 <View style={styles.statusContainer}>
                   {getStatusBadge(book.status)}
                   {book.status === 'reading' && (
@@ -224,27 +270,25 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                 </View>
               </View>
             )}
-          </Card.Content>
-        </Card>
+          </View>
+        </CustomCard>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
-          <Button
-            mode="contained"
+          <TouchableOpacity
             onPress={() => setIsQuoteModalVisible(true)}
-            style={styles.quoteButton}
+            style={[styles.quoteButton, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}
           >
             <Ionicons name="chatbubble" size={16} color="white" />
-            <Text>인용문 추가</Text>
-          </Button>
-          <Button
-            mode="outlined"
+            <Text style={{ color: '#fff', marginLeft: 6 }}>인용문 추가</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => setIsNoteModalVisible(true)}
-            style={styles.noteButton}
+            style={[styles.noteButton, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2563eb', borderRadius: 8 }]}
           >
-            <Ionicons name="document-text" size={16} />
-            <Text>메모 추가</Text>
-          </Button>
+            <Ionicons name="document-text" size={16} color="#2563eb" />
+            <Text style={{ color: '#2563eb', marginLeft: 6 }}>메모 추가</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Tabs */}
@@ -257,62 +301,66 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
         <View style={styles.content}>
           {activeTab === 'quotes' ? (
             <View style={styles.quotesContainer}>
-              {quotes.map((quote) => (
-                <Card key={quote.id} style={styles.quoteCard}>
-                  <Card.Content>
+              {quotes.length === 0 ? (
+                <CustomCard>
+                  <Text>인용문이 없습니다</Text>
+                </CustomCard>
+              ) : (
+                quotes.map((quote) => (
+                  <CustomCard key={quote.id} style={styles.quoteCard}>
                     <View style={styles.quoteContent}>
                       <Ionicons name="chatbubble" size={20} color="#2563eb" style={styles.quoteIcon} />
                       <View style={styles.quoteText}>
                         <Text style={styles.quoteTextContent}>"{quote.text}"</Text>
-                        {quote.memo && (
+                        {quote.memo ? (
                           <View style={styles.memoContainer}>
                             <Text style={styles.memoText}>{quote.memo}</Text>
                           </View>
-                        )}
+                        ) : null}
                         <View style={styles.quoteMeta}>
                           <Text style={styles.quoteMetaText}>페이지 {quote.page}</Text>
                           <Text style={styles.quoteMetaText}>•</Text>
                           <Text style={styles.quoteMetaText}>{quote.createdAt}</Text>
                         </View>
-                        {quote.tags && quote.tags.length > 0 && (
+                        {quote.tags && quote.tags.length > 0 ? (
                           <View style={styles.tagsContainer}>
                             {quote.tags.map((tag, index) => (
-                              <Chip key={index} style={styles.tagChip} textStyle={styles.tagText}>
-                                <Text style={styles.tagText}>{tag}</Text>
-                              </Chip>
+                              <CustomChip key={index} title={tag} style={styles.tagChip} textStyle={styles.tagText} />
                             ))}
                           </View>
-                        )}
+                        ) : null}
                       </View>
                     </View>
-                  </Card.Content>
-                </Card>
-              ))}
+                  </CustomCard>
+                ))
+              )}
             </View>
           ) : (
             <View style={styles.notesContainer}>
-              {notes.map((note) => (
-                <Card key={note.id} style={styles.noteCard}>
-                  <Card.Content>
+              {notes.length === 0 ? (
+                <CustomCard>
+                  <Text>메모가 없습니다</Text>
+                </CustomCard>
+              ) : (
+                notes.map((note) => (
+                  <CustomCard key={note.id} style={styles.noteCard}>
                     <View style={styles.noteContent}>
                       <Ionicons name="document-text" size={20} color="#8b5cf6" style={styles.noteIcon} />
                       <View style={styles.noteText}>
                         <Text style={styles.noteTextContent}>{note.content}</Text>
                         <Text style={styles.noteMeta}>{note.createdAt}</Text>
-                        {note.tags && note.tags.length > 0 && (
+                        {note.tags && note.tags.length > 0 ? (
                           <View style={styles.tagsContainer}>
                             {note.tags.map((tag, index) => (
-                              <Chip key={index} style={styles.tagChip} textStyle={styles.tagText}>
-                                <Text style={styles.tagText}>{tag}</Text>
-                              </Chip>
+                              <CustomChip key={index} title={tag} style={styles.tagChip} textStyle={styles.tagText} />
                             ))}
                           </View>
-                        )}
+                        ) : null}
                       </View>
                     </View>
-                  </Card.Content>
-                </Card>
-              ))}
+                  </CustomCard>
+                ))
+              )}
             </View>
           )}
         </View>
@@ -333,14 +381,13 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
             </View>
             <ScrollView style={styles.modalContent}>
               <View style={styles.ocrButtonContainer}>
-                <Button mode="outlined" onPress={handleOCR} style={styles.ocrButton}>
-                  <Ionicons name="camera" size={16} />
-                  <Text>OCR</Text>
-                </Button>
+                <TouchableOpacity onPress={handleOCR} style={[styles.ocrButton, { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#2563eb', borderRadius: 8, padding: 8 }]}>
+                  <Ionicons name="camera" size={16} color="#2563eb" />
+                  <Text style={{ color: '#2563eb', marginLeft: 6 }}>OCR</Text>
+                </TouchableOpacity>
                 <Text style={styles.ocrText}>카메라로 텍스트 인식</Text>
               </View>
               <TextInput
-                label="인용문"
                 placeholder="인상 깊었던 구절을 입력하세요..."
                 value={newQuote}
                 onChangeText={setNewQuote}
@@ -349,7 +396,6 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                 style={styles.modalInput}
               />
               <TextInput
-                label="메모 (선택사항)"
                 placeholder="이 인용문에 대한 생각이나 메모를 남겨보세요..."
                 value={newQuoteMemo}
                 onChangeText={setNewQuoteMemo}
@@ -367,27 +413,26 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                     onSubmitEditing={handleAddQuoteTag}
                     style={styles.tagInput}
                   />
-                  <Button onPress={handleAddQuoteTag} style={styles.tagAddButton}>
-                    <Ionicons name="add" size={16} />
-                    <Text>추가</Text>
-                  </Button>
+                  <TouchableOpacity onPress={handleAddQuoteTag} style={[styles.tagAddButton, { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2563eb', borderRadius: 8, padding: 8 }]}>
+                    <Ionicons name="add" size={16} color="#fff" />
+                    <Text style={{ color: '#fff', marginLeft: 4 }}>추가</Text>
+                  </TouchableOpacity>
                 </View>
                 {newQuoteTags.length > 0 && (
                   <View style={styles.tagsRow}>
                     {newQuoteTags.map((tag, index) => (
-                      <Chip key={index} onClose={() => removeQuoteTag(tag)} style={styles.tagChip}>
-                        <Text style={styles.tagText}>{tag}</Text>
-                      </Chip>
+                      <CustomChip key={index} title={tag} style={styles.tagChip} textStyle={styles.tagText} onPress={() => removeQuoteTag(tag)} />
                     ))}
                   </View>
                 )}
               </View>
-              <Button mode="contained" onPress={handleAddQuote} style={styles.modalSubmitButton}>
-                <Text>인용문 추가</Text>
-              </Button>
+              <TouchableOpacity onPress={handleAddQuote} style={[styles.modalSubmitButton, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}>
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>인용문 추가</Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </Modal>
+
         {/* Note Modal */}
         <Modal
           visible={isNoteModalVisible}
@@ -404,7 +449,6 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
             </View>
             <ScrollView style={styles.modalContent}>
               <TextInput
-                label="메모"
                 placeholder="이 책에 대한 생각을 자유롭게 적어보세요..."
                 value={newNote}
                 onChangeText={setNewNote}
@@ -422,24 +466,22 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                     onSubmitEditing={handleAddNoteTag}
                     style={styles.tagInput}
                   />
-                  <Button onPress={handleAddNoteTag} style={styles.tagAddButton}>
-                    <Ionicons name="add" size={16} />
-                    <Text>추가</Text>
-                  </Button>
+                  <TouchableOpacity onPress={handleAddNoteTag} style={[styles.tagAddButton, { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2563eb', borderRadius: 8, padding: 8 }]}>
+                    <Ionicons name="add" size={16} color="#fff" />
+                    <Text style={{ color: '#fff', marginLeft: 4 }}>추가</Text>
+                  </TouchableOpacity>
                 </View>
                 {newNoteTags.length > 0 && (
                   <View style={styles.tagsRow}>
                     {newNoteTags.map((tag, index) => (
-                      <Chip key={index} onClose={() => removeNoteTag(tag)} style={styles.tagChip}>
-                        <Text style={styles.tagText}>{tag}</Text>
-                      </Chip>
+                      <CustomChip key={index} title={tag} style={styles.tagChip} textStyle={styles.tagText} onPress={() => removeNoteTag(tag)} />
                     ))}
                   </View>
                 )}
               </View>
-              <Button mode="contained" onPress={handleAddNote} style={styles.modalSubmitButton}>
-                <Text>메모 추가</Text>
-              </Button>
+              <TouchableOpacity onPress={handleAddNote} style={[styles.modalSubmitButton, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}>
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>메모 추가</Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </Modal>
@@ -478,6 +520,9 @@ const styles = StyleSheet.create({
   bookCard: {
     marginBottom: 16,
     maxWidth: '100%',
+    borderRadius: 12,
+    elevation: 2,
+    backgroundColor: '#fff',
   },
   bookCardContent: {
     padding: 16,
@@ -748,6 +793,13 @@ const styles = StyleSheet.create({
   modalSubmitButton: {
     backgroundColor: '#2563eb',
     marginTop: 16,
+  },
+  card: {
+    marginBottom: 16,
+    maxWidth: '100%',
+    borderRadius: 12,
+    elevation: 2,
+    backgroundColor: '#fff',
   },
 });
 

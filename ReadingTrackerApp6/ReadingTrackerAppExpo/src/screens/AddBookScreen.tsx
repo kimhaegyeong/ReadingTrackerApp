@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { Button } from 'react-native-paper';
+import { Button } from 'react-native-elements';
 import { Feather } from '@expo/vector-icons';
 
 const AddBookScreen = ({ navigation }: any) => {
@@ -62,13 +62,11 @@ const AddBookScreen = ({ navigation }: any) => {
             keyboardType="numeric"
           />
           <Button
-            mode="contained"
+            title="저장"
             onPress={handleSave}
-            style={styles.saveButton}
-            contentStyle={{ paddingVertical: 10 }}
-          >
-            저장
-          </Button>
+            buttonStyle={styles.saveButton}
+            titleStyle={{ paddingVertical: 10 }}
+          />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

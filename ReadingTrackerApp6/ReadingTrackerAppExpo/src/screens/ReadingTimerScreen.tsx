@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Alert, FlatList, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
-import { Button, Card, TextInput, Badge, Title, IconButton } from 'react-native-paper';
+import { View, Text, StyleSheet, Alert, FlatList, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, SafeAreaView, TextInput } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -136,6 +135,67 @@ const ReadingTimerScreen = () => {
 
   const { totalMinutes, totalPages } = getTotalStats();
 
+  // 커스텀 버튼
+  const CustomButton = ({ onPress, icon, text, color, outline, disabled, style }: any) => (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      style={[{
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: outline ? '#fff' : color || '#1976d2',
+        borderWidth: outline ? 1 : 0,
+        borderColor: color || '#1976d2',
+        borderRadius: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        opacity: disabled ? 0.5 : 1,
+        marginHorizontal: 4,
+        justifyContent: 'center',
+      }, style]}
+    >
+      {icon}
+      <Text style={{ color: outline ? (color || '#1976d2') : '#fff', fontWeight: 'bold', marginLeft: icon ? 6 : 0 }}>{text}</Text>
+    </TouchableOpacity>
+  );
+
+  // 커스텀 뱃지
+  const CustomBadge = ({ children, style, textStyle }: any) => (
+    <View style={[{
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      alignSelf: 'flex-start',
+      backgroundColor: '#e0e7ff',
+      marginLeft: 6,
+    }, style]}>
+      <Text style={[{ color: '#3730a3', fontSize: 12 }, textStyle]}>{children}</Text>
+    </View>
+  );
+
+  // 커스텀 카드
+  const CustomCard = ({ children, style }: any) => {
+    const wrappedChildren = React.Children.map(children, (child) => {
+      if (typeof child === 'string' && child.trim() !== '') {
+        return <Text>{child}</Text>;
+      }
+      if (typeof child === 'string') {
+        // 공백/줄바꿈은 무시
+        return null;
+      }
+      return child;
+    });
+    return <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>{wrappedChildren}</View>;
+  };
+
+  // 커스텀 카드 타이틀
+  const CustomCardTitle = ({ title, left }: any) => (
+    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+      {left && left()}
+      <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#222' }}>{title}</Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -145,11 +205,9 @@ const ReadingTimerScreen = () => {
         <ScrollView style={styles.container}>
           {/* Header */}
           <View style={styles.headerRow}>
-            <IconButton
-              icon={() => <Ionicons name="arrow-back" size={24} color="#333" />}
-              onPress={() => navigation.goBack()}
-              style={{ marginRight: 4 }}
-            />
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ marginRight: 4, padding: 4 }}>
+              <Ionicons name="arrow-back" size={24} color="#333" />
+            </TouchableOpacity>
             <View>
               <Text style={styles.headerTitle}>독서 시간 기록</Text>
               <Text style={styles.headerSub}>{`오늘 총 ${totalMinutes}분, ${totalPages}페이지 읽었어요`}</Text>
@@ -157,185 +215,174 @@ const ReadingTimerScreen = () => {
           </View>
 
           {/* 타이머 카드 */}
-          <Card style={styles.card}>
-            <Card.Title
+          <CustomCard>
+            <CustomCardTitle
               title="타이머"
-              left={(props) => <Feather name="clock" size={22} color="#2563eb" style={{ marginRight: 8 }} />}
+              left={() => <Feather name="clock" size={22} color="#2563eb" style={{ marginRight: 8 }} />}
             />
-            <Card.Content>
-              {/* 책 선택 */}
-              <Text style={styles.label}>읽을 책</Text>
-              <View style={styles.pickerWrapper}>
-                <Picker
-                  selectedValue={selectedBook}
-                  onValueChange={(itemValue: string) => setSelectedBook(itemValue)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="책을 선택하세요" value="" />
-                  {books.map((book) => (
-                    <Picker.Item
-                      key={book.id}
-                      label={`${book.title} - ${book.author}`}
-                      value={book.title}
-                    />
-                  ))}
-                </Picker>
+            {/* 책 선택 */}
+            <Text style={styles.label}>읽을 책</Text>
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={selectedBook}
+                onValueChange={(itemValue: string) => setSelectedBook(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="책을 선택하세요" value="" />
+                {books.map((book) => (
+                  <Picker.Item
+                    key={book.id}
+                    label={`${book.title} - ${book.author}`}
+                    value={book.title}
+                  />
+                ))}
+              </Picker>
+            </View>
+            {/* 타이머 디스플레이 */}
+            <View style={styles.timerDisplayWrapper}>
+              <Text style={styles.timerText}>{formatTime(seconds)}</Text>
+              <View style={styles.timerButtonRow}>
+                {!isRunning ? (
+                  <CustomButton
+                    onPress={handleStart}
+                    icon={<Feather name="play" size={18} color="#fff" />}
+                    text="시작"
+                    color="#16a34a"
+                  />
+                ) : (
+                  <CustomButton
+                    onPress={handlePause}
+                    icon={<Feather name="pause" size={18} color="#1976d2" />}
+                    text="일시정지"
+                    outline
+                    color="#1976d2"
+                  />
+                )}
+                <CustomButton
+                  onPress={handleStop}
+                  icon={<Feather name="square" size={18} color="#fff" />}
+                  text="종료"
+                  color="#dc2626"
+                  disabled={seconds === 0}
+                />
               </View>
-              {/* 타이머 디스플레이 */}
-              <View style={styles.timerDisplayWrapper}>
-                <Text style={styles.timerText}>{formatTime(seconds)}</Text>
-                <View style={styles.timerButtonRow}>
-                  {!isRunning ? (
-                    <Button
-                      mode="contained"
-                      icon="play"
-                      onPress={handleStart}
-                      style={{ backgroundColor: '#16a34a' }}
-                    >
-                      시작
-                    </Button>
-                  ) : (
-                    <Button mode="outlined" icon="pause" onPress={handlePause}
-                    >일시정지</Button>
-                  )}
-                  <Button
-                    mode="contained"
-                    icon="stop"
-                    onPress={handleStop}
-                    disabled={seconds === 0}
-                    style={{ backgroundColor: '#dc2626' }}
-                  >
-                    종료
-                  </Button>
-                </View>
-              </View>
-              {/* 추가 정보 입력 */}
-              <Text style={styles.label}>읽은 페이지 수</Text>
-              <TextInput
-                mode="outlined"
-                placeholder="페이지 수"
-                value={manualPages}
-                onChangeText={setManualPages}
-                keyboardType="numeric"
-                style={styles.input}
-              />
-              <Text style={styles.label}>메모</Text>
-              <TextInput
-                mode="outlined"
-                placeholder="독서 중 느낀 점이나 메모를 남겨보세요"
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                numberOfLines={2}
-                style={styles.input}
-              />
-            </Card.Content>
-          </Card>
+            </View>
+            {/* 추가 정보 입력 */}
+            <Text style={styles.label}>읽은 페이지 수</Text>
+            <TextInput
+              placeholder="페이지 수"
+              value={manualPages}
+              onChangeText={setManualPages}
+              keyboardType="numeric"
+              style={styles.input}
+            />
+            <Text style={styles.label}>메모</Text>
+            <TextInput
+              placeholder="독서 중 느낀 점이나 메모를 남겨보세요"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={2}
+              style={styles.input}
+            />
+          </CustomCard>
 
           {/* 수동 입력 카드 */}
-          <Card style={styles.card}>
-            <Card.Title
+          <CustomCard>
+            <CustomCardTitle
               title="수동 입력"
-              left={(props) => <Feather name="plus" size={22} color="#a21caf" style={{ marginRight: 8 }} />}
+              left={() => <Feather name="plus" size={22} color="#a21caf" style={{ marginRight: 8 }} />}
             />
-            <Card.Content>
-              <Text style={styles.label}>읽은 책</Text>
-              <View style={styles.pickerWrapper}>
-                <Picker
-                  selectedValue={selectedBook}
-                  onValueChange={(itemValue: string) => setSelectedBook(itemValue)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="책을 선택하세요" value="" />
-                  {books.map((book) => (
-                    <Picker.Item
-                      key={book.id}
-                      label={`${book.title} - ${book.author}`}
-                      value={book.title}
-                    />
-                  ))}
-                </Picker>
-              </View>
-              <View style={styles.manualRow}>
-                <View style={{ flex: 1, marginRight: 8 }}>
-                  <Text style={styles.label}>읽은 시간 (분)</Text>
-                  <TextInput
-                    mode="outlined"
-                    placeholder="분"
-                    value={manualMinutes}
-                    onChangeText={setManualMinutes}
-                    keyboardType="numeric"
-                    style={styles.input}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>읽은 페이지</Text>
-                  <TextInput
-                    mode="outlined"
-                    placeholder="페이지"
-                    value={manualPages}
-                    onChangeText={setManualPages}
-                    keyboardType="numeric"
-                    style={styles.input}
-                  />
-                </View>
-              </View>
-              <Text style={styles.label}>메모</Text>
-              <TextInput
-                mode="outlined"
-                placeholder="독서 중 느낀 점이나 메모를 남겨보세요"
-                value={notes}
-                onChangeText={setNotes}
-                multiline
-                numberOfLines={3}
-                style={styles.input}
-              />
-              <Button
-                mode="contained"
-                icon="plus"
-                onPress={handleManualAdd}
-                style={{ backgroundColor: '#a21caf', marginTop: 8 }}
+            <Text style={styles.label}>읽은 책</Text>
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={selectedBook}
+                onValueChange={(itemValue: string) => setSelectedBook(itemValue)}
+                style={styles.picker}
               >
-                기록 추가
-              </Button>
-            </Card.Content>
-          </Card>
+                <Picker.Item label="책을 선택하세요" value="" />
+                {books.map((book) => (
+                  <Picker.Item
+                    key={book.id}
+                    label={`${book.title} - ${book.author}`}
+                    value={book.title}
+                  />
+                ))}
+              </Picker>
+            </View>
+            <View style={styles.manualRow}>
+              <View style={{ flex: 1, marginRight: 8 }}>
+                <Text style={styles.label}>읽은 시간 (분)</Text>
+                <TextInput
+                  placeholder="분"
+                  value={manualMinutes}
+                  onChangeText={setManualMinutes}
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>읽은 페이지</Text>
+                <TextInput
+                  placeholder="페이지"
+                  value={manualPages}
+                  onChangeText={setManualPages}
+                  keyboardType="numeric"
+                  style={styles.input}
+                />
+              </View>
+            </View>
+            <Text style={styles.label}>메모</Text>
+            <TextInput
+              placeholder="독서 중 느낀 점이나 메모를 남겨보세요"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={3}
+              style={styles.input}
+            />
+            <CustomButton
+              onPress={handleManualAdd}
+              icon={<Feather name="plus" size={18} color="#fff" />}
+              text="기록 추가"
+              color="#a21caf"
+              style={{ marginTop: 8 }}
+            />
+          </CustomCard>
 
           {/* 오늘의 독서 기록 */}
-          <Card style={[styles.card, { marginBottom: 32 }]}> 
-            <Card.Title
+          <CustomCard style={{ marginBottom: 32 }}>
+            <CustomCardTitle
               title="오늘의 독서 기록"
-              left={(props) => <Feather name="book-open" size={22} color="#16a34a" style={{ marginRight: 8 }} />}
+              left={() => <Feather name="book-open" size={22} color="#16a34a" style={{ marginRight: 8 }} />}
             />
-            <Card.Content>
-              {todaySessions.length === 0 ? (
-                <Text style={{ color: '#888', textAlign: 'center', marginVertical: 16 }}>오늘의 기록이 없습니다.</Text>
-              ) : (
-                <FlatList
-                  data={todaySessions}
-                  keyExtractor={(item) => item.id.toString()}
-                  renderItem={({ item }) => (
-                    <View style={styles.sessionItem}>
-                      <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                          <Text style={styles.sessionBook}>{item.book}</Text>
-                          <Badge style={{ marginLeft: 6, backgroundColor: '#e0e7ff', color: '#3730a3' }}>{`${item.minutes}분`}</Badge>
-                          {item.pages > 0 && (
-                            <Badge style={{ marginLeft: 6, backgroundColor: '#f3e8ff', color: '#a21caf' }}>{`${item.pages}페이지`}</Badge>
-                          )}
-                        </View>
-                        <Text style={styles.sessionTime}>{item.startTime} - {item.endTime}</Text>
-                        {item.notes ? (
-                          <Text style={styles.sessionNotes}>{item.notes}</Text>
-                        ) : null}
+            {todaySessions.length === 0 ? (
+              <Text style={{ color: '#888', textAlign: 'center', marginVertical: 16 }}>오늘의 기록이 없습니다.</Text>
+            ) : (
+              <FlatList
+                data={todaySessions}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => (
+                  <View style={styles.sessionItem}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                        <Text style={styles.sessionBook}>{item.book}</Text>
+                        <CustomBadge>{`${item.minutes}분`}</CustomBadge>
+                        {item.pages > 0 && (
+                          <CustomBadge style={{ backgroundColor: '#f3e8ff' }} textStyle={{ color: '#a21caf' }}>{`${item.pages}페이지`}</CustomBadge>
+                        )}
                       </View>
+                      <Text style={styles.sessionTime}>{item.startTime} - {item.endTime}</Text>
+                      {item.notes ? (
+                        <Text style={styles.sessionNotes}>{item.notes}</Text>
+                      ) : null}
                     </View>
-                  )}
-                  scrollEnabled={false}
-                />
-              )}
-            </Card.Content>
-          </Card>
+                  </View>
+                )}
+                scrollEnabled={false}
+              />
+            )}
+          </CustomCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -405,6 +452,13 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 8,
     backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 15,
+    color: '#222',
   },
   manualRow: {
     flexDirection: 'row',

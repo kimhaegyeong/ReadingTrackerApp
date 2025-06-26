@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
-import { Card, Title, Paragraph, Badge, Button } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
@@ -15,6 +14,38 @@ interface Book {
   notes: number;
   readingTime: string;
 }
+
+// 커스텀 카드
+const CustomCard = ({ children, style }: any) => {
+  const wrappedChildren = React.Children.map(children, (child) => {
+    if (typeof child === 'string' && child.trim() !== '') {
+      return <Text>{child}</Text>;
+    }
+    if (typeof child === 'string') {
+      // 공백/줄바꿈은 무시
+      return null;
+    }
+    return child;
+  });
+  return <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>{wrappedChildren}</View>;
+};
+
+// 커스텀 버튼
+const CustomButton = ({ onPress, icon, title, type, buttonStyle }: any) => (
+  <TouchableOpacity
+    onPress={onPress}
+    style={[
+      type === 'solid' ? styles.addButton : styles.headerButton,
+      buttonStyle,
+      type === 'outline' && { backgroundColor: '#fff', borderWidth: 1, borderColor: '#2563eb' },
+    ]}
+  >
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+      {icon}
+      <Text style={{ color: type === 'solid' ? '#fff' : '#2563eb', fontWeight: 'bold', marginLeft: 6 }}>{title}</Text>
+    </View>
+  </TouchableOpacity>
+);
 
 const BookLibraryScreen = () => {
   const navigation = useNavigation();
@@ -39,15 +70,15 @@ const BookLibraryScreen = () => {
     const statusInfo = getStatusInfo(book.status);
     return (
       <TouchableOpacity onPress={() => (navigation as any).navigate('BookDetail', { book })} style={styles.bookCard}>
-        <Card style={styles.card}>
-          <Card.Content style={styles.cardContent}>
+        <CustomCard>
+          <View style={styles.cardContent}>
             <View style={styles.bookInfo}>
               <View style={[styles.bookCover, { backgroundColor: book.coverColor }]}> 
                 <Ionicons name="book" size={24} color="white" />
               </View>
               <View style={styles.bookDetails}>
-                <Title style={styles.bookTitle}><Text style={styles.bookTitle}>{book.title}</Text></Title>
-                <Paragraph style={styles.bookAuthor}><Text style={styles.bookAuthor}>{book.author}</Text></Paragraph>
+                <Text style={styles.bookTitle}>{book.title}</Text>
+                <Text style={styles.bookAuthor}>{book.author}</Text>
                 <View style={styles.statusContainer}>
                   <View style={[styles.badge, { backgroundColor: statusInfo.color }]}> 
                     <Ionicons name={statusInfo.icon as any} size={12} color="white" />
@@ -70,8 +101,8 @@ const BookLibraryScreen = () => {
                 </View>
               </View>
             )}
-          </Card.Content>
-        </Card>
+          </View>
+        </CustomCard>
       </TouchableOpacity>
     );
   };
@@ -86,13 +117,13 @@ const BookLibraryScreen = () => {
         <View style={styles.header}>
           <View style={styles.headerContent}><Ionicons name="library" size={32} color="#2563eb" /><Text style={styles.headerTitle}>리브노트</Text></View>
           <View style={styles.headerButtons}>
-            <Button mode="outlined" onPress={() => (navigation as any).navigate('ReadingStats')} style={styles.headerButton}><Ionicons name="stats-chart" size={16} />통계</Button>
-            <Button mode="outlined" onPress={() => (navigation as any).navigate('ReadingTimer')} style={styles.headerButton}><Ionicons name="timer" size={16} />독서 기록</Button>
-            <Button mode="contained" onPress={() => (navigation as any).navigate('Search')} style={styles.addButton}><Ionicons name="add" size={16} />책 추가</Button>
+            <CustomButton type="outline" onPress={() => (navigation as any).navigate('ReadingStats')} icon={<Ionicons name="stats-chart" size={16} color="#2563eb" />} title="통계" />
+            <CustomButton type="outline" onPress={() => (navigation as any).navigate('ReadingTimer')} icon={<Ionicons name="timer" size={16} color="#2563eb" />} title="독서 기록" />
+            <CustomButton type="solid" onPress={() => (navigation as any).navigate('Search')} icon={<Ionicons name="add" size={16} color="#fff" />} title="책 추가" />
           </View>
         </View>
         <View style={styles.welcomeSection}><Text style={styles.welcomeTitle}>내 서재</Text><Text style={styles.welcomeSubtitle}>지금까지 {books.length}권의 책과 함께했어요</Text></View>
-        <Card style={styles.todayCard}><Card.Content><View style={styles.todayHeader}><Ionicons name="calendar" size={20} color="#2563eb" /><Title style={styles.todayTitle}><Text style={styles.todayTitle}>오늘의 독서 기록</Text></Title></View><View style={styles.statsGrid}><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalMinutes}</Text><Text style={styles.statLabel}>분</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalPages}</Text><Text style={styles.statLabel}>페이지</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalNotes}</Text><Text style={styles.statLabel}>노트</Text></View></View><View style={styles.sessionsContainer}><Text style={styles.sessionsTitle}>독서 세션</Text>{todayReading.sessions.map((session, index) => (<View key={index} style={styles.sessionItem}><Text style={styles.sessionBook}>{session.book}</Text><View style={styles.sessionStats}><Text style={styles.sessionText}>{session.minutes}분</Text><Text style={styles.sessionText}>{session.pages}페이지</Text><Text style={styles.sessionText}>{session.notes}노트</Text></View></View>))}</View></Card.Content></Card>
+        <CustomCard style={styles.todayCard}><View style={styles.todayHeader}><Ionicons name="calendar" size={20} color="#2563eb" /><Text style={styles.todayTitle}>오늘의 독서 기록</Text></View><View style={styles.statsGrid}><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalMinutes}</Text><Text style={styles.statLabel}>분</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalPages}</Text><Text style={styles.statLabel}>페이지</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalNotes}</Text><Text style={styles.statLabel}>노트</Text></View></View><View style={styles.sessionsContainer}><Text style={styles.sessionsTitle}>독서 세션</Text>{todayReading.sessions.map((session, index) => (<View key={index} style={styles.sessionItem}><Text style={styles.sessionBook}>{session.book}</Text><View style={styles.sessionStats}><Text style={styles.sessionText}>{session.minutes}분</Text><Text style={styles.sessionText}>{session.pages}페이지</Text><Text style={styles.sessionText}>{session.notes}노트</Text></View></View>))}</View></CustomCard>
         <View style={styles.tabsContainer}><TabButton title="전체" value="all" isActive={activeTab === 'all'} /><TabButton title="읽는 중" value="reading" isActive={activeTab === 'reading'} /><TabButton title="완료" value="completed" isActive={activeTab === 'completed'} /><TabButton title="읽고 싶은" value="want-to-read" isActive={activeTab === 'want-to-read'} /></View>
         <View style={styles.booksContainer}>{filterBooksByStatus(activeTab).map(book => (<BookCard key={book.id} book={book} />))}</View>
       </ScrollView>

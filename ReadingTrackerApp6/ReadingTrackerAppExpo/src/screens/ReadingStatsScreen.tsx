@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Share, SafeAreaView } from 'react-native';
-import { Card, Button, Snackbar } from 'react-native-paper';
 import { Feather, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { BarChart, PieChart } from 'react-native-chart-kit';
 
@@ -44,6 +43,20 @@ const TABS = [
   { key: 'history', label: '기록' },
 ];
 
+const CustomCard = ({ children, style }: any) => {
+  const wrappedChildren = React.Children.map(children, (child) => {
+    if (typeof child === 'string' && child.trim() !== '') {
+      return <Text>{child}</Text>;
+    }
+    if (typeof child === 'string') {
+      // 공백/줄바꿈은 무시
+      return null;
+    }
+    return child;
+  });
+  return <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>{wrappedChildren}</View>;
+};
+
 const ReadingStatsScreen = ({ navigation }: any) => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
@@ -71,9 +84,12 @@ const ReadingStatsScreen = ({ navigation }: any) => {
             <Text style={styles.headerTitle}>독서 통계</Text>
             <Text style={styles.headerSub}>{selectedYear}년 독서 현황을 확인하세요</Text>
           </View>
-          <Button mode="contained" onPress={handleShareStats} style={styles.shareBtn} icon="share-variant">
-            공유하기
-          </Button>
+          <TouchableOpacity onPress={handleShareStats} style={styles.shareBtn}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Feather name="share-2" size={18} color="#fff" />
+              <Text style={{ color: '#fff', marginLeft: 6, fontWeight: 'bold' }}>공유하기</Text>
+            </View>
+          </TouchableOpacity>
         </View>
         {/* Tabs */}
         <View style={styles.tabsRow}>
@@ -91,7 +107,8 @@ const ReadingStatsScreen = ({ navigation }: any) => {
         {selectedTab === 'overview' && (
           <View>
             <View style={styles.cardsRow}>
-              <Card style={styles.card}><Card.Content>
+              {/* Card 1 */}
+              <CustomCard style={styles.card}>
                 <Text style={styles.cardLabel}>읽은 책</Text>
                 <View style={styles.cardValueRow}>
                   <Text style={styles.cardValue}>{mockData.booksRead}</Text>
@@ -101,33 +118,36 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                 <View style={styles.progressBarWrap}>
                   <View style={[styles.progressBar, { width: `${progressPercentage}%` }]} />
                 </View>
-              </Card.Content></Card>
-              <Card style={styles.card}><Card.Content>
+              </CustomCard>
+              {/* Card 2 */}
+              <CustomCard style={styles.card}>
                 <Text style={styles.cardLabel}>독서 시간</Text>
                 <View style={styles.cardValueRow}>
                   <Text style={styles.cardValue}>{Math.floor(mockData.totalMinutes / 60)}h {mockData.totalMinutes % 60}m</Text>
                   <FontAwesome name="clock-o" size={28} color="#8B5CF6" style={{ marginLeft: 8 }} />
                 </View>
-              </Card.Content></Card>
+              </CustomCard>
             </View>
             <View style={styles.cardsRow}>
-              <Card style={styles.card}><Card.Content>
+              {/* Card 3 */}
+              <CustomCard style={styles.card}>
                 <Text style={styles.cardLabel}>연속 기록</Text>
                 <View style={styles.cardValueRow}>
                   <Text style={styles.cardValue}>{mockData.currentStreak}일</Text>
                   <Feather name="trending-up" size={28} color="#10B981" style={{ marginLeft: 8 }} />
                 </View>
-              </Card.Content></Card>
-              <Card style={styles.card}><Card.Content>
+              </CustomCard>
+              {/* Card 4 */}
+              <CustomCard style={styles.card}>
                 <Text style={styles.cardLabel}>총 페이지</Text>
                 <View style={styles.cardValueRow}>
                   <Text style={styles.cardValue}>{mockData.totalPages.toLocaleString()}</Text>
                   <MaterialIcons name="bar-chart" size={28} color="#F59E0B" style={{ marginLeft: 8 }} />
                 </View>
-              </Card.Content></Card>
+              </CustomCard>
             </View>
             {/* 최근 읽은 책 */}
-            <Card style={styles.recentCard}><Card.Content>
+            <CustomCard style={styles.recentCard}>
               <Text style={styles.recentTitle}>최근 읽은 책</Text>
               {mockData.recentBooks.map((book, idx) => (
                 <View key={idx} style={styles.recentBookRow}>
@@ -147,7 +167,7 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                   </View>
                 </View>
               ))}
-            </Card.Content></Card>
+            </CustomCard>
           </View>
         )}
         {/* 차트 탭 */}
@@ -198,17 +218,17 @@ const ReadingStatsScreen = ({ navigation }: any) => {
         {/* 목표 탭 */}
         {selectedTab === 'goals' && (
           <View style={{ marginTop: 16 }}>
-            <Card style={styles.goalCard}><Card.Content>
+            <View style={styles.goalCard}>
               <Text style={styles.goalTitle}>올해 목표</Text>
               <Text style={styles.goalValue}>{mockData.yearlyGoal}권</Text>
               <Text style={styles.goalDesc}>올해 목표 달성까지 {mockData.yearlyGoal - mockData.booksRead}권 남았습니다!</Text>
-            </Card.Content></Card>
+            </View>
           </View>
         )}
         {/* 기록 탭 */}
         {selectedTab === 'history' && (
           <View style={{ marginTop: 16 }}>
-            <Card style={styles.historyCard}><Card.Content>
+            <View style={styles.historyCard}>
               <Text style={styles.historyTitle}>월별 독서 기록</Text>
               {mockData.sessions.map((s, idx) => (
                 <View key={idx} style={styles.historyRow}>
@@ -218,17 +238,16 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                   <Text style={styles.historyPages}>{s.pages}p</Text>
                 </View>
               ))}
-            </Card.Content></Card>
+            </View>
           </View>
         )}
       </ScrollView>
-      <Snackbar
-        visible={snackbar.visible}
-        onDismiss={() => setSnackbar({ visible: false, message: '' })}
-        duration={2000}
-      >
-        {snackbar.message}
-      </Snackbar>
+      {/* Snackbar 대체 */}
+      {snackbar.visible && (
+        <View style={styles.snackbar}>
+          <Text style={styles.snackbarText}>{snackbar.message}</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -243,7 +262,7 @@ const styles = StyleSheet.create({
   backBtn: { marginRight: 12, padding: 4, borderRadius: 20 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#222' },
   headerSub: { fontSize: 13, color: '#607d8b', marginTop: 2 },
-  shareBtn: { marginLeft: 8, height: 40, justifyContent: 'center' },
+  shareBtn: { marginLeft: 8, height: 40, justifyContent: 'center', backgroundColor: '#1976d2', borderRadius: 8, paddingHorizontal: 16 },
   tabsRow: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4 },
   tabBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 8 },
   tabBtnActive: { backgroundColor: '#fff', borderBottomWidth: 2, borderColor: '#1976d2' },
@@ -251,18 +270,18 @@ const styles = StyleSheet.create({
   tabLabelActive: { color: '#1976d2', fontWeight: 'bold' },
   scrollContent: { padding: 16, paddingBottom: 32 },
   cardsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  card: { flex: 1, marginRight: 8, borderRadius: 12, overflow: 'hidden' },
-  recentCard: { marginTop: 12, borderRadius: 12 },
+  card: { flex: 1, marginRight: 8, borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff', padding: 16 },
+  recentCard: { marginTop: 12, borderRadius: 12, backgroundColor: '#fff', padding: 16 },
   recentTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
   recentBookRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   recentBookTitle: { fontSize: 15, fontWeight: 'bold' },
   recentBookAuthor: { color: '#607d8b', fontSize: 13 },
   chartTitle: { fontSize: 16, fontWeight: 'bold', marginTop: 16, marginBottom: 8 },
-  goalCard: { borderRadius: 12 },
+  goalCard: { borderRadius: 12, backgroundColor: '#fff', padding: 16 },
   goalTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
   goalValue: { fontSize: 28, fontWeight: 'bold', color: '#1976d2', marginBottom: 4 },
   goalDesc: { color: '#607d8b', fontSize: 14 },
-  historyCard: { borderRadius: 12 },
+  historyCard: { borderRadius: 12, backgroundColor: '#fff', padding: 16 },
   historyTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
   historyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   historyMonth: { flex: 1, fontWeight: 'bold', color: '#1976d2' },
@@ -275,6 +294,8 @@ const styles = StyleSheet.create({
   cardValueSub: { fontSize: 15, color: '#90a4ae', marginLeft: 4 },
   progressBarWrap: { height: 8, backgroundColor: '#e0e0e0', borderRadius: 4, marginTop: 8, overflow: 'hidden' },
   progressBar: { height: 8, backgroundColor: '#3B82F6', borderRadius: 4 },
+  snackbar: { position: 'absolute', bottom: 32, left: 24, right: 24, backgroundColor: '#222', borderRadius: 8, padding: 16, alignItems: 'center', zIndex: 100 },
+  snackbarText: { color: '#fff', fontSize: 15 },
 });
 
 export default ReadingStatsScreen; 

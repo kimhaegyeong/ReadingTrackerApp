@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Keyboard, SafeAreaView } from 'react-native';
-import { Card, Button, Snackbar } from 'react-native-paper';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 
 const mockSearch = (query: string) => {
@@ -35,6 +34,21 @@ const mockSearch = (query: string) => {
       ]);
     }, 1000);
   });
+};
+
+// 커스텀 카드
+const CustomCard = ({ children, style }: any) => {
+  const wrappedChildren = React.Children.map(children, (child) => {
+    if (typeof child === 'string' && child.trim() !== '') {
+      return <Text>{child}</Text>;
+    }
+    if (typeof child === 'string') {
+      // 공백/줄바꿈은 무시
+      return null;
+    }
+    return child;
+  });
+  return <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>{wrappedChildren}</View>;
 };
 
 const BookSearchScreen = ({ navigation }: any) => {
@@ -81,22 +95,29 @@ const BookSearchScreen = ({ navigation }: any) => {
             onSubmitEditing={handleSearch}
             returnKeyType="search"
           />
-          <Button mode="contained" onPress={handleSearch} loading={isSearching} style={styles.searchBtn}>
-            <Feather name="search" size={20} color="#fff" />
-          </Button>
+          <TouchableOpacity onPress={handleSearch} style={styles.searchBtn} disabled={isSearching}>
+            {isSearching ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Feather name="search" size={20} color="#fff" />
+            )}
+          </TouchableOpacity>
         </View>
         {/* Manual Add */}
-        <Button mode="outlined" onPress={handleManualAdd} style={styles.manualBtn} icon="plus">
-          직접 입력으로 책 추가하기
-        </Button>
+        <TouchableOpacity onPress={handleManualAdd} style={styles.manualBtn}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <Feather name="plus" size={18} color="#1976d2" />
+            <Text style={{ color: '#1976d2', fontWeight: 'bold', marginLeft: 6 }}>직접 입력으로 책 추가하기</Text>
+          </View>
+        </TouchableOpacity>
         {/* Results */}
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.resultsContainer}>
           {isSearching && (
             <View style={styles.centered}><ActivityIndicator size="large" color="#1976d2" /><Text style={styles.loadingText}>검색 중...</Text></View>
           )}
           {!isSearching && searchResults.length > 0 && searchResults.map((book) => (
-            <Card key={book.id} style={styles.card}>
-              <Card.Content style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <CustomCard key={book.id}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={styles.bookIconWrap}>
                   <MaterialIcons name="menu-book" size={36} color="#90a4ae" />
                 </View>
@@ -104,12 +125,15 @@ const BookSearchScreen = ({ navigation }: any) => {
                   <Text style={styles.bookTitle}>{book.title}</Text>
                   <Text style={styles.bookAuthor}>{book.author}</Text>
                   <Text style={styles.bookMeta}>{book.publisher} · {book.publishedYear}</Text>
-                  <Button mode="contained" onPress={() => handleAddBook(book)} style={styles.addBtn} icon="plus">
-                    서재에 추가
-                  </Button>
+                  <TouchableOpacity onPress={() => handleAddBook(book)} style={styles.addBtn}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <Feather name="plus" size={16} color="#fff" />
+                      <Text style={{ color: '#fff', marginLeft: 6 }}>서재에 추가</Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
-              </Card.Content>
-            </Card>
+              </View>
+            </CustomCard>
           ))}
           {!isSearching && searchQuery && searchResults.length === 0 && (
             <View style={styles.centered}>
@@ -119,13 +143,6 @@ const BookSearchScreen = ({ navigation }: any) => {
             </View>
           )}
         </ScrollView>
-        <Snackbar
-          visible={snackbar.visible}
-          onDismiss={() => setSnackbar({ visible: false, message: '' })}
-          duration={2000}
-        >
-          {snackbar.message}
-        </Snackbar>
       </View>
     </SafeAreaView>
   );
@@ -142,15 +159,15 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#222' },
   searchRow: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 0 },
   input: { flex: 1, height: 48, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 16, fontSize: 16, borderWidth: 1, borderColor: '#e0e0e0', marginRight: 8 },
-  searchBtn: { height: 48, justifyContent: 'center' },
-  manualBtn: { margin: 16, marginBottom: 0 },
+  searchBtn: { height: 48, width: 48, borderRadius: 8, backgroundColor: '#1976d2', justifyContent: 'center', alignItems: 'center' },
+  manualBtn: { margin: 16, marginBottom: 0, borderWidth: 1, borderColor: '#1976d2', borderRadius: 8, paddingVertical: 12, alignItems: 'center', backgroundColor: '#fff' },
   resultsContainer: { padding: 16, paddingTop: 8 },
   card: { marginBottom: 16, borderRadius: 12, overflow: 'hidden' },
   bookIconWrap: { width: 48, height: 64, backgroundColor: '#eceff1', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   bookTitle: { fontSize: 17, fontWeight: 'bold', color: '#222' },
   bookAuthor: { color: '#607d8b', marginTop: 2 },
   bookMeta: { color: '#90a4ae', fontSize: 13, marginBottom: 8 },
-  addBtn: { alignSelf: 'flex-start', marginTop: 4 },
+  addBtn: { alignSelf: 'flex-start', marginTop: 4, backgroundColor: '#1976d2', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
   centered: { alignItems: 'center', justifyContent: 'center', marginTop: 48 },
   loadingText: { marginTop: 12, color: '#1976d2' },
   emptyText: { marginTop: 12, fontSize: 16, color: '#757575' },

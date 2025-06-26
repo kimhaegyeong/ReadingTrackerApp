@@ -3,7 +3,6 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Provider as PaperProvider } from 'react-native-paper';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -49,7 +48,7 @@ function StackNavigator() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
-      <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="BookDetail" component={BookDetailScreen as any} options={{ headerShown: false }} />
       <Stack.Screen name="ReadingTimer" component={ReadingTimerScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ReadingStats" component={ReadingStatsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AddBook" component={AddBookScreen} options={{ headerShown: false }} />
@@ -60,12 +59,10 @@ function StackNavigator() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <PaperProvider>
-        <NavigationContainer>
-          <StackNavigator />
-          <StatusBar style="auto" />
-        </NavigationContainer>
-      </PaperProvider>
+      <NavigationContainer>
+        <StackNavigator />
+        <StatusBar style="auto" />
+      </NavigationContainer>
     </QueryClientProvider>
   );
 }
