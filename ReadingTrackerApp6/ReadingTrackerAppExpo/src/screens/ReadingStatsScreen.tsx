@@ -74,168 +74,216 @@ const ReadingStatsScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack && navigation.goBack()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={24} color="#222" />
-          </TouchableOpacity>
-          <View>
+          <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>독서 통계</Text>
-            <Text style={styles.headerSub}>{selectedYear}년 독서 현황을 확인하세요</Text>
+            <Text style={styles.headerSub}>{selectedYear}년 독서 현황</Text>
           </View>
-          <TouchableOpacity onPress={handleShareStats} style={styles.shareBtn}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Feather name="share-2" size={18} color="#fff" />
-              <Text style={{ color: '#fff', marginLeft: 6, fontWeight: 'bold' }}>공유하기</Text>
-            </View>
+          <TouchableOpacity onPress={handleShareStats} style={styles.shareButton}>
+            <Feather name="share-2" size={20} color="#2563eb" />
           </TouchableOpacity>
         </View>
+
         {/* Tabs */}
-        <View style={styles.tabsRow}>
+        <View style={styles.tabsContainer}>
           {TABS.map(tab => (
             <TouchableOpacity
               key={tab.key}
-              style={[styles.tabBtn, selectedTab === tab.key && styles.tabBtnActive]}
+              style={[styles.tabButton, selectedTab === tab.key && styles.activeTabButton]}
               onPress={() => setSelectedTab(tab.key)}
             >
-              <Text style={[styles.tabLabel, selectedTab === tab.key && styles.tabLabelActive]}>{tab.label}</Text>
+              <Text style={[styles.tabText, selectedTab === tab.key && styles.activeTabText]}>
+                {tab.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
+
         {/* 개요 탭 */}
         {selectedTab === 'overview' && (
-          <View>
-            <View style={styles.cardsRow}>
-              {/* Card 1 */}
-              <CustomCard style={styles.card}>
-                <Text style={styles.cardLabel}>읽은 책</Text>
-                <View style={styles.cardValueRow}>
-                  <Text style={styles.cardValue}>{mockData.booksRead}</Text>
-                  <Text style={styles.cardValueSub}>/ {mockData.yearlyGoal}권</Text>
-                  <MaterialIcons name="menu-book" size={28} color="#3B82F6" style={{ marginLeft: 8 }} />
+          <View style={styles.overviewContainer}>
+            {/* 주요 통계 카드들 */}
+            <View style={styles.statsGrid}>
+              <View style={styles.statCard}>
+                <View style={styles.statIconContainer}>
+                  <MaterialIcons name="menu-book" size={24} color="#2563eb" />
                 </View>
-                <View style={styles.progressBarWrap}>
-                  <View style={[styles.progressBar, { width: `${progressPercentage}%` }]} />
+                <Text style={styles.statNumber}>{mockData.booksRead}</Text>
+                <Text style={styles.statLabel}>읽은 책</Text>
+                <Text style={styles.statSubtext}>목표 {mockData.yearlyGoal}권</Text>
+              </View>
+              
+              <View style={styles.statCard}>
+                <View style={styles.statIconContainer}>
+                  <FontAwesome name="clock-o" size={24} color="#8b5cf6" />
                 </View>
-              </CustomCard>
-              {/* Card 2 */}
-              <CustomCard style={styles.card}>
-                <Text style={styles.cardLabel}>독서 시간</Text>
-                <View style={styles.cardValueRow}>
-                  <Text style={styles.cardValue}>{Math.floor(mockData.totalMinutes / 60)}h {mockData.totalMinutes % 60}m</Text>
-                  <FontAwesome name="clock-o" size={28} color="#8B5CF6" style={{ marginLeft: 8 }} />
+                <Text style={styles.statNumber}>{Math.floor(mockData.totalMinutes / 60)}</Text>
+                <Text style={styles.statLabel}>독서 시간</Text>
+                <Text style={styles.statSubtext}>시간</Text>
+              </View>
+              
+              <View style={styles.statCard}>
+                <View style={styles.statIconContainer}>
+                  <Feather name="trending-up" size={24} color="#10b981" />
                 </View>
-              </CustomCard>
+                <Text style={styles.statNumber}>{mockData.currentStreak}</Text>
+                <Text style={styles.statLabel}>연속 기록</Text>
+                <Text style={styles.statSubtext}>일</Text>
+              </View>
+              
+              <View style={styles.statCard}>
+                <View style={styles.statIconContainer}>
+                  <MaterialIcons name="bar-chart" size={24} color="#f59e0b" />
+                </View>
+                <Text style={styles.statNumber}>{Math.floor(mockData.totalPages / 1000)}k</Text>
+                <Text style={styles.statLabel}>총 페이지</Text>
+                <Text style={styles.statSubtext}>페이지</Text>
+              </View>
             </View>
-            <View style={styles.cardsRow}>
-              {/* Card 3 */}
-              <CustomCard style={styles.card}>
-                <Text style={styles.cardLabel}>연속 기록</Text>
-                <View style={styles.cardValueRow}>
-                  <Text style={styles.cardValue}>{mockData.currentStreak}일</Text>
-                  <Feather name="trending-up" size={28} color="#10B981" style={{ marginLeft: 8 }} />
+
+            {/* 목표 진행률 */}
+            <View style={styles.progressCard}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressTitle}>올해 목표 진행률</Text>
+                <Text style={styles.progressPercentage}>{Math.round(progressPercentage)}%</Text>
+              </View>
+              <View style={styles.progressBarContainer}>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: `${progressPercentage}%` }]} />
                 </View>
-              </CustomCard>
-              {/* Card 4 */}
-              <CustomCard style={styles.card}>
-                <Text style={styles.cardLabel}>총 페이지</Text>
-                <View style={styles.cardValueRow}>
-                  <Text style={styles.cardValue}>{mockData.totalPages.toLocaleString()}</Text>
-                  <MaterialIcons name="bar-chart" size={28} color="#F59E0B" style={{ marginLeft: 8 }} />
-                </View>
-              </CustomCard>
+              </View>
+              <Text style={styles.progressText}>
+                {mockData.booksRead}권 완료 • {mockData.yearlyGoal - mockData.booksRead}권 남음
+              </Text>
             </View>
+
             {/* 최근 읽은 책 */}
-            <CustomCard style={styles.recentCard}>
-              <Text style={styles.recentTitle}>최근 읽은 책</Text>
+            <View style={styles.recentBooksCard}>
+              <Text style={styles.sectionTitle}>최근 읽은 책</Text>
               {mockData.recentBooks.map((book, idx) => (
-                <View key={idx} style={styles.recentBookRow}>
-                  <View>
-                    <Text style={styles.recentBookTitle}>{book.title}</Text>
-                    <Text style={styles.recentBookAuthor}>{book.author}</Text>
+                <View key={idx} style={styles.bookItem}>
+                  <View style={styles.bookInfo}>
+                    <Text style={styles.bookTitle}>{book.title}</Text>
+                    <Text style={styles.bookAuthor}>{book.author}</Text>
+                    <Text style={styles.bookDate}>{book.finishedDate}</Text>
                   </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={styles.ratingContainer}>
                     {[...Array(5)].map((_, i) => (
                       <MaterialIcons
                         key={i}
                         name={i < book.rating ? 'star' : 'star-border'}
-                        size={18}
-                        color={i < book.rating ? '#FFD600' : '#E0E0E0'}
+                        size={16}
+                        color={i < book.rating ? '#fbbf24' : '#d1d5db'}
+                        style={{ marginRight: 2 }}
                       />
                     ))}
                   </View>
                 </View>
               ))}
-            </CustomCard>
-          </View>
-        )}
-        {/* 차트 탭 */}
-        {selectedTab === 'charts' && (
-          <View>
-            <Text style={styles.chartTitle}>월별 독서량</Text>
-            <BarChart
-              data={{
-                labels: mockData.sessions.map(s => s.month),
-                datasets: [{ data: mockData.sessions.map(s => s.books) }]
-              }}
-              width={width - 32}
-              height={220}
-              yAxisLabel=""
-              yAxisSuffix=""
-              chartConfig={{
-                backgroundColor: "#fff",
-                backgroundGradientFrom: "#f8fafc",
-                backgroundGradientTo: "#f8fafc",
-                decimalPlaces: 0,
-                color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                style: { borderRadius: 8 },
-                propsForBackgroundLines: { stroke: "#e0e0e0" }
-              }}
-              style={{ borderRadius: 8 }}
-            />
-            <Text style={styles.chartTitle}>장르별 비율</Text>
-            <PieChart
-              data={mockData.genres.map(g => ({
-                name: g.name,
-                population: g.value,
-                color: g.color,
-                legendFontColor: "#374151",
-                legendFontSize: 13
-              }))}
-              width={width - 32}
-              height={220}
-              chartConfig={{
-                color: () => "#374151"
-              }}
-              accessor="population"
-              backgroundColor="transparent"
-              paddingLeft="15"
-            />
-          </View>
-        )}
-        {/* 목표 탭 */}
-        {selectedTab === 'goals' && (
-          <View style={{ marginTop: 16 }}>
-            <View style={styles.goalCard}>
-              <Text style={styles.goalTitle}>올해 목표</Text>
-              <Text style={styles.goalValue}>{mockData.yearlyGoal}권</Text>
-              <Text style={styles.goalDesc}>올해 목표 달성까지 {mockData.yearlyGoal - mockData.booksRead}권 남았습니다!</Text>
             </View>
           </View>
         )}
+
+        {/* 차트 탭 */}
+        {selectedTab === 'charts' && (
+          <View style={styles.chartsContainer}>
+            <View style={styles.chartCard}>
+              <Text style={styles.chartTitle}>월별 독서량</Text>
+              <BarChart
+                data={{
+                  labels: mockData.sessions.map(s => s.month),
+                  datasets: [{ data: mockData.sessions.map(s => s.books) }]
+                }}
+                width={width - 48}
+                height={200}
+                yAxisLabel=""
+                yAxisSuffix=""
+                chartConfig={{
+                  backgroundColor: "#fff",
+                  backgroundGradientFrom: "#fff",
+                  backgroundGradientTo: "#fff",
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
+                  style: { borderRadius: 8 },
+                  propsForBackgroundLines: { stroke: "#f3f4f6" }
+                }}
+                style={{ borderRadius: 12, marginVertical: 8 }}
+              />
+            </View>
+
+            <View style={styles.chartCard}>
+              <Text style={styles.chartTitle}>장르별 비율</Text>
+              <PieChart
+                data={mockData.genres.map(g => ({
+                  name: g.name,
+                  population: g.value,
+                  color: g.color,
+                  legendFontColor: "#374151",
+                  legendFontSize: 12
+                }))}
+                width={width - 48}
+                height={180}
+                chartConfig={{
+                  color: () => "#374151"
+                }}
+                accessor="population"
+                backgroundColor="transparent"
+                paddingLeft="15"
+              />
+            </View>
+          </View>
+        )}
+
+        {/* 목표 탭 */}
+        {selectedTab === 'goals' && (
+          <View style={styles.goalsContainer}>
+            <View style={styles.goalCard}>
+              <View style={styles.goalHeader}>
+                <Text style={styles.goalTitle}>올해 목표</Text>
+                <Text style={styles.goalNumber}>{mockData.yearlyGoal}권</Text>
+              </View>
+              <View style={styles.goalProgress}>
+                <View style={styles.goalProgressBar}>
+                  <View style={[styles.goalProgressFill, { width: `${progressPercentage}%` }]} />
+                </View>
+                <Text style={styles.goalProgressText}>
+                  {mockData.booksRead}권 완료 ({Math.round(progressPercentage)}%)
+                </Text>
+              </View>
+              <Text style={styles.goalDescription}>
+                목표 달성까지 {mockData.yearlyGoal - mockData.booksRead}권 남았습니다!
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* 기록 탭 */}
         {selectedTab === 'history' && (
-          <View style={{ marginTop: 16 }}>
+          <View style={styles.historyContainer}>
             <View style={styles.historyCard}>
-              <Text style={styles.historyTitle}>월별 독서 기록</Text>
-              {mockData.sessions.map((s, idx) => (
-                <View key={idx} style={styles.historyRow}>
-                  <Text style={styles.historyMonth}>{s.month}</Text>
-                  <Text style={styles.historyBooks}>{s.books}권</Text>
-                  <Text style={styles.historyMinutes}>{s.minutes}분</Text>
-                  <Text style={styles.historyPages}>{s.pages}p</Text>
+              <Text style={styles.sectionTitle}>월별 독서 기록</Text>
+              {mockData.sessions.map((session, idx) => (
+                <View key={idx} style={styles.historyItem}>
+                  <View style={styles.historyMonth}>
+                    <Text style={styles.historyMonthText}>{session.month}</Text>
+                  </View>
+                  <View style={styles.historyStats}>
+                    <View style={styles.historyStat}>
+                      <Text style={styles.historyStatNumber}>{session.books}</Text>
+                      <Text style={styles.historyStatLabel}>권</Text>
+                    </View>
+                    <View style={styles.historyStat}>
+                      <Text style={styles.historyStatNumber}>{session.minutes}</Text>
+                      <Text style={styles.historyStatLabel}>분</Text>
+                    </View>
+                    <View style={styles.historyStat}>
+                      <Text style={styles.historyStatNumber}>{session.pages}</Text>
+                      <Text style={styles.historyStatLabel}>페이지</Text>
+                    </View>
+                  </View>
                 </View>
               ))}
             </View>
@@ -257,43 +305,332 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8fafc',
   },
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#e0e0e0', justifyContent: 'space-between' },
-  backBtn: { marginRight: 12, padding: 4, borderRadius: 20 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#222' },
-  headerSub: { fontSize: 13, color: '#607d8b', marginTop: 2 },
-  shareBtn: { marginLeft: 8, height: 40, justifyContent: 'center', backgroundColor: '#1976d2', borderRadius: 8, paddingHorizontal: 16 },
-  tabsRow: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#f1f5f9', paddingHorizontal: 8, paddingVertical: 4 },
-  tabBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 8 },
-  tabBtnActive: { backgroundColor: '#fff', borderBottomWidth: 2, borderColor: '#1976d2' },
-  tabLabel: { color: '#607d8b', fontSize: 15 },
-  tabLabelActive: { color: '#1976d2', fontWeight: 'bold' },
-  scrollContent: { padding: 16, paddingBottom: 32 },
-  cardsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  card: { flex: 1, marginRight: 8, borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff', padding: 16 },
-  recentCard: { marginTop: 12, borderRadius: 12, backgroundColor: '#fff', padding: 16 },
-  recentTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  recentBookRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  recentBookTitle: { fontSize: 15, fontWeight: 'bold' },
-  recentBookAuthor: { color: '#607d8b', fontSize: 13 },
-  chartTitle: { fontSize: 16, fontWeight: 'bold', marginTop: 16, marginBottom: 8 },
-  goalCard: { borderRadius: 12, backgroundColor: '#fff', padding: 16 },
-  goalTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  goalValue: { fontSize: 28, fontWeight: 'bold', color: '#1976d2', marginBottom: 4 },
-  goalDesc: { color: '#607d8b', fontSize: 14 },
-  historyCard: { borderRadius: 12, backgroundColor: '#fff', padding: 16 },
-  historyTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 8 },
-  historyRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  historyMonth: { flex: 1, fontWeight: 'bold', color: '#1976d2' },
-  historyBooks: { flex: 1, textAlign: 'center' },
-  historyMinutes: { flex: 1, textAlign: 'center' },
-  historyPages: { flex: 1, textAlign: 'right' },
-  cardLabel: { color: '#607d8b', fontSize: 13 },
-  cardValueRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  cardValue: { fontSize: 22, fontWeight: 'bold', color: '#222' },
-  cardValueSub: { fontSize: 15, color: '#90a4ae', marginLeft: 4 },
-  progressBarWrap: { height: 8, backgroundColor: '#e0e0e0', borderRadius: 4, marginTop: 8, overflow: 'hidden' },
-  progressBar: { height: 8, backgroundColor: '#3B82F6', borderRadius: 4 },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 32,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  headerContent: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  headerSub: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  shareButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 20,
+    marginTop: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  activeTabButton: {
+    backgroundColor: '#2563eb',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  activeTabText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  overviewContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  statCard: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  statNumber: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 2,
+  },
+  statSubtext: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  progressCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  progressTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  progressPercentage: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2563eb',
+  },
+  progressBarContainer: {
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#2563eb',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  recentBooksCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 16,
+  },
+  bookItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  bookInfo: {
+    flex: 1,
+  },
+  bookTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  bookAuthor: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 2,
+  },
+  bookDate: {
+    fontSize: 12,
+    color: '#9ca3af',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+  },
+  chartsContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  chartCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 16,
+  },
+  goalsContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  goalCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  goalHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  goalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  goalNumber: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#2563eb',
+  },
+  goalProgress: {
+    marginBottom: 16,
+  },
+  goalProgressBar: {
+    height: 12,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 6,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  goalProgressFill: {
+    height: '100%',
+    backgroundColor: '#2563eb',
+    borderRadius: 6,
+  },
+  goalProgressText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  goalDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  historyContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  historyCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  historyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  historyMonth: {
+    width: 60,
+  },
+  historyMonthText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2563eb',
+  },
+  historyStats: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  historyStat: {
+    alignItems: 'center',
+  },
+  historyStatNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 2,
+  },
+  historyStatLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
   snackbar: { position: 'absolute', bottom: 32, left: 24, right: 24, backgroundColor: '#222', borderRadius: 8, padding: 16, alignItems: 'center', zIndex: 100 },
   snackbarText: { color: '#fff', fontSize: 15 },
 });
