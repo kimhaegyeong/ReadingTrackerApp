@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, SafeAreaView } from 'react-native';
 import { Card, Title, Paragraph, Button, TextInput, Chip } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, RouteProp } from '@react-navigation/native';
 
 interface Quote {
   id: number;
@@ -20,7 +20,27 @@ interface Note {
   tags: string[];
 }
 
-const BookDetailScreen = ({ route }) => {
+interface Book {
+  id: number;
+  title: string;
+  author: string;
+  status: 'want-to-read' | 'reading' | 'completed';
+  progress: number;
+  coverColor: string;
+  quotes: number;
+  notes: number;
+  readingTime: string;
+}
+
+type RootStackParamList = {
+  BookDetail: { book: Book };
+};
+
+interface BookDetailScreenProps {
+  route: RouteProp<RootStackParamList, 'BookDetail'>;
+}
+
+const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
   const navigation = useNavigation();
   const { book } = route.params;
   const [activeTab, setActiveTab] = useState('quotes');
@@ -157,283 +177,292 @@ const BookDetailScreen = ({ route }) => {
   );
 
   return (
-    <ScrollView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => (navigation as any).goBack()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#64748b" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>책 상세</Text>
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => (navigation as any).goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#64748b" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>책 상세</Text>
+        </View>
 
-      {/* Book Info Card */}
-      <Card style={styles.bookCard}>
-        <Card.Content style={styles.bookCardContent}>
-          <View style={styles.bookInfo}>
-            <View style={[styles.bookCover, { backgroundColor: book.coverColor }]}> <Ionicons name="book" size={48} color="white" /> </View>
-            <View style={styles.bookDetails}>
-              <Title style={styles.bookTitle}>{book.title}</Title>
-              <Paragraph style={styles.bookAuthor}>{book.author}</Paragraph>
-              <View style={styles.statusContainer}>
-                {getStatusBadge(book.status)}
-                {book.status === 'reading' && (
-                  <Text style={styles.progressText}>{book.progress}% 완료</Text>
-                )}
-              </View>
-              <View style={styles.statsGrid}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>{book.quotes}</Text>
-                  <Text style={styles.statLabel}>인용문</Text>
+        {/* Book Info Card */}
+        <Card style={styles.bookCard}>
+          <Card.Content style={styles.bookCardContent}>
+            <View style={styles.bookInfo}>
+              <View style={[styles.bookCover, { backgroundColor: book.coverColor }]}> <Ionicons name="book" size={48} color="white" /> </View>
+              <View style={styles.bookDetails}>
+                <Title style={styles.bookTitle}>{book.title}</Title>
+                <Paragraph style={styles.bookAuthor}>{book.author}</Paragraph>
+                <View style={styles.statusContainer}>
+                  {getStatusBadge(book.status)}
+                  {book.status === 'reading' && (
+                    <Text style={styles.progressText}>{book.progress}% 완료</Text>
+                  )}
                 </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>{book.notes}</Text>
-                  <Text style={styles.statLabel}>메모</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statNumber}>{book.readingTime}</Text>
-                  <Text style={styles.statLabel}>독서 시간</Text>
+                <View style={styles.statsGrid}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statNumber}>{book.quotes}</Text>
+                    <Text style={styles.statLabel}>인용문</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statNumber}>{book.notes}</Text>
+                    <Text style={styles.statLabel}>메모</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statNumber}>{book.readingTime}</Text>
+                    <Text style={styles.statLabel}>독서 시간</Text>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
-          {book.status === 'reading' && (
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: `${book.progress}%` }]} />
+            {book.status === 'reading' && (
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: `${book.progress}%` }]} />
+                </View>
               </View>
+            )}
+          </Card.Content>
+        </Card>
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <Button
+            mode="contained"
+            onPress={() => setIsQuoteModalVisible(true)}
+            style={styles.quoteButton}
+          >
+            <Ionicons name="chatbubble" size={16} color="white" />
+            <Text>인용문 추가</Text>
+          </Button>
+          <Button
+            mode="outlined"
+            onPress={() => setIsNoteModalVisible(true)}
+            style={styles.noteButton}
+          >
+            <Ionicons name="document-text" size={16} />
+            <Text>메모 추가</Text>
+          </Button>
+        </View>
+
+        {/* Tabs */}
+        <View style={styles.tabsContainer}>
+          <TabButton title="인용문" value="quotes" isActive={activeTab === 'quotes'} />
+          <TabButton title="메모" value="notes" isActive={activeTab === 'notes'} />
+        </View>
+
+        {/* Content */}
+        <View style={styles.content}>
+          {activeTab === 'quotes' ? (
+            <View style={styles.quotesContainer}>
+              {quotes.map((quote) => (
+                <Card key={quote.id} style={styles.quoteCard}>
+                  <Card.Content>
+                    <View style={styles.quoteContent}>
+                      <Ionicons name="chatbubble" size={20} color="#2563eb" style={styles.quoteIcon} />
+                      <View style={styles.quoteText}>
+                        <Text style={styles.quoteTextContent}>"{quote.text}"</Text>
+                        {quote.memo && (
+                          <View style={styles.memoContainer}>
+                            <Text style={styles.memoText}>{quote.memo}</Text>
+                          </View>
+                        )}
+                        <View style={styles.quoteMeta}>
+                          <Text style={styles.quoteMetaText}>페이지 {quote.page}</Text>
+                          <Text style={styles.quoteMetaText}>•</Text>
+                          <Text style={styles.quoteMetaText}>{quote.createdAt}</Text>
+                        </View>
+                        {quote.tags && quote.tags.length > 0 && (
+                          <View style={styles.tagsContainer}>
+                            {quote.tags.map((tag, index) => (
+                              <Chip key={index} style={styles.tagChip} textStyle={styles.tagText}>
+                                {tag}
+                              </Chip>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </Card.Content>
+                </Card>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.notesContainer}>
+              {notes.map((note) => (
+                <Card key={note.id} style={styles.noteCard}>
+                  <Card.Content>
+                    <View style={styles.noteContent}>
+                      <Ionicons name="document-text" size={20} color="#8b5cf6" style={styles.noteIcon} />
+                      <View style={styles.noteText}>
+                        <Text style={styles.noteTextContent}>{note.content}</Text>
+                        <Text style={styles.noteMeta}>{note.createdAt}</Text>
+                        {note.tags && note.tags.length > 0 && (
+                          <View style={styles.tagsContainer}>
+                            {note.tags.map((tag, index) => (
+                              <Chip key={index} style={styles.tagChip} textStyle={styles.tagText}>
+                                {tag}
+                              </Chip>
+                            ))}
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </Card.Content>
+                </Card>
+              ))}
             </View>
           )}
-        </Card.Content>
-      </Card>
+        </View>
 
-      {/* Action Buttons */}
-      <View style={styles.actionButtons}>
-        <Button
-          mode="contained"
-          onPress={() => setIsQuoteModalVisible(true)}
-          style={styles.quoteButton}
+        {/* Quote Modal */}
+        <Modal
+          visible={isQuoteModalVisible}
+          onRequestClose={() => setIsQuoteModalVisible(false)}
+          animationType="slide"
+          presentationStyle="pageSheet"
         >
-          <Ionicons name="chatbubble" size={16} color="white" />
-          인용문 추가
-        </Button>
-        <Button
-          mode="outlined"
-          onPress={() => setIsNoteModalVisible(true)}
-          style={styles.noteButton}
-        >
-          <Ionicons name="document-text" size={16} />
-          메모 추가
-        </Button>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        <TabButton title="인용문" value="quotes" isActive={activeTab === 'quotes'} />
-        <TabButton title="메모" value="notes" isActive={activeTab === 'notes'} />
-      </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        {activeTab === 'quotes' ? (
-          <View style={styles.quotesContainer}>
-            {quotes.map((quote) => (
-              <Card key={quote.id} style={styles.quoteCard}>
-                <Card.Content>
-                  <View style={styles.quoteContent}>
-                    <Ionicons name="chatbubble" size={20} color="#2563eb" style={styles.quoteIcon} />
-                    <View style={styles.quoteText}>
-                      <Text style={styles.quoteTextContent}>"{quote.text}"</Text>
-                      {quote.memo && (
-                        <View style={styles.memoContainer}>
-                          <Text style={styles.memoText}>{quote.memo}</Text>
-                        </View>
-                      )}
-                      <View style={styles.quoteMeta}>
-                        <Text style={styles.quoteMetaText}>페이지 {quote.page}</Text>
-                        <Text style={styles.quoteMetaText}>•</Text>
-                        <Text style={styles.quoteMetaText}>{quote.createdAt}</Text>
-                      </View>
-                      {quote.tags && quote.tags.length > 0 && (
-                        <View style={styles.tagsContainer}>
-                          {quote.tags.map((tag, index) => (
-                            <Chip key={index} style={styles.tagChip} textStyle={styles.tagText}>
-                              {tag}
-                            </Chip>
-                          ))}
-                        </View>
-                      )}
-                    </View>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>새 인용문 추가</Text>
+              <TouchableOpacity onPress={() => setIsQuoteModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalContent}>
+              <View style={styles.ocrButtonContainer}>
+                <Button mode="outlined" onPress={handleOCR} style={styles.ocrButton}>
+                  <Ionicons name="camera" size={16} />
+                  <Text>OCR</Text>
+                </Button>
+                <Text style={styles.ocrText}>카메라로 텍스트 인식</Text>
+              </View>
+              <TextInput
+                label="인용문"
+                placeholder="인상 깊었던 구절을 입력하세요..."
+                value={newQuote}
+                onChangeText={setNewQuote}
+                multiline
+                numberOfLines={4}
+                style={styles.modalInput}
+              />
+              <TextInput
+                label="메모 (선택사항)"
+                placeholder="이 인용문에 대한 생각이나 메모를 남겨보세요..."
+                value={newQuoteMemo}
+                onChangeText={setNewQuoteMemo}
+                multiline
+                numberOfLines={3}
+                style={styles.modalInput}
+              />
+              <View style={styles.tagInputContainer}>
+                <Text style={styles.tagLabel}>태그</Text>
+                <View style={styles.tagInputRow}>
+                  <TextInput
+                    placeholder="태그를 입력하세요..."
+                    value={currentQuoteTag}
+                    onChangeText={setCurrentQuoteTag}
+                    onSubmitEditing={handleAddQuoteTag}
+                    style={styles.tagInput}
+                  />
+                  <Button onPress={handleAddQuoteTag} style={styles.tagAddButton}>
+                    <Ionicons name="add" size={16} />
+                    <Text>추가</Text>
+                  </Button>
+                </View>
+                {newQuoteTags.length > 0 && (
+                  <View style={styles.tagsRow}>
+                    {newQuoteTags.map((tag, index) => (
+                      <Chip key={index} onClose={() => removeQuoteTag(tag)} style={styles.tagChip}>
+                        {tag}
+                      </Chip>
+                    ))}
                   </View>
-                </Card.Content>
-              </Card>
-            ))}
-          </View>
-        ) : (
-          <View style={styles.notesContainer}>
-            {notes.map((note) => (
-              <Card key={note.id} style={styles.noteCard}>
-                <Card.Content>
-                  <View style={styles.noteContent}>
-                    <Ionicons name="document-text" size={20} color="#8b5cf6" style={styles.noteIcon} />
-                    <View style={styles.noteText}>
-                      <Text style={styles.noteTextContent}>{note.content}</Text>
-                      <Text style={styles.noteMeta}>{note.createdAt}</Text>
-                      {note.tags && note.tags.length > 0 && (
-                        <View style={styles.tagsContainer}>
-                          {note.tags.map((tag, index) => (
-                            <Chip key={index} style={styles.tagChip} textStyle={styles.tagText}>
-                              {tag}
-                            </Chip>
-                          ))}
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                </Card.Content>
-              </Card>
-            ))}
-          </View>
-        )}
-      </View>
-
-      {/* Quote Modal */}
-      <Modal
-        visible={isQuoteModalVisible}
-        onRequestClose={() => setIsQuoteModalVisible(false)}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>새 인용문 추가</Text>
-            <TouchableOpacity onPress={() => setIsQuoteModalVisible(false)}>
-              <Ionicons name="close" size={24} color="#64748b" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView style={styles.modalContent}>
-            <View style={styles.ocrButtonContainer}>
-              <Button mode="outlined" onPress={handleOCR} style={styles.ocrButton}>
-                <Ionicons name="camera" size={16} />
-                OCR
+                )}
+              </View>
+              <Button mode="contained" onPress={handleAddQuote} style={styles.modalSubmitButton}>
+                <Text>인용문 추가</Text>
               </Button>
-              <Text style={styles.ocrText}>카메라로 텍스트 인식</Text>
-            </View>
-            <TextInput
-              label="인용문"
-              placeholder="인상 깊었던 구절을 입력하세요..."
-              value={newQuote}
-              onChangeText={setNewQuote}
-              multiline
-              numberOfLines={4}
-              style={styles.modalInput}
-            />
-            <TextInput
-              label="메모 (선택사항)"
-              placeholder="이 인용문에 대한 생각이나 메모를 남겨보세요..."
-              value={newQuoteMemo}
-              onChangeText={setNewQuoteMemo}
-              multiline
-              numberOfLines={3}
-              style={styles.modalInput}
-            />
-            <View style={styles.tagInputContainer}>
-              <Text style={styles.tagLabel}>태그</Text>
-              <View style={styles.tagInputRow}>
-                <TextInput
-                  placeholder="태그를 입력하세요..."
-                  value={currentQuoteTag}
-                  onChangeText={setCurrentQuoteTag}
-                  onSubmitEditing={handleAddQuoteTag}
-                  style={styles.tagInput}
-                />
-                <Button onPress={handleAddQuoteTag} style={styles.tagAddButton}>
-                  <Ionicons name="add" size={16} />
-                </Button>
-              </View>
-              {newQuoteTags.length > 0 && (
-                <View style={styles.tagsRow}>
-                  {newQuoteTags.map((tag, index) => (
-                    <Chip key={index} onClose={() => removeQuoteTag(tag)} style={styles.tagChip}>
-                      {tag}
-                    </Chip>
-                  ))}
-                </View>
-              )}
-            </View>
-            <Button mode="contained" onPress={handleAddQuote} style={styles.modalSubmitButton}>
-              인용문 추가
-            </Button>
-          </ScrollView>
-        </View>
-      </Modal>
-      {/* Note Modal */}
-      <Modal
-        visible={isNoteModalVisible}
-        onRequestClose={() => setIsNoteModalVisible(false)}
-        animationType="slide"
-        presentationStyle="pageSheet"
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>새 메모 추가</Text>
-            <TouchableOpacity onPress={() => setIsNoteModalVisible(false)}>
-              <Ionicons name="close" size={24} color="#64748b" />
-            </TouchableOpacity>
+            </ScrollView>
           </View>
-          <ScrollView style={styles.modalContent}>
-            <TextInput
-              label="메모"
-              placeholder="이 책에 대한 생각을 자유롭게 적어보세요..."
-              value={newNote}
-              onChangeText={setNewNote}
-              multiline
-              numberOfLines={5}
-              style={styles.modalInput}
-            />
-            <View style={styles.tagInputContainer}>
-              <Text style={styles.tagLabel}>태그</Text>
-              <View style={styles.tagInputRow}>
-                <TextInput
-                  placeholder="태그를 입력하세요..."
-                  value={currentNoteTag}
-                  onChangeText={setCurrentNoteTag}
-                  onSubmitEditing={handleAddNoteTag}
-                  style={styles.tagInput}
-                />
-                <Button onPress={handleAddNoteTag} style={styles.tagAddButton}>
-                  <Ionicons name="add" size={16} />
-                </Button>
-              </View>
-              {newNoteTags.length > 0 && (
-                <View style={styles.tagsRow}>
-                  {newNoteTags.map((tag, index) => (
-                    <Chip key={index} onClose={() => removeNoteTag(tag)} style={styles.tagChip}>
-                      {tag}
-                    </Chip>
-                  ))}
-                </View>
-              )}
+        </Modal>
+        {/* Note Modal */}
+        <Modal
+          visible={isNoteModalVisible}
+          onRequestClose={() => setIsNoteModalVisible(false)}
+          animationType="slide"
+          presentationStyle="pageSheet"
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>새 메모 추가</Text>
+              <TouchableOpacity onPress={() => setIsNoteModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#64748b" />
+              </TouchableOpacity>
             </View>
-            <Button mode="contained" onPress={handleAddNote} style={styles.modalSubmitButton}>
-              메모 추가
-            </Button>
-          </ScrollView>
-        </View>
-      </Modal>
-    </ScrollView>
+            <ScrollView style={styles.modalContent}>
+              <TextInput
+                label="메모"
+                placeholder="이 책에 대한 생각을 자유롭게 적어보세요..."
+                value={newNote}
+                onChangeText={setNewNote}
+                multiline
+                numberOfLines={5}
+                style={styles.modalInput}
+              />
+              <View style={styles.tagInputContainer}>
+                <Text style={styles.tagLabel}>태그</Text>
+                <View style={styles.tagInputRow}>
+                  <TextInput
+                    placeholder="태그를 입력하세요..."
+                    value={currentNoteTag}
+                    onChangeText={setCurrentNoteTag}
+                    onSubmitEditing={handleAddNoteTag}
+                    style={styles.tagInput}
+                  />
+                  <Button onPress={handleAddNoteTag} style={styles.tagAddButton}>
+                    <Ionicons name="add" size={16} />
+                    <Text>추가</Text>
+                  </Button>
+                </View>
+                {newNoteTags.length > 0 && (
+                  <View style={styles.tagsRow}>
+                    {newNoteTags.map((tag, index) => (
+                      <Chip key={index} onClose={() => removeNoteTag(tag)} style={styles.tagChip}>
+                        {tag}
+                      </Chip>
+                    ))}
+                  </View>
+                )}
+              </View>
+              <Button mode="contained" onPress={handleAddNote} style={styles.modalSubmitButton}>
+                <Text>메모 추가</Text>
+              </Button>
+            </ScrollView>
+          </View>
+        </Modal>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
+    maxWidth: '100%',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    paddingTop: 50,
+    paddingTop: 0,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
@@ -447,7 +476,8 @@ const styles = StyleSheet.create({
     color: '#1e293b',
   },
   bookCard: {
-    margin: 16,
+    marginBottom: 16,
+    maxWidth: '100%',
   },
   bookCardContent: {
     padding: 16,
@@ -465,6 +495,7 @@ const styles = StyleSheet.create({
   },
   bookDetails: {
     flex: 1,
+    minWidth: 0,
   },
   bookTitle: {
     fontSize: 24,
@@ -566,6 +597,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingBottom: 100,
+    maxWidth: '100%',
   },
   quotesContainer: {
     gap: 12,

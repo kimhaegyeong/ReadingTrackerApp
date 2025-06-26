@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { Card, Title, Paragraph, Badge, Button } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -81,31 +81,52 @@ const BookLibraryScreen = () => {
     </TouchableOpacity>
   );
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}><Ionicons name="library" size={32} color="#2563eb" /><Text style={styles.headerTitle}>리브노트</Text></View>
-        <View style={styles.headerButtons}>
-          <Button mode="outlined" onPress={() => (navigation as any).navigate('ReadingStats')} style={styles.headerButton}><Ionicons name="stats-chart" size={16} />통계</Button>
-          <Button mode="outlined" onPress={() => (navigation as any).navigate('ReadingTimer')} style={styles.headerButton}><Ionicons name="timer" size={16} />독서 기록</Button>
-          <Button mode="contained" onPress={() => (navigation as any).navigate('AddBook')} style={styles.addButton}><Ionicons name="add" size={16} />책 추가</Button>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.headerContent}><Ionicons name="library" size={32} color="#2563eb" /><Text style={styles.headerTitle}>리브노트</Text></View>
+          <View style={styles.headerButtons}>
+            <Button mode="outlined" onPress={() => (navigation as any).navigate('ReadingStats')} style={styles.headerButton}><Ionicons name="stats-chart" size={16} />통계</Button>
+            <Button mode="outlined" onPress={() => (navigation as any).navigate('ReadingTimer')} style={styles.headerButton}><Ionicons name="timer" size={16} />독서 기록</Button>
+            <Button mode="contained" onPress={() => (navigation as any).navigate('Search')} style={styles.addButton}><Ionicons name="add" size={16} />책 추가</Button>
+          </View>
         </View>
-      </View>
-      <View style={styles.welcomeSection}><Text style={styles.welcomeTitle}>내 서재</Text><Text style={styles.welcomeSubtitle}>지금까지 {books.length}권의 책과 함께했어요</Text></View>
-      <Card style={styles.todayCard}><Card.Content><View style={styles.todayHeader}><Ionicons name="calendar" size={20} color="#2563eb" /><Title style={styles.todayTitle}>오늘의 독서 기록</Title></View><View style={styles.statsGrid}><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalMinutes}</Text><Text style={styles.statLabel}>분</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalPages}</Text><Text style={styles.statLabel}>페이지</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalNotes}</Text><Text style={styles.statLabel}>노트</Text></View></View><View style={styles.sessionsContainer}><Text style={styles.sessionsTitle}>독서 세션</Text>{todayReading.sessions.map((session, index) => (<View key={index} style={styles.sessionItem}><Text style={styles.sessionBook}>{session.book}</Text><View style={styles.sessionStats}><Text style={styles.sessionText}>{session.minutes}분</Text><Text style={styles.sessionText}>{session.pages}페이지</Text><Text style={styles.sessionText}>{session.notes}노트</Text></View></View>))}</View></Card.Content></Card>
-      <View style={styles.tabsContainer}><TabButton title="전체" value="all" isActive={activeTab === 'all'} /><TabButton title="읽는 중" value="reading" isActive={activeTab === 'reading'} /><TabButton title="완료" value="completed" isActive={activeTab === 'completed'} /><TabButton title="읽고 싶은" value="want-to-read" isActive={activeTab === 'want-to-read'} /></View>
-      <View style={styles.booksContainer}>{filterBooksByStatus(activeTab).map(book => (<BookCard key={book.id} book={book} />))}</View>
-    </ScrollView>
+        <View style={styles.welcomeSection}><Text style={styles.welcomeTitle}>내 서재</Text><Text style={styles.welcomeSubtitle}>지금까지 {books.length}권의 책과 함께했어요</Text></View>
+        <Card style={styles.todayCard}><Card.Content><View style={styles.todayHeader}><Ionicons name="calendar" size={20} color="#2563eb" /><Title style={styles.todayTitle}>오늘의 독서 기록</Title></View><View style={styles.statsGrid}><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalMinutes}</Text><Text style={styles.statLabel}>분</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalPages}</Text><Text style={styles.statLabel}>페이지</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalNotes}</Text><Text style={styles.statLabel}>노트</Text></View></View><View style={styles.sessionsContainer}><Text style={styles.sessionsTitle}>독서 세션</Text>{todayReading.sessions.map((session, index) => (<View key={index} style={styles.sessionItem}><Text style={styles.sessionBook}>{session.book}</Text><View style={styles.sessionStats}><Text style={styles.sessionText}>{session.minutes}분</Text><Text style={styles.sessionText}>{session.pages}페이지</Text><Text style={styles.sessionText}>{session.notes}노트</Text></View></View>))}</View></Card.Content></Card>
+        <View style={styles.tabsContainer}><TabButton title="전체" value="all" isActive={activeTab === 'all'} /><TabButton title="읽는 중" value="reading" isActive={activeTab === 'reading'} /><TabButton title="완료" value="completed" isActive={activeTab === 'completed'} /><TabButton title="읽고 싶은" value="want-to-read" isActive={activeTab === 'want-to-read'} /></View>
+        <View style={styles.booksContainer}>{filterBooksByStatus(activeTab).map(book => (<BookCard key={book.id} book={book} />))}</View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  header: { backgroundColor: 'white', paddingHorizontal: 16, paddingTop: 50, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  container: { flex: 1, backgroundColor: '#f8fafc', maxWidth: '100%' },
+  header: { backgroundColor: 'white', paddingHorizontal: 16, paddingTop: 0, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
   headerContent: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', marginLeft: 8, color: '#1e293b' },
   headerButtons: { flexDirection: 'row', justifyContent: 'space-between' },
-  headerButton: { marginRight: 8 },
-  addButton: { backgroundColor: '#2563eb' },
+  headerButton: {
+    marginRight: 8,
+    minWidth: 100,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButton: {
+    backgroundColor: '#2563eb',
+    minWidth: 100,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 0,
+  },
   welcomeSection: { alignItems: 'center', paddingVertical: 32 },
   welcomeTitle: { fontSize: 28, fontWeight: 'bold', color: '#1e293b', marginBottom: 8 },
   welcomeSubtitle: { fontSize: 16, color: '#64748b' },
@@ -127,13 +148,13 @@ const styles = StyleSheet.create({
   activeTabButton: { backgroundColor: '#2563eb' },
   tabText: { fontSize: 14, color: '#64748b' },
   activeTabText: { color: 'white', fontWeight: '600' },
-  booksContainer: { padding: 16, paddingBottom: 100 },
+  booksContainer: { padding: 16, paddingBottom: 100, maxWidth: '100%' },
   bookCard: { marginBottom: 12 },
-  card: { elevation: 2 },
+  card: { elevation: 2, maxWidth: '100%' },
   cardContent: { padding: 16 },
   bookInfo: { flexDirection: 'row' },
   bookCover: { width: 48, height: 64, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
-  bookDetails: { flex: 1 },
+  bookDetails: { flex: 1, minWidth: 0 },
   bookTitle: { fontSize: 16, fontWeight: '600', marginBottom: 4 },
   bookAuthor: { fontSize: 14, color: '#6b7280', marginBottom: 8 },
   statusContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },

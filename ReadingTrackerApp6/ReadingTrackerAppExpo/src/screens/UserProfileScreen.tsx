@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
 import { Card, Button, Divider } from 'react-native-paper';
 import { Feather, MaterialIcons, FontAwesome, Ionicons } from '@expo/vector-icons';
 
@@ -28,92 +28,98 @@ const monthlyGoal = {
 
 const UserProfileScreen = ({ navigation }: any) => {
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
-      {/* 프로필 헤더 */}
-      <Card style={styles.profileCard}>
-        <Card.Content style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={styles.avatarWrap}>
-            <MaterialIcons name="menu-book" size={40} color="#fff" />
-          </View>
-          <View style={{ marginLeft: 16 }}>
-            <Text style={styles.profileName}>독서 여정</Text>
-            <Text style={styles.profileDesc}>지식과 함께 성장하는 중</Text>
-            <View style={styles.streakBadge}>
-              <Text style={styles.streakText}>🔥 {userStats.currentStreak}일 연속</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
+        {/* 프로필 헤더 */}
+        <Card style={styles.profileCard}>
+          <Card.Content style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={styles.avatarWrap}>
+              <MaterialIcons name="menu-book" size={40} color="#fff" />
             </View>
-          </View>
-        </Card.Content>
-      </Card>
-      {/* 이번 달 목표 */}
-      <Card style={styles.card}>
-        <Card.Title title="이번 달 목표" left={props => <Feather name="target" size={20} color="#1976d2" />} />
-        <Card.Content>
-          <View style={styles.rowBetween}>
-            <Text style={styles.goalValue}>{monthlyGoal.current} / {monthlyGoal.target}권</Text>
-            <Text style={styles.goalPercent}>{monthlyGoal.percentage}% 달성</Text>
-          </View>
-          <View style={styles.progressBarWrap}>
-            <View style={[styles.progressBar, { width: `${monthlyGoal.percentage}%` }]} />
-          </View>
-          <Text style={styles.goalDesc}>목표까지 {monthlyGoal.target - monthlyGoal.current}권 남았어요!</Text>
-        </Card.Content>
-      </Card>
-      {/* 통계 그리드 */}
-      <View style={styles.statsGrid}>
-        <Card style={styles.statCard}><Card.Content style={styles.statContent}>
-          <MaterialIcons name="menu-book" size={28} color="#1976d2" style={{ marginBottom: 4 }} />
-          <Text style={styles.statValue}>{userStats.totalBooks}</Text>
-          <Text style={styles.statLabel}>총 책 수</Text>
-        </Card.Content></Card>
-        <Card style={styles.statCard}><Card.Content style={styles.statContent}>
-          <FontAwesome name="clock-o" size={28} color="#43a047" style={{ marginBottom: 4 }} />
-          <Text style={styles.statValue}>{userStats.totalReadingTime}</Text>
-          <Text style={styles.statLabel}>총 독서 시간</Text>
-        </Card.Content></Card>
-        <Card style={styles.statCard}><Card.Content style={styles.statContent}>
-          <MaterialIcons name="format-quote" size={28} color="#8B5CF6" style={{ marginBottom: 4 }} />
-          <Text style={styles.statValue}>{userStats.totalQuotes}</Text>
-          <Text style={styles.statLabel}>인용문</Text>
-        </Card.Content></Card>
-        <Card style={styles.statCard}><Card.Content style={styles.statContent}>
-          <MaterialIcons name="sticky-note-2" size={28} color="#F59E0B" style={{ marginBottom: 4 }} />
-          <Text style={styles.statValue}>{userStats.totalNotes}</Text>
-          <Text style={styles.statLabel}>메모</Text>
-        </Card.Content></Card>
-      </View>
-      {/* 독서 현황 */}
-      <Card style={styles.card}>
-        <Card.Title title="독서 현황" left={props => <MaterialIcons name="menu-book" size={20} color="#1976d2" />} />
-        <Card.Content>
-          <View style={styles.rowBetween}><Text style={styles.statusLabel}>완독한 책</Text><Text style={styles.statusValue}>{userStats.completedBooks}권</Text></View>
-          <View style={styles.rowBetween}><Text style={styles.statusLabel}>읽는 중</Text><Text style={styles.statusValue}>{userStats.readingBooks}권</Text></View>
-          <View style={styles.rowBetween}><Text style={styles.statusLabel}>읽고 싶은</Text><Text style={styles.statusValue}>{userStats.wantToReadBooks}권</Text></View>
-        </Card.Content>
-      </Card>
-      {/* 최근 달성 */}
-      <Card style={styles.card}>
-        <Card.Title title="최근 달성" left={props => <MaterialIcons name="emoji-events" size={20} color="#F59E0B" />} />
-        <Card.Content>
-          {recentAchievements.map(a => (
-            <View key={a.id} style={styles.achieveRow}>
-              <Text style={styles.achieveIcon}>{a.icon}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.achieveTitle}>{a.title}</Text>
-                <Text style={styles.achieveDate}>{a.date}</Text>
+            <View style={{ marginLeft: 16 }}>
+              <Text style={styles.profileName}>독서 여정</Text>
+              <Text style={styles.profileDesc}>지식과 함께 성장하는 중</Text>
+              <View style={styles.streakBadge}>
+                <Text style={styles.streakText}>🔥 {userStats.currentStreak}일 연속</Text>
               </View>
             </View>
-          ))}
-        </Card.Content>
-      </Card>
-      {/* 설정 버튼 */}
-      <Button mode="outlined" icon="settings" style={{ marginTop: 18 }} onPress={() => navigation.navigate && navigation.navigate('SettingsScreen')}>
-        설정
-      </Button>
-    </ScrollView>
+          </Card.Content>
+        </Card>
+        {/* 이번 달 목표 */}
+        <Card style={styles.card}>
+          <Card.Title title="이번 달 목표" left={props => <Feather name="target" size={20} color="#1976d2" />} />
+          <Card.Content>
+            <View style={styles.rowBetween}>
+              <Text style={styles.goalValue}>{monthlyGoal.current} / {monthlyGoal.target}권</Text>
+              <Text style={styles.goalPercent}>{monthlyGoal.percentage}% 달성</Text>
+            </View>
+            <View style={styles.progressBarWrap}>
+              <View style={[styles.progressBar, { width: `${monthlyGoal.percentage}%` }]} />
+            </View>
+            <Text style={styles.goalDesc}>목표까지 {monthlyGoal.target - monthlyGoal.current}권 남았어요!</Text>
+          </Card.Content>
+        </Card>
+        {/* 통계 그리드 */}
+        <View style={styles.statsGrid}>
+          <Card style={styles.statCard}><Card.Content style={styles.statContent}>
+            <MaterialIcons name="menu-book" size={28} color="#1976d2" style={{ marginBottom: 4 }} />
+            <Text style={styles.statValue}>{userStats.totalBooks}</Text>
+            <Text style={styles.statLabel}>총 책 수</Text>
+          </Card.Content></Card>
+          <Card style={styles.statCard}><Card.Content style={styles.statContent}>
+            <FontAwesome name="clock-o" size={28} color="#43a047" style={{ marginBottom: 4 }} />
+            <Text style={styles.statValue}>{userStats.totalReadingTime}</Text>
+            <Text style={styles.statLabel}>총 독서 시간</Text>
+          </Card.Content></Card>
+          <Card style={styles.statCard}><Card.Content style={styles.statContent}>
+            <MaterialIcons name="format-quote" size={28} color="#8B5CF6" style={{ marginBottom: 4 }} />
+            <Text style={styles.statValue}>{userStats.totalQuotes}</Text>
+            <Text style={styles.statLabel}>인용문</Text>
+          </Card.Content></Card>
+          <Card style={styles.statCard}><Card.Content style={styles.statContent}>
+            <MaterialIcons name="sticky-note-2" size={28} color="#F59E0B" style={{ marginBottom: 4 }} />
+            <Text style={styles.statValue}>{userStats.totalNotes}</Text>
+            <Text style={styles.statLabel}>메모</Text>
+          </Card.Content></Card>
+        </View>
+        {/* 독서 현황 */}
+        <Card style={styles.card}>
+          <Card.Title title="독서 현황" left={props => <MaterialIcons name="menu-book" size={20} color="#1976d2" />} />
+          <Card.Content>
+            <View style={styles.rowBetween}><Text style={styles.statusLabel}>완독한 책</Text><Text style={styles.statusValue}>{userStats.completedBooks}권</Text></View>
+            <View style={styles.rowBetween}><Text style={styles.statusLabel}>읽는 중</Text><Text style={styles.statusValue}>{userStats.readingBooks}권</Text></View>
+            <View style={styles.rowBetween}><Text style={styles.statusLabel}>읽고 싶은</Text><Text style={styles.statusValue}>{userStats.wantToReadBooks}권</Text></View>
+          </Card.Content>
+        </Card>
+        {/* 최근 달성 */}
+        <Card style={styles.card}>
+          <Card.Title title="최근 달성" left={props => <MaterialIcons name="emoji-events" size={20} color="#F59E0B" />} />
+          <Card.Content>
+            {recentAchievements.map(a => (
+              <View key={a.id} style={styles.achieveRow}>
+                <Text style={styles.achieveIcon}>{a.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.achieveTitle}>{a.title}</Text>
+                  <Text style={styles.achieveDate}>{a.date}</Text>
+                </View>
+              </View>
+            ))}
+          </Card.Content>
+        </Card>
+        {/* 설정 버튼 */}
+        <Button mode="outlined" icon="settings" style={{ marginTop: 18 }} onPress={() => navigation.navigate && navigation.navigate('SettingsScreen')}>
+          설정
+        </Button>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
   container: { flex: 1, backgroundColor: '#f8fafc' },
   profileCard: { marginBottom: 18, borderRadius: 12, backgroundColor: 'linear-gradient(90deg, #1976d2 0%, #8B5CF6 100%)' },
   avatarWrap: { width: 64, height: 64, borderRadius: 32, backgroundColor: '#8B5CF6', alignItems: 'center', justifyContent: 'center' },

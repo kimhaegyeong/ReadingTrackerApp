@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Share } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Share, SafeAreaView } from 'react-native';
 import { Card, Button, Snackbar } from 'react-native-paper';
 import { Feather, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { BarChart, PieChart } from 'react-native-chart-kit';
@@ -60,33 +60,33 @@ const ReadingStatsScreen = ({ navigation }: any) => {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack && navigation.goBack()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={24} color="#222" />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.headerTitle}>독서 통계</Text>
-          <Text style={styles.headerSub}>{selectedYear}년 독서 현황을 확인하세요</Text>
-        </View>
-        <Button mode="contained" onPress={handleShareStats} style={styles.shareBtn} icon="share-variant">
-          공유하기
-        </Button>
-      </View>
-      {/* Tabs */}
-      <View style={styles.tabsRow}>
-        {TABS.map(tab => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.tabBtn, selectedTab === tab.key && styles.tabBtnActive]}
-            onPress={() => setSelectedTab(tab.key)}
-          >
-            <Text style={[styles.tabLabel, selectedTab === tab.key && styles.tabLabelActive]}>{tab.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+    <SafeAreaView style={styles.safeArea}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack && navigation.goBack()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={24} color="#222" />
+          </TouchableOpacity>
+          <View>
+            <Text style={styles.headerTitle}>독서 통계</Text>
+            <Text style={styles.headerSub}>{selectedYear}년 독서 현황을 확인하세요</Text>
+          </View>
+          <Button mode="contained" onPress={handleShareStats} style={styles.shareBtn} icon="share-variant">
+            공유하기
+          </Button>
+        </View>
+        {/* Tabs */}
+        <View style={styles.tabsRow}>
+          {TABS.map(tab => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tabBtn, selectedTab === tab.key && styles.tabBtnActive]}
+              onPress={() => setSelectedTab(tab.key)}
+            >
+              <Text style={[styles.tabLabel, selectedTab === tab.key && styles.tabLabelActive]}>{tab.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
         {/* 개요 탭 */}
         {selectedTab === 'overview' && (
           <View>
@@ -229,11 +229,15 @@ const ReadingStatsScreen = ({ navigation }: any) => {
       >
         {snackbar.message}
       </Snackbar>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
   container: { flex: 1, backgroundColor: '#f8fafc' },
   header: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderColor: '#e0e0e0', justifyContent: 'space-between' },
   backBtn: { marginRight: 12, padding: 4, borderRadius: 20 },

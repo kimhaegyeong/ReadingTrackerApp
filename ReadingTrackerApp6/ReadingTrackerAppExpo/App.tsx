@@ -49,10 +49,10 @@ function StackNavigator() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
-      <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ title: '책 상세' }} />
-      <Stack.Screen name="ReadingTimer" component={ReadingTimerScreen} options={{ title: '독서 타이머' }} />
-      <Stack.Screen name="ReadingStats" component={ReadingStatsScreen} options={{ title: '독서 통계' }} />
-      <Stack.Screen name="AddBook" component={AddBookScreen} options={{ title: '책 추가' }} />
+      <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="ReadingTimer" component={ReadingTimerScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="ReadingStats" component={ReadingStatsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="AddBook" component={AddBookScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }

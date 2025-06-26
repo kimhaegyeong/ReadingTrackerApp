@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Alert, FlatList, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Alert, FlatList, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import { Button, Card, TextInput, Badge, Title, IconButton } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
@@ -137,206 +137,208 @@ const ReadingTimerScreen = () => {
   const { totalMinutes, totalPages } = getTotalStats();
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView style={styles.container}>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <IconButton
-            icon={() => <Ionicons name="arrow-back" size={24} color="#333" />}
-            onPress={() => navigation.goBack()}
-            style={{ marginRight: 4 }}
-          />
-          <View>
-            <Text style={styles.headerTitle}>독서 시간 기록</Text>
-            <Text style={styles.headerSub}>{`오늘 총 ${totalMinutes}분, ${totalPages}페이지 읽었어요`}</Text>
-          </View>
-        </View>
-
-        {/* 타이머 카드 */}
-        <Card style={styles.card}>
-          <Card.Title
-            title="타이머"
-            left={(props) => <Feather name="clock" size={22} color="#2563eb" style={{ marginRight: 8 }} />}
-          />
-          <Card.Content>
-            {/* 책 선택 */}
-            <Text style={styles.label}>읽을 책</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={selectedBook}
-                onValueChange={(itemValue: string) => setSelectedBook(itemValue)}
-                style={styles.picker}
-              >
-                <Picker.Item label="책을 선택하세요" value="" />
-                {books.map((book) => (
-                  <Picker.Item
-                    key={book.id}
-                    label={`${book.title} - ${book.author}`}
-                    value={book.title}
-                  />
-                ))}
-              </Picker>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView style={styles.container}>
+          {/* Header */}
+          <View style={styles.headerRow}>
+            <IconButton
+              icon={() => <Ionicons name="arrow-back" size={24} color="#333" />}
+              onPress={() => navigation.goBack()}
+              style={{ marginRight: 4 }}
+            />
+            <View>
+              <Text style={styles.headerTitle}>독서 시간 기록</Text>
+              <Text style={styles.headerSub}>{`오늘 총 ${totalMinutes}분, ${totalPages}페이지 읽었어요`}</Text>
             </View>
-            {/* 타이머 디스플레이 */}
-            <View style={styles.timerDisplayWrapper}>
-              <Text style={styles.timerText}>{formatTime(seconds)}</Text>
-              <View style={styles.timerButtonRow}>
-                {!isRunning ? (
+          </View>
+
+          {/* 타이머 카드 */}
+          <Card style={styles.card}>
+            <Card.Title
+              title="타이머"
+              left={(props) => <Feather name="clock" size={22} color="#2563eb" style={{ marginRight: 8 }} />}
+            />
+            <Card.Content>
+              {/* 책 선택 */}
+              <Text style={styles.label}>읽을 책</Text>
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  selectedValue={selectedBook}
+                  onValueChange={(itemValue: string) => setSelectedBook(itemValue)}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="책을 선택하세요" value="" />
+                  {books.map((book) => (
+                    <Picker.Item
+                      key={book.id}
+                      label={`${book.title} - ${book.author}`}
+                      value={book.title}
+                    />
+                  ))}
+                </Picker>
+              </View>
+              {/* 타이머 디스플레이 */}
+              <View style={styles.timerDisplayWrapper}>
+                <Text style={styles.timerText}>{formatTime(seconds)}</Text>
+                <View style={styles.timerButtonRow}>
+                  {!isRunning ? (
+                    <Button
+                      mode="contained"
+                      icon="play"
+                      onPress={handleStart}
+                      style={{ backgroundColor: '#16a34a' }}
+                    >
+                      시작
+                    </Button>
+                  ) : (
+                    <Button mode="outlined" icon="pause" onPress={handlePause}
+                    >일시정지</Button>
+                  )}
                   <Button
                     mode="contained"
-                    icon="play"
-                    onPress={handleStart}
-                    style={{ backgroundColor: '#16a34a' }}
+                    icon="stop"
+                    onPress={handleStop}
+                    disabled={seconds === 0}
+                    style={{ backgroundColor: '#dc2626' }}
                   >
-                    시작
+                    종료
                   </Button>
-                ) : (
-                  <Button mode="outlined" icon="pause" onPress={handlePause}
-                  >일시정지</Button>
-                )}
-                <Button
-                  mode="contained"
-                  icon="stop"
-                  onPress={handleStop}
-                  disabled={seconds === 0}
-                  style={{ backgroundColor: '#dc2626' }}
-                >
-                  종료
-                </Button>
+                </View>
               </View>
-            </View>
-            {/* 추가 정보 입력 */}
-            <Text style={styles.label}>읽은 페이지 수</Text>
-            <TextInput
-              mode="outlined"
-              placeholder="페이지 수"
-              value={manualPages}
-              onChangeText={setManualPages}
-              keyboardType="numeric"
-              style={styles.input}
-            />
-            <Text style={styles.label}>메모</Text>
-            <TextInput
-              mode="outlined"
-              placeholder="독서 중 느낀 점이나 메모를 남겨보세요"
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={2}
-              style={styles.input}
-            />
-          </Card.Content>
-        </Card>
-
-        {/* 수동 입력 카드 */}
-        <Card style={styles.card}>
-          <Card.Title
-            title="수동 입력"
-            left={(props) => <Feather name="plus" size={22} color="#a21caf" style={{ marginRight: 8 }} />}
-          />
-          <Card.Content>
-            <Text style={styles.label}>읽은 책</Text>
-            <View style={styles.pickerWrapper}>
-              <Picker
-                selectedValue={selectedBook}
-                onValueChange={(itemValue: string) => setSelectedBook(itemValue)}
-                style={styles.picker}
-              >
-                <Picker.Item label="책을 선택하세요" value="" />
-                {books.map((book) => (
-                  <Picker.Item
-                    key={book.id}
-                    label={`${book.title} - ${book.author}`}
-                    value={book.title}
-                  />
-                ))}
-              </Picker>
-            </View>
-            <View style={styles.manualRow}>
-              <View style={{ flex: 1, marginRight: 8 }}>
-                <Text style={styles.label}>읽은 시간 (분)</Text>
-                <TextInput
-                  mode="outlined"
-                  placeholder="분"
-                  value={manualMinutes}
-                  onChangeText={setManualMinutes}
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.label}>읽은 페이지</Text>
-                <TextInput
-                  mode="outlined"
-                  placeholder="페이지"
-                  value={manualPages}
-                  onChangeText={setManualPages}
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
-              </View>
-            </View>
-            <Text style={styles.label}>메모</Text>
-            <TextInput
-              mode="outlined"
-              placeholder="독서 중 느낀 점이나 메모를 남겨보세요"
-              value={notes}
-              onChangeText={setNotes}
-              multiline
-              numberOfLines={3}
-              style={styles.input}
-            />
-            <Button
-              mode="contained"
-              icon="plus"
-              onPress={handleManualAdd}
-              style={{ backgroundColor: '#a21caf', marginTop: 8 }}
-            >
-              기록 추가
-            </Button>
-          </Card.Content>
-        </Card>
-
-        {/* 오늘의 독서 기록 */}
-        <Card style={[styles.card, { marginBottom: 32 }]}> 
-          <Card.Title
-            title="오늘의 독서 기록"
-            left={(props) => <Feather name="book-open" size={22} color="#16a34a" style={{ marginRight: 8 }} />}
-          />
-          <Card.Content>
-            {todaySessions.length === 0 ? (
-              <Text style={{ color: '#888', textAlign: 'center', marginVertical: 16 }}>오늘의 기록이 없습니다.</Text>
-            ) : (
-              <FlatList
-                data={todaySessions}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={({ item }) => (
-                  <View style={styles.sessionItem}>
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                        <Text style={styles.sessionBook}>{item.book}</Text>
-                        <Badge style={{ marginLeft: 6, backgroundColor: '#e0e7ff', color: '#3730a3' }}>{`${item.minutes}분`}</Badge>
-                        {item.pages > 0 && (
-                          <Badge style={{ marginLeft: 6, backgroundColor: '#f3e8ff', color: '#a21caf' }}>{`${item.pages}페이지`}</Badge>
-                        )}
-                      </View>
-                      <Text style={styles.sessionTime}>{item.startTime} - {item.endTime}</Text>
-                      {item.notes ? (
-                        <Text style={styles.sessionNotes}>{item.notes}</Text>
-                      ) : null}
-                    </View>
-                  </View>
-                )}
-                scrollEnabled={false}
+              {/* 추가 정보 입력 */}
+              <Text style={styles.label}>읽은 페이지 수</Text>
+              <TextInput
+                mode="outlined"
+                placeholder="페이지 수"
+                value={manualPages}
+                onChangeText={setManualPages}
+                keyboardType="numeric"
+                style={styles.input}
               />
-            )}
-          </Card.Content>
-        </Card>
-      </ScrollView>
-    </KeyboardAvoidingView>
+              <Text style={styles.label}>메모</Text>
+              <TextInput
+                mode="outlined"
+                placeholder="독서 중 느낀 점이나 메모를 남겨보세요"
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                numberOfLines={2}
+                style={styles.input}
+              />
+            </Card.Content>
+          </Card>
+
+          {/* 수동 입력 카드 */}
+          <Card style={styles.card}>
+            <Card.Title
+              title="수동 입력"
+              left={(props) => <Feather name="plus" size={22} color="#a21caf" style={{ marginRight: 8 }} />}
+            />
+            <Card.Content>
+              <Text style={styles.label}>읽은 책</Text>
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  selectedValue={selectedBook}
+                  onValueChange={(itemValue: string) => setSelectedBook(itemValue)}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="책을 선택하세요" value="" />
+                  {books.map((book) => (
+                    <Picker.Item
+                      key={book.id}
+                      label={`${book.title} - ${book.author}`}
+                      value={book.title}
+                    />
+                  ))}
+                </Picker>
+              </View>
+              <View style={styles.manualRow}>
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text style={styles.label}>읽은 시간 (분)</Text>
+                  <TextInput
+                    mode="outlined"
+                    placeholder="분"
+                    value={manualMinutes}
+                    onChangeText={setManualMinutes}
+                    keyboardType="numeric"
+                    style={styles.input}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>읽은 페이지</Text>
+                  <TextInput
+                    mode="outlined"
+                    placeholder="페이지"
+                    value={manualPages}
+                    onChangeText={setManualPages}
+                    keyboardType="numeric"
+                    style={styles.input}
+                  />
+                </View>
+              </View>
+              <Text style={styles.label}>메모</Text>
+              <TextInput
+                mode="outlined"
+                placeholder="독서 중 느낀 점이나 메모를 남겨보세요"
+                value={notes}
+                onChangeText={setNotes}
+                multiline
+                numberOfLines={3}
+                style={styles.input}
+              />
+              <Button
+                mode="contained"
+                icon="plus"
+                onPress={handleManualAdd}
+                style={{ backgroundColor: '#a21caf', marginTop: 8 }}
+              >
+                기록 추가
+              </Button>
+            </Card.Content>
+          </Card>
+
+          {/* 오늘의 독서 기록 */}
+          <Card style={[styles.card, { marginBottom: 32 }]}> 
+            <Card.Title
+              title="오늘의 독서 기록"
+              left={(props) => <Feather name="book-open" size={22} color="#16a34a" style={{ marginRight: 8 }} />}
+            />
+            <Card.Content>
+              {todaySessions.length === 0 ? (
+                <Text style={{ color: '#888', textAlign: 'center', marginVertical: 16 }}>오늘의 기록이 없습니다.</Text>
+              ) : (
+                <FlatList
+                  data={todaySessions}
+                  keyExtractor={(item) => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <View style={styles.sessionItem}>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                          <Text style={styles.sessionBook}>{item.book}</Text>
+                          <Badge style={{ marginLeft: 6, backgroundColor: '#e0e7ff', color: '#3730a3' }}>{`${item.minutes}분`}</Badge>
+                          {item.pages > 0 && (
+                            <Badge style={{ marginLeft: 6, backgroundColor: '#f3e8ff', color: '#a21caf' }}>{`${item.pages}페이지`}</Badge>
+                          )}
+                        </View>
+                        <Text style={styles.sessionTime}>{item.startTime} - {item.endTime}</Text>
+                        {item.notes ? (
+                          <Text style={styles.sessionNotes}>{item.notes}</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  )}
+                  scrollEnabled={false}
+                />
+              )}
+            </Card.Content>
+          </Card>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
@@ -430,6 +432,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#334155',
     marginTop: 2,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
   },
 });
 
