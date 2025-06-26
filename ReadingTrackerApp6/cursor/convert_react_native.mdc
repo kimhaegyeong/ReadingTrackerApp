@@ -1,0 +1,200 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+PRD 문서와 현재 웹 기반 소스를 분석하여 React Native 앱으로 변환하는 계획을 세워드리겠습니다.
+
+Read file: lovable/package.json
+Read file: lovable/src/App.tsx
+Read file: lovable/src/pages/Index.tsx
+Ran tool
+PRD 문서와 현재 웹 기반 소스를 분석한 결과를 바탕으로 React Native 앱으로 변환하는 상세 계획을 세워드리겠습니다.
+
+## �� React Native 변환 계획
+
+### 1. 프로젝트 구조 및 초기 설정
+
+#### 1.1 새로운 React Native 프로젝트 생성
+```bash
+# Expo CLI를 사용한 프로젝트 생성
+npx create-expo-app@latest ReadingTrackerAppExpo --template blank-typescript
+cd ReadingTrackerAppExpo
+```
+
+#### 1.2 필수 의존성 설치
+```json
+{
+  "dependencies": {
+    "@react-navigation/native": "^6.1.9",
+    "@react-navigation/bottom-tabs": "^6.5.11",
+    "@react-navigation/stack": "^6.3.20",
+    "react-native-screens": "^3.29.0",
+    "react-native-safe-area-context": "^4.9.0",
+    "react-native-vector-icons": "^10.0.3",
+    "@react-native-async-storage/async-storage": "^1.21.0",
+    "expo-sqlite": "^13.3.0",
+    "expo-camera": "^14.0.5",
+    "expo-image-picker": "^14.7.1",
+    "expo-mlkit-ocr": "^1.0.0",
+    "react-native-chart-kit": "^6.12.0",
+    "react-native-svg": "^14.1.0",
+    "react-native-paper": "^5.12.3",
+    "react-native-elements": "^3.4.3",
+    "react-hook-form": "^7.53.0",
+    "zod": "^3.23.8",
+    "@tanstack/react-query": "^5.56.2"
+  }
+}
+```
+
+### 2. 컴포넌트 변환 매핑
+
+#### 2.1 네비게이션 구조 변환
+**웹 → React Native**
+- `BrowserRouter` → `NavigationContainer`
+- `Routes/Route` → `Stack.Navigator` + `Tab.Navigator`
+- 하단 탭 네비게이션: `TabsList` → `BottomTabNavigator`
+
+#### 2.2 주요 컴포넌트 변환 계획
+
+| 웹 컴포넌트 | React Native 컴포넌트 | 주요 변경사항 |
+|------------|---------------------|-------------|
+| `Index.tsx` | `App.tsx` | 네비게이션 구조로 변경 |
+| `BookLibrary.tsx` | `BookLibraryScreen.tsx` | `ScrollView` + `FlatList` 사용 |
+| `BookDetail.tsx` | `BookDetailScreen.tsx` | `ScrollView` + 모바일 최적화 |
+| `AddBookDialog.tsx` | `AddBookModal.tsx` | `Modal` 컴포넌트 사용 |
+| `BookSearch.tsx` | `BookSearchScreen.tsx` | 검색 UI 모바일 최적화 |
+| `ReadingTimer.tsx` | `ReadingTimerScreen.tsx` | 전체 화면 타이머 |
+| `ReadingStats.tsx` | `ReadingStatsScreen.tsx` | `react-native-chart-kit` 사용 |
+| `Settings.tsx` | `SettingsScreen.tsx` | `SectionList` 사용 |
+| `UserProfile.tsx` | `UserProfileScreen.tsx` | 프로필 카드 모바일 최적화 |
+
+### 3. UI/UX 변환 전략
+
+#### 3.1 디자인 시스템 변환
+**웹 → React Native**
+- `Tailwind CSS` → `React Native Paper` + 커스텀 스타일
+- `shadcn/ui` → `React Native Elements` + 커스텀 컴포넌트
+- `lucide-react` → `react-native-vector-icons`
+
+#### 3.2 레이아웃 변환
+```typescript
+// 웹: CSS Grid/Flexbox
+// React Native: Flexbox 기반 레이아웃
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'white',
+  },
+});
+```
+
+### 4. 데이터 관리 변환
+
+#### 4.1 상태 관리
+- `React Query` → 그대로 사용 (웹과 동일)
+- 로컬 상태 → `useState`, `useContext` 그대로 사용
+
+#### 4.2 데이터베이스
+- 웹: 브라우저 LocalStorage
+- React Native: `expo-sqlite` + `AsyncStorage`
+
+```typescript
+// 데이터베이스 스키마 설계
+const BookSchema = {
+  id: 'TEXT PRIMARY KEY',
+  title: 'TEXT NOT NULL',
+  author: 'TEXT',
+  coverUrl: 'TEXT',
+  status: 'TEXT', // 'want', 'reading', 'completed'
+  createdAt: 'TEXT',
+  updatedAt: 'TEXT',
+};
+
+const ReadingSessionSchema = {
+  id: 'TEXT PRIMARY KEY',
+  bookId: 'TEXT',
+  startTime: 'TEXT',
+  endTime: 'TEXT',
+  duration: 'INTEGER', // minutes
+  pagesRead: 'INTEGER',
+  notes: 'TEXT',
+};
+```
+
+### 5. 기능별 변환 계획
+
+#### 5.1 마일스톤 1 기능 (기본 기록)
+- ✅ 책 등록/검색
+- ✅ 독서 상태 관리
+- ✅ 인용문 기록 (OCR)
+- ✅ 감상 메모
+- ✅ 독서 시간 기록
+
+#### 5.2 마일스톤 2 기능 (통계/동기부여)
+- 📊 통계 대시보드 (`react-native-chart-kit`)
+- 📈 차트 시각화
+- 📤 기록 공유 (이미지 생성)
+- �� 독서 목표 설정
+
+#### 5.3 마일스톤 3 기능 (연결/동기화)
+- 🔗 노트 간 연결
+- 🏷️ 태그 시스템
+- ☁️ 클라우드 동기화
+
+### 6. 개발 단계별 계획
+
+#### Phase 1: 기본 구조 (1-2주)
+1. React Native 프로젝트 설정
+2. 네비게이션 구조 구축
+3. 기본 UI 컴포넌트 라이브러리 설정
+4. 데이터베이스 스키마 설계
+
+#### Phase 2: 핵심 기능 (2-3주)
+1. 책 등록/검색 기능
+2. 서재 화면 구현
+3. 책 상세 화면
+4. 기본 CRUD 기능
+
+#### Phase 3: 고급 기능 (2-3주)
+1. OCR 기능 (인용문 스캔)
+2. 독서 타이머
+3. 통계 대시보드
+4. 설정 화면
+
+#### Phase 4: 최적화 및 테스트 (1-2주)
+1. 성능 최적화
+2. UI/UX 개선
+3. 테스트 및 버그 수정
+4. 앱 스토어 준비
+
+### 7. 기술적 고려사항
+
+#### 7.1 플랫폼별 최적화
+- iOS: Safe Area 처리
+- Android: Material Design 가이드라인
+- 크로스 플랫폼: 공통 컴포넌트 설계
+
+#### 7.2 성능 최적화
+- `FlatList` 사용으로 대용량 데이터 처리
+- 이미지 캐싱 및 최적화
+- 메모리 누수 방지
+
+#### 7.3 접근성
+- VoiceOver/TalkBack 지원
+- 키보드 네비게이션
+- 색상 대비 고려
+
+### 8. 예상 개발 기간
+- **총 개발 기간**: 8-10주
+- **MVP 완성**: 6-7주
+- **최적화 및 배포 준비**: 2-3주
+\

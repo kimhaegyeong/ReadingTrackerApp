@@ -6,7 +6,7 @@ alwaysApply: true
 # 📚 리브노트(ReadingTrackerApp) 개발 규칙 - .cursorrules
 
 ## 1. 프로젝트 구조 및 네이밍
-- 소스코드는 모두 `ReadingTrackerAppExpo` 하위에 작성한다.
+- 소스코드는 모두 `./ReadingTrackerAppExpo` 하위에 작성한다.
 - **React Native 스타일 폴더 구조/네이밍 가이드**
     - 주요 폴더 구조 예시:
       ```
