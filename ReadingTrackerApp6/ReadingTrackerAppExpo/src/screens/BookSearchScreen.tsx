@@ -48,7 +48,7 @@ const CustomCard = ({ children, style }: any) => {
     }
     return child;
   });
-  return <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>{wrappedChildren}</View>;
+  return <View style={[styles.card, style]}>{wrappedChildren}</View>;
 };
 
 const BookSearchScreen = ({ navigation }: any) => {
@@ -106,8 +106,8 @@ const BookSearchScreen = ({ navigation }: any) => {
         {/* Manual Add */}
         <TouchableOpacity onPress={handleManualAdd} style={styles.manualBtn}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-            <Feather name="plus" size={18} color="#1976d2" />
-            <Text style={{ color: '#1976d2', fontWeight: 'bold', marginLeft: 6 }}>직접 입력으로 책 추가하기</Text>
+            <Feather name="plus" size={18} color="#2563eb" />
+            <Text style={{ color: '#2563eb', fontWeight: 'bold', marginLeft: 6 }}>직접 입력으로 책 추가하기</Text>
           </View>
         </TouchableOpacity>
         {/* Results */}
@@ -158,16 +158,68 @@ const styles = StyleSheet.create({
   backBtn: { marginRight: 12, padding: 4, borderRadius: 20 },
   headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#222' },
   searchRow: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 0 },
-  input: { flex: 1, height: 48, backgroundColor: '#fff', borderRadius: 8, paddingHorizontal: 16, fontSize: 16, borderWidth: 1, borderColor: '#e0e0e0', marginRight: 8 },
-  searchBtn: { height: 48, width: 48, borderRadius: 8, backgroundColor: '#1976d2', justifyContent: 'center', alignItems: 'center' },
-  manualBtn: { margin: 16, marginBottom: 0, borderWidth: 1, borderColor: '#1976d2', borderRadius: 8, paddingVertical: 12, alignItems: 'center', backgroundColor: '#fff' },
+  input: {
+    flex: 1,
+    height: 48,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    marginRight: 8,
+  },
+  searchBtn: {
+    height: 48,
+    width: 48,
+    borderRadius: 12,
+    backgroundColor: '#1976d2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  manualBtn: {
+    margin: 16,
+    marginBottom: 0,
+    borderWidth: 1.5,
+    borderColor: '#2563eb',
+    borderRadius: 12,
+    height: 48,
+    paddingVertical: 0,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
   resultsContainer: { padding: 16, paddingTop: 8 },
-  card: { marginBottom: 16, borderRadius: 12, overflow: 'hidden' },
+  card: {
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
   bookIconWrap: { width: 48, height: 64, backgroundColor: '#eceff1', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   bookTitle: { fontSize: 17, fontWeight: 'bold', color: '#222' },
   bookAuthor: { color: '#607d8b', marginTop: 2 },
   bookMeta: { color: '#90a4ae', fontSize: 13, marginBottom: 8 },
-  addBtn: { alignSelf: 'flex-start', marginTop: 4, backgroundColor: '#1976d2', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 16 },
+  addBtn: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    backgroundColor: '#1976d2',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
   centered: { alignItems: 'center', justifyContent: 'center', marginTop: 48 },
   loadingText: { marginTop: 12, color: '#1976d2' },
   emptyText: { marginTop: 12, fontSize: 16, color: '#757575' },

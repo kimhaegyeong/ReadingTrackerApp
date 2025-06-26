@@ -54,7 +54,7 @@ const CustomCard = ({ children, style }: any) => {
     }
     return child;
   });
-  return <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>{wrappedChildren}</View>;
+  return <View style={[styles.card, style]}>{wrappedChildren}</View>;
 };
 
 const ReadingStatsScreen = ({ navigation }: any) => {
@@ -633,6 +633,17 @@ const styles = StyleSheet.create({
   },
   snackbar: { position: 'absolute', bottom: 32, left: 24, right: 24, backgroundColor: '#222', borderRadius: 8, padding: 16, alignItems: 'center', zIndex: 100 },
   snackbarText: { color: '#fff', fontSize: 15 },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
 });
 
 export default ReadingStatsScreen; 
