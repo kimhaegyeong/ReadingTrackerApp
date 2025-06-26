@@ -113,20 +113,72 @@ const BookLibraryScreen = () => {
   );
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerContent}><Ionicons name="library" size={32} color="#2563eb" /><Text style={styles.headerTitle}>리브노트</Text></View>
-          <View style={styles.headerButtons}>
-            <CustomButton type="outline" onPress={() => (navigation as any).navigate('ReadingStats')} icon={<Ionicons name="stats-chart" size={16} color="#2563eb" />} title="통계" />
-            <CustomButton type="outline" onPress={() => (navigation as any).navigate('ReadingTimer')} icon={<Ionicons name="timer" size={16} color="#2563eb" />} title="독서 기록" />
-            <CustomButton type="solid" onPress={() => (navigation as any).navigate('Search')} icon={<Ionicons name="add" size={16} color="#fff" />} title="책 추가" />
+      <View style={styles.container}>
+        <ScrollView style={styles.scrollView}>
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <Ionicons name="library" size={32} color="#2563eb" />
+              <Text style={styles.headerTitle}>리브노트</Text>
+            </View>
           </View>
-        </View>
-        <View style={styles.welcomeSection}><Text style={styles.welcomeTitle}>내 서재</Text><Text style={styles.welcomeSubtitle}>지금까지 {books.length}권의 책과 함께했어요</Text></View>
-        <CustomCard style={styles.todayCard}><View style={styles.todayHeader}><Ionicons name="calendar" size={20} color="#2563eb" /><Text style={styles.todayTitle}>오늘의 독서 기록</Text></View><View style={styles.statsGrid}><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalMinutes}</Text><Text style={styles.statLabel}>분</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalPages}</Text><Text style={styles.statLabel}>페이지</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalNotes}</Text><Text style={styles.statLabel}>노트</Text></View></View><View style={styles.sessionsContainer}><Text style={styles.sessionsTitle}>독서 세션</Text>{todayReading.sessions.map((session, index) => (<View key={index} style={styles.sessionItem}><Text style={styles.sessionBook}>{session.book}</Text><View style={styles.sessionStats}><Text style={styles.sessionText}>{session.minutes}분</Text><Text style={styles.sessionText}>{session.pages}페이지</Text><Text style={styles.sessionText}>{session.notes}노트</Text></View></View>))}</View></CustomCard>
-        <View style={styles.tabsContainer}><TabButton title="전체" value="all" isActive={activeTab === 'all'} /><TabButton title="읽는 중" value="reading" isActive={activeTab === 'reading'} /><TabButton title="완료" value="completed" isActive={activeTab === 'completed'} /><TabButton title="읽고 싶은" value="want-to-read" isActive={activeTab === 'want-to-read'} /></View>
-        <View style={styles.booksContainer}>{filterBooksByStatus(activeTab).map(book => (<BookCard key={book.id} book={book} />))}</View>
-      </ScrollView>
+          <View style={styles.welcomeSection}>
+            <Text style={styles.welcomeTitle}>내 서재</Text>
+            <Text style={styles.welcomeSubtitle}>지금까지 {books.length}권의 책과 함께했어요</Text>
+          </View>
+          <CustomCard style={styles.todayCard}>
+            <View style={styles.todayHeader}>
+              <Ionicons name="calendar" size={20} color="#2563eb" />
+              <Text style={styles.todayTitle}>오늘의 독서 기록</Text>
+            </View>
+            <View style={styles.statsGrid}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{todayReading.totalMinutes}</Text>
+                <Text style={styles.statLabel}>분</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{todayReading.totalPages}</Text>
+                <Text style={styles.statLabel}>페이지</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{todayReading.totalNotes}</Text>
+                <Text style={styles.statLabel}>노트</Text>
+              </View>
+            </View>
+            <View style={styles.sessionsContainer}>
+              <Text style={styles.sessionsTitle}>독서 세션</Text>
+              {todayReading.sessions.map((session, index) => (
+                <View key={index} style={styles.sessionItem}>
+                  <Text style={styles.sessionBook}>{session.book}</Text>
+                  <View style={styles.sessionStats}>
+                    <Text style={styles.sessionText}>{session.minutes}분</Text>
+                    <Text style={styles.sessionText}>{session.pages}페이지</Text>
+                    <Text style={styles.sessionText}>{session.notes}노트</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </CustomCard>
+          <View style={styles.tabsContainer}>
+            <TabButton title="전체" value="all" isActive={activeTab === 'all'} />
+            <TabButton title="읽는 중" value="reading" isActive={activeTab === 'reading'} />
+            <TabButton title="완료" value="completed" isActive={activeTab === 'completed'} />
+            <TabButton title="읽고 싶은" value="want-to-read" isActive={activeTab === 'want-to-read'} />
+          </View>
+          <View style={styles.booksContainer}>
+            {filterBooksByStatus(activeTab).map(book => (
+              <BookCard key={book.id} book={book} />
+            ))}
+          </View>
+        </ScrollView>
+        
+        {/* 플로팅 액션 버튼 - ScrollView 밖에 배치 */}
+        <TouchableOpacity
+          onPress={() => (navigation as any).navigate('Search')}
+          style={styles.floatingActionButton}
+        >
+          <Ionicons name="add" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -136,27 +188,33 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  container: { flex: 1, backgroundColor: '#f8fafc', maxWidth: '100%' },
-  header: { backgroundColor: 'white', paddingHorizontal: 16, paddingTop: 0, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
-  headerContent: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', marginLeft: 8, color: '#1e293b' },
-  headerButtons: { flexDirection: 'row', justifyContent: 'space-between' },
-  headerButton: {
-    marginRight: 8,
-    minWidth: 100,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f8fafc', 
+    maxWidth: '100%',
+    position: 'relative', // 플로팅 버튼의 기준점
   },
-  addButton: {
-    backgroundColor: '#2563eb',
-    minWidth: 100,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 0,
+  scrollView: {
+    flex: 1,
+  },
+  header: { 
+    backgroundColor: 'white', 
+    paddingHorizontal: 16, 
+    paddingTop: 0, 
+    paddingBottom: 16, 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#e2e8f0' 
+  },
+  headerContent: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginBottom: 0 
+  },
+  headerTitle: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    marginLeft: 8, 
+    color: '#1e293b' 
   },
   welcomeSection: { alignItems: 'center', paddingVertical: 32 },
   welcomeTitle: { fontSize: 28, fontWeight: 'bold', color: '#1e293b', marginBottom: 8 },
@@ -197,6 +255,26 @@ const styles = StyleSheet.create({
   progressContainer: { marginTop: 12 },
   progressBar: { height: 8, backgroundColor: '#e5e7eb', borderRadius: 4 },
   progressFill: { height: '100%', backgroundColor: '#2563eb', borderRadius: 4 },
+  floatingActionButton: {
+    position: 'absolute',
+    bottom: 24,
+    right: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#2563eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    zIndex: 1000, // 다른 요소들 위에 표시
+  },
 });
 
 export default BookLibraryScreen; 

@@ -25,10 +25,11 @@ function TabNavigator() {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'ellipse';
-          if (route.name === 'Library') iconName = focused ? 'library-outline' : 'library-outline';
-          else if (route.name === 'Search') iconName = focused ? 'search-outline' : 'search-outline';
-          else if (route.name === 'Profile') iconName = focused ? 'person-outline' : 'person-outline';
-          else if (route.name === 'Settings') iconName = focused ? 'settings-outline' : 'settings-outline';
+          if (route.name === 'Library') iconName = focused ? 'library' : 'library-outline';
+          else if (route.name === 'Stats') iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+          else if (route.name === 'Timer') iconName = focused ? 'timer' : 'timer-outline';
+          else if (route.name === 'Search') iconName = focused ? 'search' : 'search-outline';
+          else if (route.name === 'Profile') iconName = focused ? 'person' : 'person-outline';
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#2563eb',
@@ -37,9 +38,10 @@ function TabNavigator() {
       })}
     >
       <Tab.Screen name="Library" component={BookLibraryScreen} options={{ title: '서재' }} />
+      <Tab.Screen name="Stats" component={ReadingStatsScreen} options={{ title: '통계' }} />
+      <Tab.Screen name="Timer" component={ReadingTimerScreen} options={{ title: '독서기록' }} />
       <Tab.Screen name="Search" component={BookSearchScreen} options={{ title: '검색' }} />
       <Tab.Screen name="Profile" component={UserProfileScreen} options={{ title: '프로필' }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: '설정', tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" size={size} color={color} /> }} />
     </Tab.Navigator>
   );
 }
@@ -49,8 +51,6 @@ function StackNavigator() {
     <Stack.Navigator>
       <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
       <Stack.Screen name="BookDetail" component={BookDetailScreen as any} options={{ headerShown: false }} />
-      <Stack.Screen name="ReadingTimer" component={ReadingTimerScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="ReadingStats" component={ReadingStatsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AddBook" component={AddBookScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );

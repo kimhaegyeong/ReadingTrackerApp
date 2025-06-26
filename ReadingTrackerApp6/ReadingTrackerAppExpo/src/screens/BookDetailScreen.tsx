@@ -277,17 +277,17 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             onPress={() => setIsQuoteModalVisible(true)}
-            style={[styles.quoteButton, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}
+            style={[styles.actionButtonCard, styles.quoteButtonCard]}
           >
-            <Ionicons name="chatbubble" size={16} color="white" />
-            <Text style={{ color: '#fff', marginLeft: 6 }}>인용문 추가</Text>
+            <Ionicons name="chatbubble" size={18} color="#fff" style={styles.buttonIconCard} />
+            <Text style={styles.buttonTextCard}>인용문 추가</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setIsNoteModalVisible(true)}
-            style={[styles.noteButton, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#2563eb', borderRadius: 8 }]}
+            style={[styles.actionButtonCard, styles.noteButtonCard]}
           >
-            <Ionicons name="document-text" size={16} color="#2563eb" />
-            <Text style={{ color: '#2563eb', marginLeft: 6 }}>메모 추가</Text>
+            <Ionicons name="document-text" size={18} color="#2563eb" style={styles.buttonIconCard} />
+            <Text style={[styles.buttonTextCard, { color: '#2563eb' }]}>메모 추가</Text>
           </TouchableOpacity>
         </View>
 
@@ -372,18 +372,18 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
           animationType="slide"
           presentationStyle="pageSheet"
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>새 인용문 추가</Text>
+          <View style={styles.modalCardContainer}>
+            <View style={styles.modalHeaderCard}>
+              <Text style={styles.modalTitleCard}>새 인용문 추가</Text>
               <TouchableOpacity onPress={() => setIsQuoteModalVisible(false)}>
                 <Ionicons name="close" size={24} color="#64748b" />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalContent}>
+            <ScrollView style={styles.modalContentCard}>
               <View style={styles.ocrButtonContainer}>
-                <TouchableOpacity onPress={handleOCR} style={[styles.ocrButton, { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#2563eb', borderRadius: 8, padding: 8 }]}>
-                  <Ionicons name="camera" size={16} color="#2563eb" />
-                  <Text style={{ color: '#2563eb', marginLeft: 6 }}>OCR</Text>
+                <TouchableOpacity onPress={handleOCR} style={[styles.ocrButton, styles.actionButtonCard, styles.noteButtonCard, { height: 40, paddingHorizontal: 16, borderRadius: 10, marginRight: 0 }]}> 
+                  <Ionicons name="camera" size={16} color="#2563eb" style={{ marginRight: 6 }} />
+                  <Text style={{ color: '#2563eb', fontWeight: '600', fontSize: 15 }}>OCR</Text>
                 </TouchableOpacity>
                 <Text style={styles.ocrText}>카메라로 텍스트 인식</Text>
               </View>
@@ -393,7 +393,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                 onChangeText={setNewQuote}
                 multiline
                 numberOfLines={4}
-                style={styles.modalInput}
+                style={styles.modalInputCard}
               />
               <TextInput
                 placeholder="이 인용문에 대한 생각이나 메모를 남겨보세요..."
@@ -401,33 +401,38 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                 onChangeText={setNewQuoteMemo}
                 multiline
                 numberOfLines={3}
-                style={styles.modalInput}
+                style={styles.modalInputCard}
               />
-              <View style={styles.tagInputContainer}>
+              <View style={styles.tagInputContainerCard}>
                 <Text style={styles.tagLabel}>태그</Text>
-                <View style={styles.tagInputRow}>
+                <View style={styles.tagInputRowCard}>
                   <TextInput
                     placeholder="태그를 입력하세요..."
                     value={currentQuoteTag}
                     onChangeText={setCurrentQuoteTag}
                     onSubmitEditing={handleAddQuoteTag}
-                    style={styles.tagInput}
+                    style={[styles.tagInput, styles.modalInputCard, { flex: 1, marginBottom: 0, marginRight: 8 }]}
                   />
-                  <TouchableOpacity onPress={handleAddQuoteTag} style={[styles.tagAddButton, { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2563eb', borderRadius: 8, padding: 8 }]}>
+                  <TouchableOpacity onPress={handleAddQuoteTag} style={[styles.actionButtonCard, styles.quoteButtonCard, { height: 40, paddingHorizontal: 16, borderRadius: 10, marginRight: 0 }]}> 
                     <Ionicons name="add" size={16} color="#fff" />
-                    <Text style={{ color: '#fff', marginLeft: 4 }}>추가</Text>
+                    <Text style={{ color: '#fff', marginLeft: 4, fontWeight: '600', fontSize: 15 }}>추가</Text>
                   </TouchableOpacity>
                 </View>
                 {newQuoteTags.length > 0 && (
-                  <View style={styles.tagsRow}>
+                  <View style={styles.tagsRowCard}>
                     {newQuoteTags.map((tag, index) => (
-                      <CustomChip key={index} title={tag} style={styles.tagChip} textStyle={styles.tagText} onPress={() => removeQuoteTag(tag)} />
+                      <View key={index} style={styles.tagChipCard}>
+                        <Text style={styles.tagTextCard}>{tag}</Text>
+                        <TouchableOpacity onPress={() => removeQuoteTag(tag)}>
+                          <Ionicons name="close" size={14} color="#64748b" style={{ marginLeft: 4 }} />
+                        </TouchableOpacity>
+                      </View>
                     ))}
                   </View>
                 )}
               </View>
-              <TouchableOpacity onPress={handleAddQuote} style={[styles.modalSubmitButton, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}>
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>인용문 추가</Text>
+              <TouchableOpacity onPress={handleAddQuote} style={[styles.actionButtonCard, styles.quoteButtonCard, { marginTop: 16 }]}> 
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>인용문 추가</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -440,47 +445,52 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
           animationType="slide"
           presentationStyle="pageSheet"
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>새 메모 추가</Text>
+          <View style={styles.modalCardContainer}>
+            <View style={styles.modalHeaderCard}>
+              <Text style={styles.modalTitleCard}>새 메모 추가</Text>
               <TouchableOpacity onPress={() => setIsNoteModalVisible(false)}>
                 <Ionicons name="close" size={24} color="#64748b" />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalContent}>
+            <ScrollView style={styles.modalContentCard}>
               <TextInput
                 placeholder="이 책에 대한 생각을 자유롭게 적어보세요..."
                 value={newNote}
                 onChangeText={setNewNote}
                 multiline
                 numberOfLines={5}
-                style={styles.modalInput}
+                style={styles.modalInputCard}
               />
-              <View style={styles.tagInputContainer}>
+              <View style={styles.tagInputContainerCard}>
                 <Text style={styles.tagLabel}>태그</Text>
-                <View style={styles.tagInputRow}>
+                <View style={styles.tagInputRowCard}>
                   <TextInput
                     placeholder="태그를 입력하세요..."
                     value={currentNoteTag}
                     onChangeText={setCurrentNoteTag}
                     onSubmitEditing={handleAddNoteTag}
-                    style={styles.tagInput}
+                    style={[styles.tagInput, styles.modalInputCard, { flex: 1, marginBottom: 0, marginRight: 8 }]}
                   />
-                  <TouchableOpacity onPress={handleAddNoteTag} style={[styles.tagAddButton, { flexDirection: 'row', alignItems: 'center', backgroundColor: '#2563eb', borderRadius: 8, padding: 8 }]}>
+                  <TouchableOpacity onPress={handleAddNoteTag} style={[styles.actionButtonCard, styles.quoteButtonCard, { height: 40, paddingHorizontal: 16, borderRadius: 10, marginRight: 0 }]}> 
                     <Ionicons name="add" size={16} color="#fff" />
-                    <Text style={{ color: '#fff', marginLeft: 4 }}>추가</Text>
+                    <Text style={{ color: '#fff', marginLeft: 4, fontWeight: '600', fontSize: 15 }}>추가</Text>
                   </TouchableOpacity>
                 </View>
                 {newNoteTags.length > 0 && (
-                  <View style={styles.tagsRow}>
+                  <View style={styles.tagsRowCard}>
                     {newNoteTags.map((tag, index) => (
-                      <CustomChip key={index} title={tag} style={styles.tagChip} textStyle={styles.tagText} onPress={() => removeNoteTag(tag)} />
+                      <View key={index} style={styles.tagChipCard}>
+                        <Text style={styles.tagTextCard}>{tag}</Text>
+                        <TouchableOpacity onPress={() => removeNoteTag(tag)}>
+                          <Ionicons name="close" size={14} color="#64748b" style={{ marginLeft: 4 }} />
+                        </TouchableOpacity>
+                      </View>
                     ))}
                   </View>
                 )}
               </View>
-              <TouchableOpacity onPress={handleAddNote} style={[styles.modalSubmitButton, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]}>
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>메모 추가</Text>
+              <TouchableOpacity onPress={handleAddNote} style={[styles.actionButtonCard, styles.quoteButtonCard, { marginTop: 16 }]}> 
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>메모 추가</Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -607,12 +617,41 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 12,
   },
-  quoteButton: {
+  actionButtonCard: {
     flex: 1,
-    backgroundColor: '#2563eb',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 14,
+    paddingHorizontal: 0,
+    marginRight: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
+    backgroundColor: '#fff', // 기본값(메모 추가용)
   },
-  noteButton: {
-    flex: 1,
+  quoteButtonCard: {
+    backgroundColor: '#2563eb',
+    borderWidth: 0,
+    marginRight: 12,
+  },
+  noteButtonCard: {
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#2563eb',
+    marginRight: 0,
+  },
+  buttonIconCard: {
+    marginRight: 8,
+  },
+  buttonTextCard: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+    color: '#fff',
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -724,28 +763,80 @@ const styles = StyleSheet.create({
     color: '#3730a3',
     fontSize: 12,
   },
-  modalContainer: {
+  modalCardContainer: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
   },
-  modalHeader: {
+  modalHeaderCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    paddingTop: 50,
-    backgroundColor: 'white',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
   },
-  modalTitle: {
+  modalTitleCard: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1e293b',
   },
-  modalContent: {
+  modalContentCard: {
     flex: 1,
-    padding: 16,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  modalInputCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 16,
+    fontSize: 15,
+  },
+  tagInputContainerCard: {
+    marginBottom: 16,
+  },
+  tagInputRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tagsRowCard: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 4,
+  },
+  tagChipCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  tagTextCard: {
+    color: '#374151',
+    fontSize: 13,
+    fontWeight: '500',
   },
   ocrButtonContainer: {
     flexDirection: 'row',
