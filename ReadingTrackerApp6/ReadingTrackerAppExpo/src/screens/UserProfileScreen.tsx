@@ -106,10 +106,6 @@ const UserProfileScreen = ({ navigation }: any) => {
             ))}
           </Card.Content>
         </Card>
-        {/* 설정 버튼 */}
-        <Button mode="outlined" icon="settings" style={{ marginTop: 18 }} onPress={() => navigation.navigate && navigation.navigate('SettingsScreen')}>
-          설정
-        </Button>
       </ScrollView>
     </SafeAreaView>
   );

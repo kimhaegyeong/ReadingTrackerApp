@@ -46,8 +46,8 @@ const BookLibraryScreen = () => {
                 <Ionicons name="book" size={24} color="white" />
               </View>
               <View style={styles.bookDetails}>
-                <Title style={styles.bookTitle}>{book.title}</Title>
-                <Paragraph style={styles.bookAuthor}>{book.author}</Paragraph>
+                <Title style={styles.bookTitle}><Text style={styles.bookTitle}>{book.title}</Text></Title>
+                <Paragraph style={styles.bookAuthor}><Text style={styles.bookAuthor}>{book.author}</Text></Paragraph>
                 <View style={styles.statusContainer}>
                   <View style={[styles.badge, { backgroundColor: statusInfo.color }]}> 
                     <Ionicons name={statusInfo.icon as any} size={12} color="white" />
@@ -92,7 +92,7 @@ const BookLibraryScreen = () => {
           </View>
         </View>
         <View style={styles.welcomeSection}><Text style={styles.welcomeTitle}>내 서재</Text><Text style={styles.welcomeSubtitle}>지금까지 {books.length}권의 책과 함께했어요</Text></View>
-        <Card style={styles.todayCard}><Card.Content><View style={styles.todayHeader}><Ionicons name="calendar" size={20} color="#2563eb" /><Title style={styles.todayTitle}>오늘의 독서 기록</Title></View><View style={styles.statsGrid}><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalMinutes}</Text><Text style={styles.statLabel}>분</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalPages}</Text><Text style={styles.statLabel}>페이지</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalNotes}</Text><Text style={styles.statLabel}>노트</Text></View></View><View style={styles.sessionsContainer}><Text style={styles.sessionsTitle}>독서 세션</Text>{todayReading.sessions.map((session, index) => (<View key={index} style={styles.sessionItem}><Text style={styles.sessionBook}>{session.book}</Text><View style={styles.sessionStats}><Text style={styles.sessionText}>{session.minutes}분</Text><Text style={styles.sessionText}>{session.pages}페이지</Text><Text style={styles.sessionText}>{session.notes}노트</Text></View></View>))}</View></Card.Content></Card>
+        <Card style={styles.todayCard}><Card.Content><View style={styles.todayHeader}><Ionicons name="calendar" size={20} color="#2563eb" /><Title style={styles.todayTitle}><Text style={styles.todayTitle}>오늘의 독서 기록</Text></Title></View><View style={styles.statsGrid}><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalMinutes}</Text><Text style={styles.statLabel}>분</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalPages}</Text><Text style={styles.statLabel}>페이지</Text></View><View style={styles.statItem}><Text style={styles.statNumber}>{todayReading.totalNotes}</Text><Text style={styles.statLabel}>노트</Text></View></View><View style={styles.sessionsContainer}><Text style={styles.sessionsTitle}>독서 세션</Text>{todayReading.sessions.map((session, index) => (<View key={index} style={styles.sessionItem}><Text style={styles.sessionBook}>{session.book}</Text><View style={styles.sessionStats}><Text style={styles.sessionText}>{session.minutes}분</Text><Text style={styles.sessionText}>{session.pages}페이지</Text><Text style={styles.sessionText}>{session.notes}노트</Text></View></View>))}</View></Card.Content></Card>
         <View style={styles.tabsContainer}><TabButton title="전체" value="all" isActive={activeTab === 'all'} /><TabButton title="읽는 중" value="reading" isActive={activeTab === 'reading'} /><TabButton title="완료" value="completed" isActive={activeTab === 'completed'} /><TabButton title="읽고 싶은" value="want-to-read" isActive={activeTab === 'want-to-read'} /></View>
         <View style={styles.booksContainer}>{filterBooksByStatus(activeTab).map(book => (<BookCard key={book.id} book={book} />))}</View>
       </ScrollView>

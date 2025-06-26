@@ -193,8 +193,8 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
             <View style={styles.bookInfo}>
               <View style={[styles.bookCover, { backgroundColor: book.coverColor }]}> <Ionicons name="book" size={48} color="white" /> </View>
               <View style={styles.bookDetails}>
-                <Title style={styles.bookTitle}>{book.title}</Title>
-                <Paragraph style={styles.bookAuthor}>{book.author}</Paragraph>
+                <Title style={styles.bookTitle}><Text style={styles.bookTitle}>{book.title}</Text></Title>
+                <Paragraph style={styles.bookAuthor}><Text style={styles.bookAuthor}>{book.author}</Text></Paragraph>
                 <View style={styles.statusContainer}>
                   {getStatusBadge(book.status)}
                   {book.status === 'reading' && (
@@ -278,7 +278,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                           <View style={styles.tagsContainer}>
                             {quote.tags.map((tag, index) => (
                               <Chip key={index} style={styles.tagChip} textStyle={styles.tagText}>
-                                {tag}
+                                <Text style={styles.tagText}>{tag}</Text>
                               </Chip>
                             ))}
                           </View>
@@ -303,7 +303,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                           <View style={styles.tagsContainer}>
                             {note.tags.map((tag, index) => (
                               <Chip key={index} style={styles.tagChip} textStyle={styles.tagText}>
-                                {tag}
+                                <Text style={styles.tagText}>{tag}</Text>
                               </Chip>
                             ))}
                           </View>
@@ -376,7 +376,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                   <View style={styles.tagsRow}>
                     {newQuoteTags.map((tag, index) => (
                       <Chip key={index} onClose={() => removeQuoteTag(tag)} style={styles.tagChip}>
-                        {tag}
+                        <Text style={styles.tagText}>{tag}</Text>
                       </Chip>
                     ))}
                   </View>
@@ -431,7 +431,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                   <View style={styles.tagsRow}>
                     {newNoteTags.map((tag, index) => (
                       <Chip key={index} onClose={() => removeNoteTag(tag)} style={styles.tagChip}>
-                        {tag}
+                        <Text style={styles.tagText}>{tag}</Text>
                       </Chip>
                     ))}
                   </View>
