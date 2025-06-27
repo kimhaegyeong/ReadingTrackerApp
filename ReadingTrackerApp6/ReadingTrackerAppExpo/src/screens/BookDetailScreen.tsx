@@ -8,10 +8,13 @@ import {
   Modal,
   TextInput,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
+import { DatabaseService, Book as DBBook } from '../DatabaseService';
+import { useBookContext } from '../BookContext';
 
 interface Quote {
   id: number;
@@ -42,7 +45,7 @@ interface Book {
 }
 
 type RootStackParamList = {
-  BookDetail: { book: Book };
+  BookDetail: { book: DBBook };
 };
 
 interface BookDetailScreenProps {
@@ -85,6 +88,9 @@ const CustomChip = ({ title, onPress, style, textStyle }: any) => (
 const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
   const navigation = useNavigation();
   const { book } = route.params;
+  const { updateBook, deleteBook } = useBookContext();
+  const [title, setTitle] = useState(book.title);
+  const [author, setAuthor] = useState(book.author);
   const [activeTab, setActiveTab] = useState('quotes');
   
   const [newQuote, setNewQuote] = useState('');
@@ -220,6 +226,39 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
     </TouchableOpacity>
   );
 
+  const handleUpdate = async () => {
+    try {
+      await updateBook(book.id, { title, author });
+      Alert.alert('수정 완료', '책 정보가 수정되었습니다.');
+      navigation.goBack && navigation.goBack();
+    } catch (e) {
+      Alert.alert('오류', '수정에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async () => {
+    Alert.alert(
+      '삭제 확인',
+      '정말로 이 책을 삭제하시겠습니까?',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '삭제',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteBook(book.id);
+              Alert.alert('삭제 완료', '책이 삭제되었습니다.');
+              navigation.navigate('Library' as never);
+            } catch (e) {
+              Alert.alert('오류', '책 삭제에 실패했습니다.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
@@ -232,46 +271,28 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
         </View>
 
         {/* Book Info Card */}
-        <CustomCard style={styles.bookCard}>
-          <View style={styles.bookCardContent}>
-            <View style={styles.bookInfo}>
-              <View style={[styles.bookCover, { backgroundColor: book.coverColor }]}>
-                <Ionicons name="book" size={48} color="white" />
-              </View>
-              <View style={styles.bookDetails}>
-                <Text style={styles.bookTitle}>{book.title}</Text>
-                <Text style={styles.bookAuthor}>{book.author}</Text>
-                <View style={styles.statusContainer}>
-                  {getStatusBadge(book.status)}
-                  {book.status === 'reading' && (
-                    <Text style={styles.progressText}>{book.progress}% 완료</Text>
-                  )}
-                </View>
-                <View style={styles.statsGrid}>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{book.quotes}</Text>
-                    <Text style={styles.statLabel}>인용문</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{book.notes}</Text>
-                    <Text style={styles.statLabel}>메모</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{book.readingTime}</Text>
-                    <Text style={styles.statLabel}>독서 시간</Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-            {book.status === 'reading' && (
-              <View style={styles.progressContainer}>
-                <View style={styles.progressBar}>
-                  <View style={[styles.progressFill, { width: `${book.progress}%` }]} />
-                </View>
-              </View>
-            )}
+        <View style={{ padding: 24, borderBottomWidth: 1, borderColor: '#e0e0e0', backgroundColor: '#f8fafc' }}>
+          <TextInput
+            placeholder="제목을 입력하세요..."
+            value={title}
+            onChangeText={setTitle}
+            style={styles.titleInput}
+          />
+          <TextInput
+            placeholder="저자를 입력하세요..."
+            value={author}
+            onChangeText={setAuthor}
+            style={styles.authorInput}
+          />
+          <View style={{ flexDirection: 'row', marginTop: 12 }}>
+            <TouchableOpacity style={{ backgroundColor: '#ef4444', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20 }} onPress={handleDelete}>
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>삭제</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={{ backgroundColor: '#2563eb', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20, marginLeft: 12 }} onPress={handleUpdate}>
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>수정</Text>
+            </TouchableOpacity>
           </View>
-        </CustomCard>
+        </View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
@@ -891,6 +912,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     elevation: 2,
     backgroundColor: '#fff',
+  },
+  titleInput: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 16,
+    fontSize: 15,
+  },
+  authorInput: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 16,
+    fontSize: 15,
   },
 });
 

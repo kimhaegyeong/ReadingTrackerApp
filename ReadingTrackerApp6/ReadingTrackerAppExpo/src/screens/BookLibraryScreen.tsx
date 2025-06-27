@@ -1,19 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-
-interface Book {
-  id: number;
-  title: string;
-  author: string;
-  status: 'want-to-read' | 'reading' | 'completed';
-  progress: number;
-  coverColor: string;
-  quotes: number;
-  notes: number;
-  readingTime: string;
-}
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { DatabaseService, Book as DBBook } from '../DatabaseService';
+import { useBookContext } from '../BookContext';
 
 // 커스텀 카드
 const CustomCard = ({ children, style }: any) => {
@@ -50,14 +40,14 @@ const CustomButton = ({ onPress, icon, title, type, buttonStyle }: any) => (
 const BookLibraryScreen = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('all');
-  const [books] = useState<Book[]>([
-    { id: 1, title: '사피엔스', author: '유발 하라리', status: 'completed', progress: 100, coverColor: '#3b82f6', quotes: 12, notes: 8, readingTime: '15시간 32분' },
-    { id: 2, title: '아몬드', author: '손원평', status: 'reading', progress: 65, coverColor: '#8b5cf6', quotes: 5, notes: 3, readingTime: '8시간 15분' },
-    { id: 3, title: '코스모스', author: '칼 세이건', status: 'want-to-read', progress: 0, coverColor: '#6366f1', quotes: 0, notes: 0, readingTime: '0분' },
-    { id: 4, title: '1984', author: '조지 오웰', status: 'completed', progress: 100, coverColor: '#ef4444', quotes: 18, notes: 12, readingTime: '12시간 45분' }
-  ]);
+  const { books, fetchBooks, loading, dbService } = useBookContext();
+  useFocusEffect(
+    React.useCallback(() => {
+      if (dbService) fetchBooks(dbService);
+    }, [dbService])
+  );
   const todayReading = { totalMinutes: 45, totalPages: 23, totalNotes: 3, sessions: [ { book: '아몬드', minutes: 25, pages: 15, notes: 2 }, { book: '사피엔스', minutes: 20, pages: 8, notes: 1 } ] };
-  const getStatusInfo = (status: Book['status']) => {
+  const getStatusInfo = (status: DBBook['status']) => {
     switch (status) {
       case 'want-to-read': return { label: '읽고 싶은', icon: 'heart', color: '#ec4899' };
       case 'reading': return { label: '읽는 중', icon: 'time', color: '#eab308' };
@@ -66,14 +56,14 @@ const BookLibraryScreen = () => {
     }
   };
   const filterBooksByStatus = (status: string) => status === 'all' ? books : books.filter(book => book.status === status);
-  const BookCard = ({ book }: { book: Book }) => {
+  const BookCard = ({ book }: { book: DBBook }) => {
     const statusInfo = getStatusInfo(book.status);
     return (
       <TouchableOpacity onPress={() => (navigation as any).navigate('BookDetail', { book })} style={styles.bookCard}>
         <CustomCard>
           <View style={styles.cardContent}>
             <View style={styles.bookInfo}>
-              <View style={[styles.bookCover, { backgroundColor: book.coverColor }]}> 
+              <View style={[styles.bookCover, { backgroundColor: book.cover_color || '#3b82f6' }]}> 
                 <Ionicons name="book" size={24} color="white" />
               </View>
               <View style={styles.bookDetails}>
@@ -84,23 +74,11 @@ const BookLibraryScreen = () => {
                     <Ionicons name={statusInfo.icon as any} size={12} color="white" />
                     <Text style={styles.badgeText}>{statusInfo.label}</Text>
                   </View>
-                  {book.status === 'reading' && (
-                    <Text style={styles.progressText}>{book.progress}%</Text>
-                  )}
                 </View>
                 <View style={styles.statsContainer}>
-                  <Text style={styles.statsText}>📖 {book.quotes}개 인용문</Text>
-                  <Text style={styles.statsText}>📝 {book.notes}개 메모</Text>
                 </View>
               </View>
             </View>
-            {book.status === 'reading' && (
-              <View style={styles.progressContainer}>
-                <View style={styles.progressBar}>
-                  <View style={[styles.progressFill, { width: `${book.progress}%` }]} />
-                </View>
-              </View>
-            )}
           </View>
         </CustomCard>
       </TouchableOpacity>
@@ -274,6 +252,26 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 6,
     zIndex: 1000, // 다른 요소들 위에 표시
+  },
+  addButton: {
+    backgroundColor: '#2563eb',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 8,
+  },
+  headerButton: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#2563eb',
+    marginVertical: 8,
   },
 });
 

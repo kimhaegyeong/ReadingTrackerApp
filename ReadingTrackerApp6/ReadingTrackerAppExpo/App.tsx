@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -14,6 +14,8 @@ import ReadingStatsScreen from './src/screens/ReadingStatsScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import UserProfileScreen from './src/screens/UserProfileScreen';
 import AddBookScreen from './src/screens/AddBookScreen';
+import { DatabaseService } from './src/DatabaseService';
+import { BookProvider } from './src/BookContext';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -59,10 +61,12 @@ function StackNavigator() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <NavigationContainer>
-        <StackNavigator />
-        <StatusBar style="auto" />
-      </NavigationContainer>
+      <BookProvider>
+        <NavigationContainer>
+          <StackNavigator />
+          <StatusBar style="auto" />
+        </NavigationContainer>
+      </BookProvider>
     </QueryClientProvider>
   );
 }

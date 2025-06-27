@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Keyboard, SafeAreaView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Keyboard, SafeAreaView, Alert } from 'react-native';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
+import { DatabaseService } from '../DatabaseService';
 
 const mockSearch = (query: string) => {
   return new Promise<any[]>((resolve) => {
@@ -66,9 +67,22 @@ const BookSearchScreen = ({ navigation }: any) => {
     setIsSearching(false);
   };
 
-  const handleAddBook = (book: any) => {
-    setSnackbar({ visible: true, message: `"${book.title}"이(가) 서재에 추가되었습니다!` });
-    navigation.goBack && navigation.goBack();
+  const handleAddBook = async (book: any) => {
+    try {
+      const db = await DatabaseService.getInstance();
+      await db.addBook({
+        title: book.title,
+        author: book.author,
+        isbn: book.isbn,
+        pages: undefined,
+        status: 'want-to-read',
+        cover_color: undefined,
+      });
+      setSnackbar({ visible: true, message: `"${book.title}"이(가) 서재에 추가되었습니다!` });
+      navigation.goBack && navigation.goBack();
+    } catch (e) {
+      Alert.alert('오류', '책 추가에 실패했습니다.');
+    }
   };
 
   const handleManualAdd = () => {

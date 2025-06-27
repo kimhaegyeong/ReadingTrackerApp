@@ -8,19 +8,42 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { Button } from 'react-native-elements';
 import { Feather } from '@expo/vector-icons';
+import { useBookContext } from '../BookContext';
 
 const AddBookScreen = ({ navigation }: any) => {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
   const [isbn, setIsbn] = useState('');
   const [pages, setPages] = useState('');
+  const { addBook, loading } = useBookContext();
 
-  const handleSave = () => {
-    // 실제로는 저장 로직 필요
-    navigation.goBack && navigation.goBack();
+  const handleSave = async () => {
+    if (!title || !author) {
+      Alert.alert('필수 입력', '제목과 저자를 입력하세요.');
+      return;
+    }
+    try {
+      await addBook({
+        title,
+        author,
+        isbn: isbn || undefined,
+        pages: pages ? parseInt(pages, 10) : undefined,
+        status: 'want-to-read',
+        cover_color: undefined,
+      });
+      Alert.alert('성공', '책이 추가되었습니다.');
+      setTitle('');
+      setAuthor('');
+      setIsbn('');
+      setPages('');
+      navigation.goBack && navigation.goBack();
+    } catch (e) {
+      Alert.alert('오류', '책 추가에 실패했습니다.');
+    }
   };
 
   return (
