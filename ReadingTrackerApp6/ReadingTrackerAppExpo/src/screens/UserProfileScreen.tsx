@@ -1,29 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { Feather, MaterialIcons, FontAwesome, Ionicons } from '@expo/vector-icons';
-
-const userStats = {
-  totalBooks: 15,
-  completedBooks: 8,
-  readingBooks: 2,
-  wantToReadBooks: 5,
-  totalReadingTime: '127시간 32분',
-  totalQuotes: 45,
-  totalNotes: 28,
-  currentStreak: 12,
-};
-
-const recentAchievements = [
-  { id: 1, title: '첫 번째 완독', icon: '🏆', date: '2023-10-15' },
-  { id: 2, title: '10권 돌파', icon: '📚', date: '2023-10-28' },
-  { id: 3, title: '꾸준한 독서', icon: '🔥', date: '2023-11-01' },
-];
-
-const monthlyGoal = {
-  target: 3,
-  current: 1,
-  percentage: 33,
-};
+import { DatabaseService, UserProfile } from '../DatabaseService';
 
 // 커스텀 카드
 const CustomCard = ({ children, style }: any) => {
@@ -49,6 +27,36 @@ const CustomCardTitle = ({ title, left }: any) => (
 );
 
 const UserProfileScreen = ({ navigation }: any) => {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [form, setForm] = useState<{ name: string; bio: string; email: string }>({ name: '', bio: '', email: '' });
+  // DB 기반 상태 (컴포넌트 내부에서 선언)
+  const [userStats, setUserStats] = useState({ totalMinutes: 0, totalPages: 0 });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const db = await DatabaseService.getInstance();
+      const user = await db.getUserProfile();
+      setProfile(user);
+      setForm({ name: user.name, bio: user.bio || '', email: user.email || '' });
+      // 통계 fetch
+      const stats = await db.getTotalStats();
+      setUserStats(stats);
+    };
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    const db = await DatabaseService.getInstance();
+    await db.updateUserProfile({ name: form.name, bio: form.bio, email: form.email });
+    setEditMode(false);
+    const user = await db.getUserProfile();
+    setProfile(user);
+    Alert.alert('성공', '프로필이 저장되었습니다!');
+  };
+
+  if (!profile) return null;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
@@ -58,70 +66,71 @@ const UserProfileScreen = ({ navigation }: any) => {
             <View style={styles.avatarWrap}>
               <MaterialIcons name="menu-book" size={40} color="#fff" />
             </View>
-            <View style={{ marginLeft: 16 }}>
-              <Text style={styles.profileName}>독서 여정</Text>
-              <Text style={styles.profileDesc}>지식과 함께 성장하는 중</Text>
-              <View style={styles.streakBadge}>
-                <Text style={styles.streakText}>🔥 {userStats.currentStreak}일 연속</Text>
-              </View>
+            <View style={{ marginLeft: 16, flex: 1 }}>
+              {editMode ? (
+                <TextInput
+                  style={[styles.profileName, { backgroundColor: '#f3f4f6', borderRadius: 8, paddingHorizontal: 8 }]}
+                  value={form.name}
+                  onChangeText={v => setForm(f => ({ ...f, name: v }))}
+                  placeholder="이름"
+                />
+              ) : (
+                <Text style={styles.profileName}>{profile.name}</Text>
+              )}
+              {editMode ? (
+                <TextInput
+                  style={[styles.profileDesc, { backgroundColor: '#f3f4f6', borderRadius: 8, paddingHorizontal: 8, marginTop: 4 }]}
+                  value={form.bio}
+                  onChangeText={v => setForm(f => ({ ...f, bio: v }))}
+                  placeholder="소개"
+                />
+              ) : (
+                <Text style={styles.profileDesc}>{profile.bio || '지식과 함께 성장하는 중'}</Text>
+              )}
+              {/* 연속 기록(추후 확장 가능) */}
             </View>
           </View>
+          <View style={{ marginTop: 12 }}>
+            <Text style={{ color: '#607d8b', fontSize: 13 }}>이메일</Text>
+            {editMode ? (
+              <TextInput
+                style={[styles.profileDesc, { backgroundColor: '#f3f4f6', borderRadius: 8, paddingHorizontal: 8, marginTop: 2 }]}
+                value={form.email}
+                onChangeText={v => setForm(f => ({ ...f, email: v }))}
+                placeholder="이메일"
+                keyboardType="email-address"
+              />
+            ) : (
+              <Text style={styles.profileDesc}>{profile.email || '-'}</Text>
+            )}
+          </View>
+          <View style={{ flexDirection: 'row', marginTop: 12 }}>
+            {editMode ? (
+              <>
+                <TouchableOpacity onPress={handleSave} style={{ backgroundColor: '#1976d2', borderRadius: 8, padding: 8, marginRight: 8 }}>
+                  <Text style={{ color: '#fff', fontWeight: 'bold' }}>저장</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { setEditMode(false); setForm({ name: profile.name, bio: profile.bio || '', email: profile.email || '' }); }} style={{ backgroundColor: '#e5e7eb', borderRadius: 8, padding: 8 }}>
+                  <Text style={{ color: '#222' }}>취소</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <TouchableOpacity onPress={() => setEditMode(true)} style={{ backgroundColor: '#e5e7eb', borderRadius: 8, padding: 8 }}>
+                <Text style={{ color: '#222' }}>프로필 수정</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </CustomCard>
-        {/* 이번 달 목표 */}
+        {/* 총 독서 시간/페이지 */}
         <CustomCard>
-          <CustomCardTitle title="이번 달 목표" left={() => <Feather name="target" size={20} color="#1976d2" />} />
+          <CustomCardTitle title="누적 독서 통계" left={() => <Feather name="target" size={20} color="#1976d2" />} />
           <View style={styles.rowBetween}>
-            <Text style={styles.goalValue}>{monthlyGoal.current} / {monthlyGoal.target}권</Text>
-            <Text style={styles.goalPercent}>{monthlyGoal.percentage}% 달성</Text>
+            <Text style={styles.goalValue}>{userStats.totalMinutes}분</Text>
+            <Text style={styles.goalPercent}>{userStats.totalPages}페이지</Text>
           </View>
-          <View style={styles.progressBarWrap}>
-            <View style={[styles.progressBar, { width: `${monthlyGoal.percentage}%` }]} />
-          </View>
-          <Text style={styles.goalDesc}>목표까지 {monthlyGoal.target - monthlyGoal.current}권 남았어요!</Text>
         </CustomCard>
-        {/* 통계 그리드 */}
-        <View style={styles.statsGrid}>
-          <CustomCard style={styles.statCard}><View style={styles.statContent}>
-            <MaterialIcons name="menu-book" size={28} color="#1976d2" style={{ marginBottom: 4 }} />
-            <Text style={styles.statValue}>{userStats.totalBooks}</Text>
-            <Text style={styles.statLabel}>총 책 수</Text>
-          </View></CustomCard>
-          <CustomCard style={styles.statCard}><View style={styles.statContent}>
-            <FontAwesome name="clock-o" size={28} color="#43a047" style={{ marginBottom: 4 }} />
-            <Text style={styles.statValue}>{userStats.totalReadingTime}</Text>
-            <Text style={styles.statLabel}>총 독서 시간</Text>
-          </View></CustomCard>
-          <CustomCard style={styles.statCard}><View style={styles.statContent}>
-            <MaterialIcons name="format-quote" size={28} color="#8B5CF6" style={{ marginBottom: 4 }} />
-            <Text style={styles.statValue}>{userStats.totalQuotes}</Text>
-            <Text style={styles.statLabel}>인용문</Text>
-          </View></CustomCard>
-          <CustomCard style={styles.statCard}><View style={styles.statContent}>
-            <MaterialIcons name="sticky-note-2" size={28} color="#F59E0B" style={{ marginBottom: 4 }} />
-            <Text style={styles.statValue}>{userStats.totalNotes}</Text>
-            <Text style={styles.statLabel}>메모</Text>
-          </View></CustomCard>
-        </View>
-        {/* 독서 현황 */}
-        <CustomCard>
-          <CustomCardTitle title="독서 현황" left={() => <MaterialIcons name="menu-book" size={20} color="#1976d2" />} />
-          <View style={styles.rowBetween}><Text style={styles.statusLabel}>완독한 책</Text><Text style={styles.statusValue}>{userStats.completedBooks}권</Text></View>
-          <View style={styles.rowBetween}><Text style={styles.statusLabel}>읽는 중</Text><Text style={styles.statusValue}>{userStats.readingBooks}권</Text></View>
-          <View style={styles.rowBetween}><Text style={styles.statusLabel}>읽고 싶은</Text><Text style={styles.statusValue}>{userStats.wantToReadBooks}권</Text></View>
-        </CustomCard>
-        {/* 최근 달성 */}
-        <CustomCard>
-          <CustomCardTitle title="최근 달성" left={() => <MaterialIcons name="emoji-events" size={20} color="#F59E0B" />} />
-          {recentAchievements.map(a => (
-            <View key={a.id} style={styles.achieveRow}>
-              <Text style={styles.achieveIcon}>{a.icon}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.achieveTitle}>{a.title}</Text>
-                <Text style={styles.achieveDate}>{a.date}</Text>
-              </View>
-            </View>
-          ))}
-        </CustomCard>
+        {/* 통계 그리드 (추가 통계 필요시 여기에 추가) */}
+        {/* 독서 현황(추후 확장 가능) */}
       </ScrollView>
     </SafeAreaView>
   );

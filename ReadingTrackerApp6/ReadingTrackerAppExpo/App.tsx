@@ -59,6 +59,9 @@ function StackNavigator() {
 }
 
 export default function App() {
+  React.useEffect(() => {
+    DatabaseService.getInstance();
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       <BookProvider>

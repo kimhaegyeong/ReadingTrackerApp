@@ -56,8 +56,31 @@ const BookLibraryScreen = () => {
     }
   };
   const filterBooksByStatus = (status: string) => status === 'all' ? books : books.filter(book => book.status === status);
+  const filteredBooks = books.filter(book => book.status !== 'deleted');
   const BookCard = ({ book }: { book: DBBook }) => {
     const statusInfo = getStatusInfo(book.status);
+    const [quoteCount, setQuoteCount] = useState<number>(0);
+    const [noteCount, setNoteCount] = useState<number>(0);
+    const [totalMinutes, setTotalMinutes] = useState<number>(0);
+    useEffect(() => {
+      let mounted = true;
+      (async () => {
+        if (!dbService) return;
+        try {
+          const quotes = await dbService.getQuotesByBook(book.id);
+          const notes = await dbService.getNotesByBook(book.id);
+          const sessions = await dbService.getSessionsByBook(book.id);
+          if (mounted) {
+            setQuoteCount(quotes.length);
+            setNoteCount(notes.length);
+            setTotalMinutes(sessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0));
+          }
+        } catch (e) {
+          // 무시
+        }
+      })();
+      return () => { mounted = false; };
+    }, [dbService, book.id]);
     return (
       <TouchableOpacity onPress={() => (navigation as any).navigate('BookDetail', { book })} style={styles.bookCard}>
         <CustomCard>
@@ -75,7 +98,19 @@ const BookLibraryScreen = () => {
                     <Text style={styles.badgeText}>{statusInfo.label}</Text>
                   </View>
                 </View>
-                <View style={styles.statsContainer}>
+                <View style={{ flexDirection: 'row', marginTop: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
+                    <Ionicons name="chatbox-ellipses-outline" size={14} color="#64748b" />
+                    <Text style={{ fontSize: 13, color: '#64748b', marginLeft: 2 }}>{quoteCount} 인용문</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
+                    <Ionicons name="document-text-outline" size={14} color="#64748b" />
+                    <Text style={{ fontSize: 13, color: '#64748b', marginLeft: 2 }}>{noteCount} 메모</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Ionicons name="timer-outline" size={14} color="#64748b" />
+                    <Text style={{ fontSize: 13, color: '#64748b', marginLeft: 2 }}>{totalMinutes}분</Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -101,7 +136,7 @@ const BookLibraryScreen = () => {
           </View>
           <View style={styles.welcomeSection}>
             <Text style={styles.welcomeTitle}>내 서재</Text>
-            <Text style={styles.welcomeSubtitle}>지금까지 {books.length}권의 책과 함께했어요</Text>
+            <Text style={styles.welcomeSubtitle}>지금까지 {filteredBooks.length}권의 책과 함께했어요</Text>
           </View>
           <CustomCard style={styles.todayCard}>
             <View style={styles.todayHeader}>
@@ -143,9 +178,11 @@ const BookLibraryScreen = () => {
             <TabButton title="읽고 싶은" value="want-to-read" isActive={activeTab === 'want-to-read'} />
           </View>
           <View style={styles.booksContainer}>
-            {filterBooksByStatus(activeTab).map(book => (
-              <BookCard key={book.id} book={book} />
-            ))}
+            {filteredBooks
+              .filter(book => activeTab === 'all' ? true : book.status === activeTab)
+              .map(book => (
+                <BookCard key={book.id} book={book} />
+              ))}
           </View>
         </ScrollView>
         

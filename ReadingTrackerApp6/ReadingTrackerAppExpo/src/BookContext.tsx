@@ -65,6 +65,18 @@ export const BookProvider = ({ children }: { children: ReactNode }) => {
         console.warn('[BookContext] addBook: dbService 없음');
         return;
       }
+      // 중복 검사: 제목+저자 또는 ISBN이 동일한 책이 이미 있는지
+      const all = await dbService.getAllBooks();
+      const isDuplicate = all.some(
+        b =>
+          (book.isbn && b.isbn && b.isbn === book.isbn) ||
+          (b.title === book.title && b.author === book.author)
+      );
+      if (isDuplicate) {
+        alert('이미 동일한 책이 서재에 있습니다.');
+        setLoading(false);
+        return;
+      }
       console.log('[BookContext] addBook 호출', book);
       await dbService.addBook(book);
       console.log('[BookContext] addBook DB 저장 완료');

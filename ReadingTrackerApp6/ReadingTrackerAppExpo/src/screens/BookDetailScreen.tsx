@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,9 @@ import { useNavigation } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
 import { DatabaseService, Book as DBBook } from '../DatabaseService';
 import { useBookContext } from '../BookContext';
+import { getStats } from '@/lib/db';
+import { getUserProfile, getUserStats } from '@/lib/db';
+import { getAllBooks, getTodayReading } from '@/lib/db';
 
 interface Quote {
   id: number;
@@ -88,7 +91,7 @@ const CustomChip = ({ title, onPress, style, textStyle }: any) => (
 const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
   const navigation = useNavigation();
   const { book } = route.params;
-  const { updateBook, deleteBook } = useBookContext();
+  const { updateBook, deleteBook, dbService } = useBookContext();
   const [title, setTitle] = useState(book.title);
   const [author, setAuthor] = useState(book.author);
   const [activeTab, setActiveTab] = useState('quotes');
@@ -103,33 +106,31 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
   const [isQuoteModalVisible, setIsQuoteModalVisible] = useState(false);
   const [isNoteModalVisible, setIsNoteModalVisible] = useState(false);
 
-  const [quotes, setQuotes] = useState<Quote[]>([
-    {
-      id: 1,
-      text: "인간이 다른 동물과 구별되는 점은 허구를 믿을 수 있다는 것이다.",
-      memo: "이 부분이 특히 인상깊었다. 허구를 통해 대규모 협력이 가능해진다는 관점이 흥미롭다.",
-      page: 45,
-      createdAt: "2023-11-01",
-      tags: ["철학", "인간의 본질", "허구"]
-    },
-    {
-      id: 2,
-      text: "우리는 모두 상상 속의 질서를 믿고 있다.",
-      memo: "",
-      page: 89,
-      createdAt: "2023-11-02",
-      tags: ["사회", "질서", "상상"]
-    }
-  ]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
 
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: 1,
-      content: "저자의 관점에서 인류 문명의 발전 과정을 바라보는 시각이 흥미롭다. 특히 농업혁명이 인간에게 미친 영향에 대한 해석이 새로웠다.",
-      createdAt: "2023-11-01",
-      tags: ["농업혁명", "문명사", "역사적 관점"]
-    }
-  ]);
+  // DB에서 인용문/메모 불러오기
+  useEffect(() => {
+    if (!dbService) return;
+    (async () => {
+      const q = await dbService.getQuotesByBook(book.id);
+      setQuotes(q.map(q => ({
+        id: q.id,
+        text: q.content,
+        memo: q.memo || '',
+        page: q.page || 0,
+        createdAt: q.created_at || '',
+        tags: q.tags ? q.tags.split(',') : [],
+      })));
+      const n = await dbService.getNotesByBook(book.id);
+      setNotes(n.map(n => ({
+        id: n.id,
+        content: n.content,
+        createdAt: n.created_at || '',
+        tags: n.tags ? n.tags.split(',') : [],
+      })));
+    })();
+  }, [dbService, book.id]);
 
   const handleAddQuoteTag = () => {
     if (currentQuoteTag.trim() && !newQuoteTags.includes(currentQuoteTag.trim())) {
@@ -153,39 +154,51 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
     setNewNoteTags(newNoteTags.filter(tag => tag !== tagToRemove));
   };
 
-  const handleAddQuote = () => {
-    if (!newQuote.trim()) return;
-    
-    const quote: Quote = {
-      id: Date.now(),
-      text: newQuote,
+  const handleAddQuote = async () => {
+    if (!newQuote.trim() || !dbService) return;
+    await dbService.addQuote({
+      book_id: book.id,
+      content: newQuote,
       memo: newQuoteMemo,
-      page: Math.floor(Math.random() * 300) + 1,
-      createdAt: new Date().toLocaleDateString(),
-      tags: [...newQuoteTags]
-    };
-    
-    setQuotes([...quotes, quote]);
+      page: undefined,
+      tags: newQuoteTags.join(',')
+    });
     setNewQuote('');
     setNewQuoteMemo('');
     setNewQuoteTags([]);
     setIsQuoteModalVisible(false);
+    // 목록 갱신
+    const q = await dbService.getQuotesByBook(book.id);
+    setQuotes(q.map(q => ({
+      id: q.id,
+      text: q.content,
+      memo: q.memo || '',
+      page: q.page || 0,
+      createdAt: q.created_at || '',
+      tags: q.tags ? q.tags.split(',') : [],
+    })));
+    setActiveTab('quotes'); // 인용문 추가 후 인용문 탭으로 전환
   };
 
-  const handleAddNote = () => {
-    if (!newNote.trim()) return;
-    
-    const note: Note = {
-      id: Date.now(),
+  const handleAddNote = async () => {
+    if (!newNote.trim() || !dbService) return;
+    await dbService.addNote({
+      book_id: book.id,
       content: newNote,
-      createdAt: new Date().toLocaleDateString(),
-      tags: [...newNoteTags]
-    };
-    
-    setNotes([...notes, note]);
+      tags: newNoteTags.join(',')
+    });
     setNewNote('');
     setNewNoteTags([]);
     setIsNoteModalVisible(false);
+    // 목록 갱신
+    const n = await dbService.getNotesByBook(book.id);
+    setNotes(n.map(n => ({
+      id: n.id,
+      content: n.content,
+      createdAt: n.created_at || '',
+      tags: n.tags ? n.tags.split(',') : [],
+    })));
+    setActiveTab('notes'); // 메모 추가 후 메모 탭으로 전환
   };
 
   const handleOCR = () => {
@@ -230,7 +243,11 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
     try {
       await updateBook(book.id, { title, author });
       Alert.alert('수정 완료', '책 정보가 수정되었습니다.');
-      navigation.goBack && navigation.goBack();
+      if ((navigation as any).canGoBack && (navigation as any).canGoBack()) {
+        (navigation as any).goBack();
+      } else {
+        (navigation as any).navigate('Main', { screen: 'Library' });
+      }
     } catch (e) {
       Alert.alert('오류', '수정에 실패했습니다.');
     }
@@ -249,7 +266,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
             try {
               await deleteBook(book.id);
               Alert.alert('삭제 완료', '책이 삭제되었습니다.');
-              navigation.navigate('Library' as never);
+              (navigation as any).navigate('Main', { screen: 'Library' });
             } catch (e) {
               Alert.alert('오류', '책 삭제에 실패했습니다.');
             }
@@ -259,12 +276,85 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
     );
   };
 
+  // 인용문/메모 수정/삭제 핸들러 예시
+  const handleUpdateQuote = async (id: number, update: Partial<Quote>) => {
+    if (!dbService) return;
+    await dbService.updateQuote(id, {
+      content: update.text,
+      memo: update.memo,
+      page: update.page,
+      tags: update.tags?.join(',')
+    });
+    const q = await dbService.getQuotesByBook(book.id);
+    setQuotes(q.map(q => ({
+      id: q.id,
+      text: q.content,
+      memo: q.memo || '',
+      page: q.page || 0,
+      createdAt: q.created_at || '',
+      tags: q.tags ? q.tags.split(',') : [],
+    })));
+  };
+  const handleDeleteQuote = async (id: number) => {
+    if (!dbService) return;
+    await dbService.deleteQuote(id);
+    const q = await dbService.getQuotesByBook(book.id);
+    setQuotes(q.map(q => ({
+      id: q.id,
+      text: q.content,
+      memo: q.memo || '',
+      page: q.page || 0,
+      createdAt: q.created_at || '',
+      tags: q.tags ? q.tags.split(',') : [],
+    })));
+  };
+  const handleUpdateNote = async (id: number, update: Partial<Note>) => {
+    if (!dbService) return;
+    await dbService.updateNote(id, {
+      content: update.content,
+      tags: update.tags?.join(',')
+    });
+    const n = await dbService.getNotesByBook(book.id);
+    setNotes(n.map(n => ({
+      id: n.id,
+      content: n.content,
+      createdAt: n.created_at || '',
+      tags: n.tags ? n.tags.split(',') : [],
+    })));
+  };
+  const handleDeleteNote = async (id: number) => {
+    if (!dbService) return;
+    await dbService.deleteNote(id);
+    const n = await dbService.getNotesByBook(book.id);
+    setNotes(n.map(n => ({
+      id: n.id,
+      content: n.content,
+      createdAt: n.created_at || '',
+      tags: n.tags ? n.tags.split(',') : [],
+    })));
+  };
+
+  // 상태 변경 핸들러 예시
+  const handleStatusChange = async (status: string) => {
+    await updateBook(book.id, { status });
+    // 필요시 최신화
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => (navigation as any).goBack()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => {
+              if ((navigation as any).canGoBack && (navigation as any).canGoBack()) {
+                (navigation as any).goBack();
+              } else {
+                (navigation as any).navigate('Main', { screen: 'Library' });
+              }
+            }}
+            style={styles.backButton}
+          >
             <Ionicons name="arrow-back" size={24} color="#64748b" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>책 상세</Text>
@@ -290,6 +380,13 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
             </TouchableOpacity>
             <TouchableOpacity style={{ backgroundColor: '#2563eb', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20, marginLeft: 12 }} onPress={handleUpdate}>
               <Text style={{ color: '#fff', fontWeight: 'bold' }}>수정</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ backgroundColor: '#e0e7ff', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20, marginLeft: 12, flexDirection: 'row', alignItems: 'center' }}
+              onPress={() => (navigation as any).navigate('Main', { screen: 'Timer' })}
+            >
+              <Ionicons name="timer" size={18} color="#2563eb" style={{ marginRight: 6 }} />
+              <Text style={{ color: '#2563eb', fontWeight: 'bold' }}>독서 기록</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Alert, FlatList, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, SafeAreaView, TextInput } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { DatabaseService } from '../DatabaseService';
 
 const books = [
   { id: 1, title: '사피엔스', author: '유발 하라리' },
@@ -48,14 +49,40 @@ const formatTime = (totalSeconds: number) => {
 
 const ReadingTimerScreen = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const initialBook = (route && (route as any).params && (route as any).params.book) ? (route as any).params.book : null;
   const [isRunning, setIsRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [books, setBooks] = useState<any[]>([]);
   const [selectedBook, setSelectedBook] = useState('');
+  const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
   const [manualMinutes, setManualMinutes] = useState('');
   const [manualPages, setManualPages] = useState('');
   const [notes, setNotes] = useState('');
-  const [todaySessions, setTodaySessions] = useState(initialSessions);
+  const [todaySessions, setTodaySessions] = useState<any[]>([]);
+  const [totalStats, setTotalStats] = useState({ totalMinutes: 0, totalPages: 0 });
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // DB에서 오늘의 기록, 통계 불러오기
+  const fetchSessionsAndStats = async () => {
+    const db = await DatabaseService.getInstance();
+    const sessions = await db.getTodaySessions();
+    setTodaySessions(sessions.map(s => ({
+      id: s.id,
+      book: (s as any).book_title || '',
+      minutes: s.duration_minutes || 0,
+      pages: s.pages_read || 0,
+      notes: s.memo || '',
+      startTime: s.start_time ? s.start_time.slice(11, 16) : '',
+      endTime: s.end_time ? s.end_time.slice(11, 16) : '',
+    })));
+    const stats = await db.getTotalStats();
+    setTotalStats(stats);
+  };
+
+  useEffect(() => {
+    fetchSessionsAndStats();
+  }, []);
 
   useEffect(() => {
     if (isRunning) {
@@ -70,8 +97,37 @@ const ReadingTimerScreen = () => {
     };
   }, [isRunning]);
 
+  // DB에서 불러온 책 목록
+  useEffect(() => {
+    (async () => {
+      const db = await DatabaseService.getInstance();
+      const allBooks = await db.getAllBooks();
+      setBooks(allBooks);
+      if (route && (route as any).params && (route as any).params.book) {
+        const book = (route as any).params.book;
+        const found = allBooks.find((b: any) => b.id === book.id);
+        if (found) {
+          setSelectedBook(found.title);
+          setSelectedBookId(found.id);
+        }
+      }
+    })();
+  }, []);
+
+  // 책 선택 시 book_id 매핑
+  const handleBookSelect = async (title: string) => {
+    setSelectedBook(title);
+    if (title) {
+      const db = await DatabaseService.getInstance();
+      const id = await db.getBookIdByTitle(title);
+      setSelectedBookId(id);
+    } else {
+      setSelectedBookId(null);
+    }
+  };
+
   const handleStart = () => {
-    if (!selectedBook) {
+    if (!selectedBookId) {
       Alert.alert('오류', '읽을 책을 선택해주세요');
       return;
     }
@@ -82,58 +138,59 @@ const ReadingTimerScreen = () => {
     setIsRunning(false);
   };
 
-  const handleStop = () => {
+  const handleStop = async () => {
     if (seconds === 0) return;
+    if (!selectedBookId) {
+      Alert.alert('오류', '읽을 책을 선택해주세요');
+      return;
+    }
     const minutes = Math.floor(seconds / 60);
     const now = new Date();
     const start = new Date(now.getTime() - seconds * 1000);
     const session = {
-      id: Date.now(),
-      book: selectedBook,
-      minutes: minutes,
-      pages: parseInt(manualPages) || 0,
-      notes: notes,
-      startTime: start.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-      endTime: now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+      book_id: selectedBookId,
+      start_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${start.toTimeString().slice(0,8)}`,
+      end_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toTimeString().slice(0,8)}`,
+      duration_minutes: minutes,
+      pages_read: parseInt(manualPages) || 0,
+      memo: notes,
     };
-    setTodaySessions([session, ...todaySessions]);
+    const db = await DatabaseService.getInstance();
+    await db.addReadingSession(session);
     setIsRunning(false);
     setSeconds(0);
     setSelectedBook('');
+    setSelectedBookId(null);
     setManualPages('');
     setNotes('');
     Alert.alert('성공', `${minutes}분 독서 기록이 저장되었습니다!`);
+    fetchSessionsAndStats();
   };
 
-  const handleManualAdd = () => {
-    if (!selectedBook || !manualMinutes) {
+  const handleManualAdd = async () => {
+    if (!selectedBookId || !manualMinutes) {
       Alert.alert('오류', '책과 시간을 입력해주세요');
       return;
     }
+    const now = new Date();
     const session = {
-      id: Date.now(),
-      book: selectedBook,
-      minutes: parseInt(manualMinutes),
-      pages: parseInt(manualPages) || 0,
-      notes: notes,
-      startTime: '수동 입력',
-      endTime: '수동 입력',
+      book_id: selectedBookId,
+      start_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toTimeString().slice(0,8)}`,
+      end_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toTimeString().slice(0,8)}`,
+      duration_minutes: parseInt(manualMinutes),
+      pages_read: parseInt(manualPages) || 0,
+      memo: notes,
     };
-    setTodaySessions([session, ...todaySessions]);
+    const db = await DatabaseService.getInstance();
+    await db.addReadingSession(session);
     setSelectedBook('');
+    setSelectedBookId(null);
     setManualMinutes('');
     setManualPages('');
     setNotes('');
     Alert.alert('성공', '독서 기록이 추가되었습니다!');
+    fetchSessionsAndStats();
   };
-
-  const getTotalStats = () => {
-    const totalMinutes = todaySessions.reduce((sum, session) => sum + session.minutes, 0);
-    const totalPages = todaySessions.reduce((sum, session) => sum + session.pages, 0);
-    return { totalMinutes, totalPages };
-  };
-
-  const { totalMinutes, totalPages } = getTotalStats();
 
   // 커스텀 버튼
   const CustomButton = ({ onPress, icon, text, color, outline, disabled, style }: any) => (
@@ -200,7 +257,7 @@ const ReadingTimerScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.headerCard}>
         <Text style={styles.headerTitleCard}>독서 시간 기록</Text>
-        <Text style={styles.headerSubCard}>{`오늘 총 ${totalMinutes}분, ${totalPages}페이지 읽었어요`}</Text>
+        <Text style={styles.headerSubCard}>{`오늘 총 ${totalStats.totalMinutes}분, ${totalStats.totalPages}페이지 읽었어요`}</Text>
       </View>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* 타이머 카드 */}
@@ -213,8 +270,8 @@ const ReadingTimerScreen = () => {
           <Text style={styles.label}>읽을 책</Text>
           <View style={styles.pickerWrapperCard}>
             <Picker
-              selectedValue={selectedBook}
-              onValueChange={(itemValue: string) => setSelectedBook(itemValue)}
+              selectedValue={books.find(b => b.title === selectedBook) ? selectedBook : ''}
+              onValueChange={handleBookSelect}
               style={styles.picker}
             >
               <Picker.Item label="책을 선택하세요" value="" />
@@ -287,7 +344,7 @@ const ReadingTimerScreen = () => {
           <View style={styles.pickerWrapperCard}>
             <Picker
               selectedValue={selectedBook}
-              onValueChange={(itemValue: string) => setSelectedBook(itemValue)}
+              onValueChange={handleBookSelect}
               style={styles.picker}
             >
               <Picker.Item label="책을 선택하세요" value="" />
