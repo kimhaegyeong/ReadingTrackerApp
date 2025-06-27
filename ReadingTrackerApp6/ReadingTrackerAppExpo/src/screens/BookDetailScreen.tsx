@@ -543,7 +543,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
           <Ionicons name="document-text" size={26} color="#8b5cf6" />
           <Text style={{ color: '#8b5cf6', fontSize: 12, marginTop: 2 }}>메모</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => (navigation as any).navigate('Main', { screen: 'Timer' })} style={{ alignItems: 'center', flex: 1 }}>
+        <TouchableOpacity onPress={() => (navigation as any).navigate('Main', { screen: 'Timer', params: { book } })} style={{ alignItems: 'center', flex: 1 }}>
           <Ionicons name="timer" size={26} color="#22c55e" />
           <Text style={{ color: '#22c55e', fontSize: 12, marginTop: 2 }}>기록</Text>
         </TouchableOpacity>

@@ -57,7 +57,9 @@ const ReadingTimerScreen = () => {
   const [totalStats, setTotalStats] = useState({ totalMinutes: 0, totalPages: 0 });
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [open, setOpen] = useState(false);
+  const [openManual, setOpenManual] = useState(false);
   const [comboValue, setComboValue] = useState<string | null>(null);
+  const [comboValueManual, setComboValueManual] = useState<string | null>(null);
   const [items, setItems] = useState(
     books.map(book => ({
       label: `${book.title} - ${book.author}`,
@@ -136,6 +138,7 @@ const ReadingTimerScreen = () => {
     );
   }, [books]);
 
+  // 책 선택 핸들러 분리 (타이머/수동입력 구분)
   // 책 선택 시 id(string) 기준으로 상태 세팅
   const handleBookSelect = async (id: string) => {
     setComboValue(id);
@@ -279,7 +282,8 @@ const ReadingTimerScreen = () => {
         <Text style={styles.headerTitleCard}>독서 시간 기록</Text>
         <Text style={styles.headerSubCard}>{`오늘 총 ${totalStats.totalMinutes}분, ${totalStats.totalPages}페이지 읽었어요`}</Text>
       </View>
-      {/* DropDownPicker가 포함된 카드들은 ScrollView 밖에서 View로 분리 */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* 타이머 카드 */}
         <View style={styles.cardTimer}>
           <View style={styles.cardTitleRow}>
             <Feather name="clock" size={22} color="#2563eb" style={{ marginRight: 8 }} />
@@ -287,28 +291,28 @@ const ReadingTimerScreen = () => {
           </View>
           {/* 책 선택 */}
           <Text style={styles.label}>읽을 책</Text>
-        <View style={[styles.pickerWrapperCard, { overflow: 'visible', zIndex: 3000 }]}>
-          <DropDownPicker
-            open={open}
-            value={comboValue}
-            items={items}
-            setOpen={setOpen}
-            setValue={setComboValue}
-            onChangeValue={value => handleBookSelect(value || '')}
-            setItems={setItems}
-            placeholder="책을 선택하세요"
-            style={{ marginBottom: 8, zIndex: 3000 }}
-            zIndex={3000}
-            zIndexInverse={1000}
-            dropDownContainerStyle={{
-              zIndex: 4000,
-              elevation: 10,
-              position: 'absolute',
-              top: 44, // 필요시 조정
-              backgroundColor: '#fff',
-              borderColor: '#e2e8f0',
-            }}
-          />
+          <View style={[styles.pickerWrapperCard, { overflow: 'visible', zIndex: 3000 }]}>
+            <DropDownPicker
+              open={open}
+              value={comboValue}
+              items={items}
+              setOpen={setOpen}
+              setValue={setComboValue}
+              onChangeValue={value => handleBookSelect(value || '')}
+              setItems={setItems}
+              placeholder="책을 선택하세요"
+              style={{ marginBottom: 8, zIndex: 3000 }}
+              zIndex={3000}
+              zIndexInverse={1000}
+              dropDownContainerStyle={{
+                zIndex: 4000,
+                elevation: 10,
+                position: 'absolute',
+                top: 44, // 필요시 조정
+                backgroundColor: '#fff',
+                borderColor: '#e2e8f0',
+              }}
+            />
           </View>
           {/* 타이머 디스플레이 */}
           <View style={styles.timerDisplayWrapperCard}>
@@ -346,7 +350,9 @@ const ReadingTimerScreen = () => {
           <TextInput
             placeholder="페이지 수"
             value={manualPages}
-            onChangeText={setManualPages}
+            onChangeText={text => {
+              if (text === '' || /^\d+$/.test(text)) setManualPages(text);
+            }}
             keyboardType="numeric"
             style={styles.inputCard}
           />
@@ -360,6 +366,7 @@ const ReadingTimerScreen = () => {
             style={styles.inputCard}
           />
         </View>
+        {/* 수동 입력 카드 */}
         <View style={styles.cardTimer}>
           <View style={styles.cardTitleRow}>
             <Feather name="plus" size={22} color="#a21caf" style={{ marginRight: 8 }} />
@@ -367,18 +374,18 @@ const ReadingTimerScreen = () => {
           </View>
           <Text style={styles.label}>읽은 책</Text>
           <View style={styles.pickerWrapperCard}>
-          <DropDownPicker
-            open={open}
-            value={comboValue}
-            items={items}
-            setOpen={setOpen}
-            setValue={setComboValue}
-            onChangeValue={value => handleBookSelect(value || '')}
-            setItems={setItems}
-            placeholder="책을 선택하세요"
-            style={{ marginBottom: 8 }}
-            zIndex={1000}
-                />
+            <DropDownPicker
+              open={open}
+              value={comboValue}
+              items={items}
+              setOpen={setOpen}
+              setValue={setComboValue}
+              onChangeValue={value => handleBookSelect(value || '')}
+              setItems={setItems}
+              placeholder="책을 선택하세요"
+              style={{ marginBottom: 8 }}
+              zIndex={1000}
+            />
           </View>
           <View style={styles.manualRowCard}>
             <View style={{ flex: 1, marginRight: 8 }}>
@@ -396,7 +403,9 @@ const ReadingTimerScreen = () => {
               <TextInput
                 placeholder="페이지"
                 value={manualPages}
-                onChangeText={setManualPages}
+                onChangeText={text => {
+                  if (text === '' || /^\d+$/.test(text)) setManualPages(text);
+                }}
                 keyboardType="numeric"
                 style={styles.inputCard}
               />
@@ -419,8 +428,7 @@ const ReadingTimerScreen = () => {
             <Text style={styles.buttonTextCard}>기록 추가</Text>
           </TouchableOpacity>
         </View>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* 오늘의 독서 기록 카드만 ScrollView 내부에 남김 */}
+        {/* 오늘의 독서 기록 카드 */}
         <View style={styles.cardTimer}>
           <View style={styles.cardTitleRow}>
             <Feather name="book-open" size={22} color="#16a34a" style={{ marginRight: 8 }} />

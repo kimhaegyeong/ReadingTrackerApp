@@ -530,4 +530,54 @@ export class DatabaseService {
       color: r.color || '#3b82f6'
     }));
   }
+
+  /**
+   * 일별 독서 기록(YYYY-MM-DD별로 독서 세션이 있는 날짜 목록 반환)
+   */
+  public async getDailyHistory(): Promise<string[]> {
+    if (!this.db) throw new Error('DB not initialized');
+    // @ts-ignore
+    const rows = await this.db.getAllAsync<{ date: string }>(
+      `SELECT DISTINCT substr(start_time, 1, 10) as date FROM reading_sessions ORDER BY date ASC`
+    );
+    return rows.map((r: any) => r.date);
+  }
+
+  /**
+   * 연속 기록(최대 streak, 현재 streak) 계산
+   * return: { currentStreak: number, longestStreak: number }
+   */
+  public async getStreakStats(): Promise<{ currentStreak: number, longestStreak: number }> {
+    if (!this.db) throw new Error('DB not initialized');
+    // 1. 모든 독서 기록 날짜를 오름차순으로 가져옴
+    // 2. streak 계산
+    // @ts-ignore
+    const rows = await this.db.getAllAsync<{ date: string }>(
+      `SELECT DISTINCT substr(start_time, 1, 10) as date FROM reading_sessions ORDER BY date ASC`
+    );
+    const dates = (rows as any[]).map((r: any) => r.date).sort();
+    if (dates.length === 0) return { currentStreak: 0, longestStreak: 0 };
+    let longest = 1, current = 1, max = 1;
+    let prev = dates[0];
+    for (let i = 1; i < dates.length; i++) {
+      const prevDate = new Date(prev);
+      const currDate = new Date(dates[i]);
+      const diff = (currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
+      if (diff === 1) {
+        current++;
+        if (current > max) max = current;
+      } else if (diff === 0) {
+        // 같은 날 여러 세션은 무시
+      } else {
+        current = 1;
+      }
+      prev = dates[i];
+    }
+    // 오늘도 streak에 포함되는지 체크
+    const today = new Date();
+    const lastDate = new Date(dates[dates.length - 1]);
+    const diffToday = (today.setHours(0,0,0,0) - lastDate.setHours(0,0,0,0)) / (1000 * 60 * 60 * 24);
+    const currentStreak = diffToday === 0 ? current : 0;
+    return { currentStreak, longestStreak: max };
+  }
 } 

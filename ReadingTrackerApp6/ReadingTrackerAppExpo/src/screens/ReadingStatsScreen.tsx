@@ -38,8 +38,8 @@ const ReadingStatsScreen = ({ navigation }: any) => {
   const [booksRead, setBooksRead] = useState(0);
   const [totalMinutes, setTotalMinutes] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [currentStreak, setCurrentStreak] = useState(0); // TODO: streak 계산 함수 필요
-  const [longestStreak, setLongestStreak] = useState(0); // TODO: streak 계산 함수 필요
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
   const [monthlyStats, setMonthlyStats] = useState<any[]>([]);
   const [genres, setGenres] = useState<any[]>([]);
   const [recentBooks, setRecentBooks] = useState<any[]>([]);
@@ -63,13 +63,26 @@ const ReadingStatsScreen = ({ navigation }: any) => {
       setGenres(genreStats);
       // 읽은 책 수
       setBooksRead(monthly.reduce((sum, m) => sum + m.books, 0));
-      // TODO: streak 계산 함수 구현 필요
-      setCurrentStreak(0);
-      setLongestStreak(0);
+      // streak 계산 함수 구현
+      const streakStats = await db.getStreakStats();
+      setCurrentStreak(streakStats.currentStreak);
+      setLongestStreak(streakStats.longestStreak);
       setLoading(false);
     };
     fetchStats();
   }, [selectedYear]);
+
+  // 목표/기록 탭용: 일별 독서 기록
+  const [dailyHistory, setDailyHistory] = useState<string[]>([]);
+  useEffect(() => {
+    if (selectedTab === 'goals' || selectedTab === 'history') {
+      (async () => {
+        const db = await DatabaseService.getInstance();
+        const days = await db.getDailyHistory();
+        setDailyHistory(days);
+      })();
+    }
+  }, [selectedTab]);
 
   const progressPercentage = yearlyGoal ? (booksRead / yearlyGoal) * 100 : 0;
 
@@ -257,7 +270,47 @@ const ReadingStatsScreen = ({ navigation }: any) => {
           </View>
         )}
 
-        {/* 목표/기록 탭은 기존 구조 유지(추후 DB 연동 가능) */}
+        {/* 목표 탭 */}
+        {selectedTab === 'goals' && (
+          <View style={styles.overviewContainer}>
+            <View style={styles.progressCard}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressTitle}>연간 목표</Text>
+                <Text style={styles.progressPercentage}>{booksRead}/{yearlyGoal}권</Text>
+              </View>
+              <View style={styles.progressBarContainer}>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: `${progressPercentage}%` }]} />
+                </View>
+              </View>
+              <Text style={styles.progressText}>
+                {booksRead}권 완료 • {yearlyGoal - booksRead}권 남음
+              </Text>
+            </View>
+            <View style={styles.progressCard}>
+              <View style={styles.progressHeader}>
+                <Text style={styles.progressTitle}>연속 기록</Text>
+                <Text style={styles.progressPercentage}>{currentStreak}일</Text>
+              </View>
+              <Text style={styles.progressText}>최장 연속 기록: {longestStreak}일</Text>
+            </View>
+          </View>
+        )}
+        {/* 기록 탭 */}
+        {selectedTab === 'history' && (
+          <View style={styles.overviewContainer}>
+            <View style={styles.progressCard}>
+              <Text style={styles.progressTitle}>일별 독서 기록</Text>
+              {dailyHistory.length === 0 ? (
+                <Text style={styles.progressText}>독서 기록이 없습니다.</Text>
+              ) : (
+                dailyHistory.map(date => (
+                  <Text key={date} style={styles.progressText}>{date}</Text>
+                ))
+              )}
+            </View>
+          </View>
+        )}
       </ScrollView>
       {/* Snackbar 대체 */}
       {snackbar.visible && (
