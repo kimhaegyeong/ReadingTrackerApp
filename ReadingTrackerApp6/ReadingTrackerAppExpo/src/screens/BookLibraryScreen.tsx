@@ -209,7 +209,13 @@ const BookLibraryScreen = () => {
                   ) : (
                     todaySessions.map((session, index) => (
                       <View key={index} style={styles.sessionItem}>
-                        <Text style={styles.sessionBook}>{session.book_title || '책'}</Text>
+                        <Text 
+                          style={[styles.sessionBook, {width: '100%', flexShrink: 1, flexGrow: 1, flexBasis: 0}]} 
+                          numberOfLines={2} 
+                          ellipsizeMode="tail"
+                        >
+                          {session.book_title || '책'}
+                        </Text>
                         <View style={styles.sessionStats}>
                           <Text style={styles.sessionText}>{session.duration_minutes || 0}분</Text>
                           <Text style={styles.sessionText}>{session.pages_read || 0}페이지</Text>
@@ -294,9 +300,9 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 14, color: '#64748b' },
   sessionsContainer: { marginTop: 16 },
   sessionsTitle: { fontWeight: '600', color: '#374151', marginBottom: 8 },
-  sessionItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.5)', padding: 8, borderRadius: 8, marginBottom: 4 },
-  sessionBook: { fontWeight: '600', color: '#1f2937' },
-  sessionStats: { flexDirection: 'row' },
+  sessionItem: { flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', backgroundColor: 'rgba(255,255,255,0.5)', padding: 8, borderRadius: 8, marginBottom: 4 },
+  sessionBook: { fontWeight: '600', color: '#1f2937', width: '100%', flexShrink: 1, flexGrow: 1, flexBasis: 0 },
+  sessionStats: { alignSelf: 'flex-end', flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center' },
   sessionText: { fontSize: 12, color: '#6b7280', marginLeft: 16 },
   tabsContainer: { flexDirection: 'row', marginHorizontal: 16, marginTop: 16, backgroundColor: 'white', borderRadius: 8, padding: 4 },
   tabButton: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 6 },

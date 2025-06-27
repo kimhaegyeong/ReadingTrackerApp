@@ -94,6 +94,11 @@ const ReadingTimerScreen = () => {
     fetchSessionsAndStats();
   }, []);
 
+  // todaySessions 변경 시 콘솔 출력
+  useEffect(() => {
+    console.log('todaySessions:', todaySessions);
+  }, [todaySessions]);
+
   useEffect(() => {
     if (isRunning) {
       timerRef.current = setInterval(() => {
@@ -209,13 +214,13 @@ const ReadingTimerScreen = () => {
   };
 
   const handleManualAdd = async () => {
-    if (!selectedBookId || !manualMinutes) {
+    if (!selectedBookIdManual || !manualMinutes) {
       Alert.alert('오류', '책과 시간을 입력해주세요');
       return;
     }
     const now = new Date();
     const session = {
-      book_id: parseInt(selectedBookId!),
+      book_id: parseInt(selectedBookIdManual!),
       start_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toTimeString().slice(0,8)}`,
       end_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toTimeString().slice(0,8)}`,
       duration_minutes: parseInt(manualMinutes),
@@ -224,9 +229,9 @@ const ReadingTimerScreen = () => {
     };
     const db = await DatabaseService.getInstance();
     await db.addReadingSession(session);
-    setSelectedBook('');
-    setSelectedBookId(null);
-    setComboValue(null);
+    setSelectedBookManual('');
+    setSelectedBookIdManual(null);
+    setComboValueManual(null);
     setManualMinutes('');
     setManualPages('');
     setNotes('');
@@ -333,7 +338,7 @@ const ReadingTimerScreen = () => {
                     <View style={[styles.bookCover, { backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }]}/>
                   )}
                   <View style={styles.bookInfo}>
-                    <Text style={styles.bookTitle}>{book.title}</Text>
+                    <Text style={[styles.bookTitle, {flexShrink: 1}]} numberOfLines={2} ellipsizeMode="tail">{book.title}</Text>
                     <Text style={styles.bookAuthor}>{book.author}</Text>
                   </View>
                   {selectedBookId === String(book.id) && (
@@ -377,7 +382,7 @@ const ReadingTimerScreen = () => {
                     <View style={[styles.bookCover, { backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }]}/>
                   )}
                   <View style={styles.bookInfo}>
-                    <Text style={styles.bookTitle}>{book.title}</Text>
+                    <Text style={[styles.bookTitle, {flexShrink: 1}]} numberOfLines={2} ellipsizeMode="tail">{book.title}</Text>
                     <Text style={styles.bookAuthor}>{book.author}</Text>
                   </View>
                   {selectedBookIdManual === String(book.id) && (
@@ -519,19 +524,30 @@ const ReadingTimerScreen = () => {
           ) : (
             todaySessions.map((item) => (
               <View key={item.id} style={styles.sessionItemCard}>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                    <Text style={styles.sessionBookCard}>{item.book}</Text>
+                {/* 책 제목 */}
+                <Text
+                  style={[styles.sessionBookCard, {flexShrink: 1, marginBottom: 2, width: '100%'}]}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
+                  {item.book}
+                </Text>
+                {/* 시간/분/페이지 한 줄 */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2, width: '100%' }}>
+                  <Text style={styles.sessionTimeCard}>{item.startTime} - {item.endTime}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <View style={styles.badgeCard}><Text style={styles.badgeCardText}>{`${item.minutes}분`}</Text></View>
                     {item.pages > 0 && (
-                      <View style={[styles.badgeCard, { backgroundColor: '#e0e7ff' }]}><Text style={[styles.badgeCardText, { color: '#3730a3' }]}>{`${item.pages}페이지`}</Text></View>
+                      <View style={[styles.badgeCard, { backgroundColor: '#e0e7ff', marginLeft: 4 }]}><Text style={[styles.badgeCardText, { color: '#3730a3' }]}>{`${item.pages}페이지`}</Text></View>
                     )}
                   </View>
-                  <Text style={styles.sessionTimeCard}>{item.startTime} - {item.endTime}</Text>
-                  {item.notes ? (
-                    <Text style={styles.sessionNotesCard}>{item.notes}</Text>
-                  ) : null}
                 </View>
+                {/* 메모 */}
+                {item.notes ? (
+                  <Text style={styles.sessionNotesCard}>{item.notes}</Text>
+                ) : null}
+                {/* 구분선 */}
+                <View style={{ height: 1, backgroundColor: '#e5e7eb', marginTop: 8 }} />
               </View>
             ))
           )}
@@ -757,7 +773,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sessionItemCard: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'flex-start',
     backgroundColor: '#f8fafc',
     borderRadius: 10,
