@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Alert, FlatList, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, SafeAreaView, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Alert, FlatList, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Image, Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -67,6 +67,8 @@ const ReadingTimerScreen = () => {
       key: String(book.id),
     }))
   );
+  const [bookModalVisible, setBookModalVisible] = useState(false);
+  const [search, setSearch] = useState('');
 
   // DB에서 오늘의 기록, 통계 불러오기
   const fetchSessionsAndStats = async () => {
@@ -138,13 +140,19 @@ const ReadingTimerScreen = () => {
     );
   }, [books]);
 
+  // 책 검색 필터
+  const filteredBooks = books.filter(
+    b =>
+      b.title.toLowerCase().includes(search.toLowerCase()) ||
+      b.author.toLowerCase().includes(search.toLowerCase())
+  );
+
   // 책 선택 핸들러 분리 (타이머/수동입력 구분)
-  // 책 선택 시 id(string) 기준으로 상태 세팅
-  const handleBookSelect = async (id: string) => {
-    setComboValue(id);
+  const handleBookSelect = (id: string) => {
     setSelectedBookId(id);
     const found = books.find(b => String(b.id) === id);
     setSelectedBook(found ? found.title : '');
+    setBookModalVisible(false);
   };
 
   const handleStart = () => {
@@ -282,6 +290,49 @@ const ReadingTimerScreen = () => {
         <Text style={styles.headerTitleCard}>독서 시간 기록</Text>
         <Text style={styles.headerSubCard}>{`오늘 총 ${totalStats.totalMinutes}분, ${totalStats.totalPages}페이지 읽었어요`}</Text>
       </View>
+      <Modal visible={bookModalVisible} animationType="none" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>책 선택</Text>
+              <TouchableOpacity onPress={() => setBookModalVisible(false)}>
+                <Feather name="x" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="책 제목 또는 저자 검색"
+              value={search}
+              onChangeText={setSearch}
+            />
+            <ScrollView style={styles.bookList}>
+              {filteredBooks.map(book => (
+                <TouchableOpacity
+                  key={book.id}
+                  style={[
+                    styles.bookItem,
+                    selectedBookId === String(book.id) && styles.selectedBookItem,
+                  ]}
+                  onPress={() => handleBookSelect(String(book.id))}
+                >
+                  {book.cover ? (
+                    <Image source={{ uri: book.cover }} style={styles.bookCover} />
+                  ) : (
+                    <View style={[styles.bookCover, { backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }]}/>
+                  )}
+                  <View style={styles.bookInfo}>
+                    <Text style={styles.bookTitle}>{book.title}</Text>
+                    <Text style={styles.bookAuthor}>{book.author}</Text>
+                  </View>
+                  {selectedBookId === String(book.id) && (
+                    <Feather name="check-circle" size={20} color="#2563eb" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* 타이머 카드 */}
         <View style={styles.cardTimer}>
@@ -291,29 +342,11 @@ const ReadingTimerScreen = () => {
           </View>
           {/* 책 선택 */}
           <Text style={styles.label}>읽을 책</Text>
-          <View style={[styles.pickerWrapperCard, { overflow: 'visible', zIndex: 3000 }]}>
-            <DropDownPicker
-              open={open}
-              value={comboValue}
-              items={items}
-              setOpen={setOpen}
-              setValue={setComboValue}
-              onChangeValue={value => handleBookSelect(value || '')}
-              setItems={setItems}
-              placeholder="책을 선택하세요"
-              style={{ marginBottom: 8, zIndex: 3000 }}
-              zIndex={3000}
-              zIndexInverse={1000}
-              dropDownContainerStyle={{
-                zIndex: 4000,
-                elevation: 10,
-                position: 'absolute',
-                top: 44, // 필요시 조정
-                backgroundColor: '#fff',
-                borderColor: '#e2e8f0',
-              }}
-            />
-          </View>
+          <TouchableOpacity style={styles.pickerWrapperCard} onPress={() => setBookModalVisible(true)}>
+            <Text style={{ padding: 14, color: selectedBook ? '#222' : '#888' }}>
+              {selectedBook ? selectedBook : '책을 선택하세요'}
+            </Text>
+          </TouchableOpacity>
           {/* 타이머 디스플레이 */}
           <View style={styles.timerDisplayWrapperCard}>
             <Text style={styles.timerTextCard}>{formatTime(seconds)}</Text>
@@ -321,15 +354,15 @@ const ReadingTimerScreen = () => {
               {!isRunning ? (
                 <TouchableOpacity
                   onPress={handleStart}
-                  style={[styles.actionButtonCard, styles.actionButtonGreen]}
+                  style={[styles.actionButtonCard, styles.actionButtonOutline, { flex: 1 }]}
                 >
-                  <Feather name="play" size={18} color="#fff" style={styles.buttonIconCard} />
-                  <Text style={styles.buttonTextCard}>시작</Text>
+                  <Feather name="play" size={18} color="#2563eb" style={styles.buttonIconCard} />
+                  <Text style={[styles.buttonTextCard, { color: '#2563eb' }]}>시작</Text>
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity
                   onPress={handlePause}
-                  style={[styles.actionButtonCard, styles.actionButtonOutline]}
+                  style={[styles.actionButtonCard, styles.actionButtonOutline, { flex: 1 }]}
                 >
                   <Feather name="pause" size={18} color="#2563eb" style={styles.buttonIconCard} />
                   <Text style={[styles.buttonTextCard, { color: '#2563eb' }]}>일시정지</Text>
@@ -337,11 +370,11 @@ const ReadingTimerScreen = () => {
               )}
               <TouchableOpacity
                 onPress={handleStop}
-                style={[styles.actionButtonCard, styles.actionButtonRed, seconds === 0 && { opacity: 0.5 }]}
+                style={[styles.actionButtonCard, styles.actionButtonRed, seconds === 0 && { opacity: 0.5, flex: 1 }]}
                 disabled={seconds === 0}
               >
-                <Feather name="square" size={18} color="#fff" style={styles.buttonIconCard} />
-                <Text style={styles.buttonTextCard}>종료</Text>
+                <Feather name="square" size={18} color="#2563eb" style={styles.buttonIconCard} />
+                <Text style={[styles.buttonTextCard, { color: '#fff' }]}>종료</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -369,7 +402,7 @@ const ReadingTimerScreen = () => {
         {/* 수동 입력 카드 */}
         <View style={styles.cardTimer}>
           <View style={styles.cardTitleRow}>
-            <Feather name="plus" size={22} color="#a21caf" style={{ marginRight: 8 }} />
+            <Feather name="plus" size={22} color="#2563eb" style={{ marginRight: 8 }} />
             <Text style={styles.cardTitle}>수동 입력</Text>
           </View>
           <Text style={styles.label}>읽은 책</Text>
@@ -385,6 +418,8 @@ const ReadingTimerScreen = () => {
               placeholder="책을 선택하세요"
               style={{ marginBottom: 8 }}
               zIndex={1000}
+              listMode="MODAL"
+              modalTitle="책을 선택하세요"
             />
           </View>
           <View style={styles.manualRowCard}>
@@ -422,16 +457,16 @@ const ReadingTimerScreen = () => {
           />
           <TouchableOpacity
             onPress={handleManualAdd}
-            style={[styles.actionButtonCard, styles.actionButtonPurple, { marginTop: 8 }]}
+            style={[styles.actionButtonCard, styles.actionButtonOutline, { marginTop: 8, flex: 1 }]}
           >
-            <Feather name="plus" size={18} color="#fff" style={styles.buttonIconCard} />
-            <Text style={styles.buttonTextCard}>기록 추가</Text>
+            <Feather name="plus" size={18} color="#2563eb" style={styles.buttonIconCard} />
+            <Text style={[styles.buttonTextCard, { color: '#2563eb' }]}>기록 추가</Text>
           </TouchableOpacity>
         </View>
         {/* 오늘의 독서 기록 카드 */}
         <View style={styles.cardTimer}>
           <View style={styles.cardTitleRow}>
-            <Feather name="book-open" size={22} color="#16a34a" style={{ marginRight: 8 }} />
+            <Feather name="book-open" size={22} color="#2563eb" style={{ marginRight: 8 }} />
             <Text style={styles.cardTitle}>오늘의 독서 기록</Text>
           </View>
           {todaySessions.length === 0 ? (
@@ -444,7 +479,7 @@ const ReadingTimerScreen = () => {
                     <Text style={styles.sessionBookCard}>{item.book}</Text>
                     <View style={styles.badgeCard}><Text style={styles.badgeCardText}>{`${item.minutes}분`}</Text></View>
                     {item.pages > 0 && (
-                      <View style={[styles.badgeCard, { backgroundColor: '#f3e8ff' }]}><Text style={[styles.badgeCardText, { color: '#a21caf' }]}>{`${item.pages}페이지`}</Text></View>
+                      <View style={[styles.badgeCard, { backgroundColor: '#e0e7ff' }]}><Text style={[styles.badgeCardText, { color: '#3730a3' }]}>{`${item.pages}페이지`}</Text></View>
                     )}
                   </View>
                   <Text style={styles.sessionTimeCard}>{item.startTime} - {item.endTime}</Text>
@@ -645,14 +680,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     backgroundColor: '#2563eb',
   },
-  actionButtonGreen: {
-    backgroundColor: '#16a34a',
-  },
   actionButtonRed: {
     backgroundColor: '#dc2626',
-  },
-  actionButtonPurple: {
-    backgroundColor: '#a21caf',
   },
   actionButtonOutline: {
     backgroundColor: '#fff',
@@ -666,7 +695,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     letterSpacing: 0.2,
-    color: '#fff',
   },
   inputCard: {
     marginBottom: 12,
@@ -719,6 +747,70 @@ const styles = StyleSheet.create({
     color: '#3730a3',
     fontSize: 12,
     fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1f2937',
+  },
+  searchInput: {
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  bookList: {
+    maxHeight: 300,
+  },
+  bookItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9',
+  },
+  selectedBookItem: {
+    backgroundColor: '#e0e7ff',
+  },
+  bookCover: {
+    width: 40,
+    height: 56,
+    borderRadius: 6,
+    backgroundColor: '#e5e7eb',
+    marginRight: 12,
+  },
+  bookInfo: {
+    flex: 1,
+  },
+  bookTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  bookAuthor: {
+    fontSize: 13,
+    color: '#64748b',
   },
 });
 
