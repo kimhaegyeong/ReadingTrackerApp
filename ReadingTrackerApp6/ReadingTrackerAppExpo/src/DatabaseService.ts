@@ -8,6 +8,7 @@ export type Book = {
   pages?: number;
   status: string;
   cover_color?: string;
+  cover?: string;
   created_at?: string;
   updated_at?: string;
 };
@@ -82,6 +83,7 @@ export class DatabaseService {
         pages INTEGER,
         status TEXT NOT NULL DEFAULT 'want-to-read',
         cover_color TEXT DEFAULT '#3b82f6',
+        cover TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
@@ -132,6 +134,19 @@ export class DatabaseService {
       CREATE INDEX IF NOT EXISTS idx_reading_sessions_book_id ON reading_sessions(book_id);
       CREATE INDEX IF NOT EXISTS idx_reading_sessions_date ON reading_sessions(start_time);
     `);
+    // cover 컬럼이 없으면 추가 (마이그레이션)
+    try {
+      // @ts-ignore
+      const columns = await this.db.getAllAsync<any>(`PRAGMA table_info(books);`);
+      const hasCover = columns.some((col: any) => col.name === 'cover');
+      if (!hasCover) {
+        // @ts-ignore
+        await this.db.execAsync(`ALTER TABLE books ADD COLUMN cover TEXT;`);
+        console.log('[DatabaseService] books 테이블에 cover 컬럼 추가 완료');
+      }
+    } catch (e) {
+      console.error('[DatabaseService] books 테이블 cover 컬럼 마이그레이션 오류', e);
+    }
     // 최초 실행 시 기본 프로필 생성
     // @ts-ignore
     const user = await this.db.getFirstAsync<UserProfile>(`SELECT * FROM user_profile WHERE id = 1`);
@@ -150,13 +165,14 @@ export class DatabaseService {
       console.log('[DatabaseService] addBook 파라미터:', book);
       // @ts-ignore
       const result = await this.db.runAsync(
-        `INSERT INTO books (title, author, isbn, pages, status, cover_color) VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO books (title, author, isbn, pages, status, cover_color, cover) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         book.title,
         book.author,
         book.isbn ?? null,
         book.pages ?? null,
         book.status,
-        book.cover_color ?? null
+        book.cover_color ?? null,
+        book.cover ?? null
       );
       console.log('[DatabaseService] addBook 결과:', result);
       // @ts-ignore
@@ -283,16 +299,16 @@ export class DatabaseService {
 
   // --- NOTES CRUD ---
   public async addNote(note: Omit<Note, 'id' | 'created_at'>): Promise<number> {
-    if (!this.db) throw new Error('DB not initialized');
-    // @ts-ignore
-    const result = await this.db.runAsync(
-      `INSERT INTO notes (book_id, content, tags) VALUES (?, ?, ?)`,
-      note.book_id,
-      note.content,
-      note.tags ?? null
-    );
-    // @ts-ignore
-    return result.lastInsertRowId;
+      if (!this.db) throw new Error('DB not initialized');
+      // @ts-ignore
+      const result = await this.db.runAsync(
+        `INSERT INTO notes (book_id, content, tags) VALUES (?, ?, ?)`,
+        note.book_id,
+        note.content,
+        note.tags ?? null
+      );
+      // @ts-ignore
+      return result.lastInsertRowId;
   }
   public async getNotesByBook(book_id: number): Promise<Note[]> {
     try {

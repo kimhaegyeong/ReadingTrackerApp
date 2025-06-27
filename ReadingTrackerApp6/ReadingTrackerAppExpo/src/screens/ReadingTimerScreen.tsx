@@ -4,13 +4,7 @@ import { Picker } from '@react-native-picker/picker';
 import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { DatabaseService } from '../DatabaseService';
-
-const books = [
-  { id: 1, title: '사피엔스', author: '유발 하라리' },
-  { id: 2, title: '아몬드', author: '손원평' },
-  { id: 3, title: '코스모스', author: '칼 세이건' },
-  { id: 4, title: '1984', author: '조지 오웰' },
-];
+import DropDownPicker from 'react-native-dropdown-picker';
 
 const initialSessions = [
   {
@@ -55,13 +49,22 @@ const ReadingTimerScreen = () => {
   const [seconds, setSeconds] = useState(0);
   const [books, setBooks] = useState<any[]>([]);
   const [selectedBook, setSelectedBook] = useState('');
-  const [selectedBookId, setSelectedBookId] = useState<number | null>(null);
+  const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
   const [manualMinutes, setManualMinutes] = useState('');
   const [manualPages, setManualPages] = useState('');
   const [notes, setNotes] = useState('');
   const [todaySessions, setTodaySessions] = useState<any[]>([]);
   const [totalStats, setTotalStats] = useState({ totalMinutes: 0, totalPages: 0 });
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [open, setOpen] = useState(false);
+  const [comboValue, setComboValue] = useState<string | null>(null);
+  const [items, setItems] = useState(
+    books.map(book => ({
+      label: `${book.title} - ${book.author}`,
+      value: String(book.id),
+      key: String(book.id),
+    }))
+  );
 
   // DB에서 오늘의 기록, 통계 불러오기
   const fetchSessionsAndStats = async () => {
@@ -102,28 +105,43 @@ const ReadingTimerScreen = () => {
     (async () => {
       const db = await DatabaseService.getInstance();
       const allBooks = await db.getAllBooks();
-      setBooks(allBooks);
+      // [디버깅] 전체 책 목록 로그
+      console.log('DB 전체 책 목록:', allBooks);
+      // status !== 'deleted'인 책만 내 서재로 간주
+      const libraryBooks = allBooks.filter((b: any) => b.status !== 'deleted');
+      // [디버깅] 내 서재 책 목록 로그
+      console.log('내 서재 책 목록:', libraryBooks);
+      setBooks(libraryBooks);
+      // route param으로 책이 넘어온 경우에도 삭제된 책은 무시
       if (route && (route as any).params && (route as any).params.book) {
         const book = (route as any).params.book;
-        const found = allBooks.find((b: any) => b.id === book.id);
+        const found = libraryBooks.find((b: any) => b.id === book.id);
         if (found) {
           setSelectedBook(found.title);
-          setSelectedBookId(found.id);
+          setSelectedBookId(String(found.id));
+          setComboValue(String(found.id));
         }
       }
     })();
   }, []);
 
-  // 책 선택 시 book_id 매핑
-  const handleBookSelect = async (title: string) => {
-    setSelectedBook(title);
-    if (title) {
-      const db = await DatabaseService.getInstance();
-      const id = await db.getBookIdByTitle(title);
-      setSelectedBookId(id);
-    } else {
-      setSelectedBookId(null);
-    }
+  // books가 바뀔 때마다 items도 갱신
+  useEffect(() => {
+    setItems(
+      books.map(book => ({
+        label: `${book.title} - ${book.author}`,
+        value: String(book.id),
+        key: String(book.id),
+      }))
+    );
+  }, [books]);
+
+  // 책 선택 시 id(string) 기준으로 상태 세팅
+  const handleBookSelect = async (id: string) => {
+    setComboValue(id);
+    setSelectedBookId(id);
+    const found = books.find(b => String(b.id) === id);
+    setSelectedBook(found ? found.title : '');
   };
 
   const handleStart = () => {
@@ -148,7 +166,7 @@ const ReadingTimerScreen = () => {
     const now = new Date();
     const start = new Date(now.getTime() - seconds * 1000);
     const session = {
-      book_id: selectedBookId,
+      book_id: parseInt(selectedBookId!),
       start_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${start.toTimeString().slice(0,8)}`,
       end_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toTimeString().slice(0,8)}`,
       duration_minutes: minutes,
@@ -161,6 +179,7 @@ const ReadingTimerScreen = () => {
     setSeconds(0);
     setSelectedBook('');
     setSelectedBookId(null);
+    setComboValue(null);
     setManualPages('');
     setNotes('');
     Alert.alert('성공', `${minutes}분 독서 기록이 저장되었습니다!`);
@@ -174,7 +193,7 @@ const ReadingTimerScreen = () => {
     }
     const now = new Date();
     const session = {
-      book_id: selectedBookId,
+      book_id: parseInt(selectedBookId!),
       start_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toTimeString().slice(0,8)}`,
       end_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toTimeString().slice(0,8)}`,
       duration_minutes: parseInt(manualMinutes),
@@ -185,6 +204,7 @@ const ReadingTimerScreen = () => {
     await db.addReadingSession(session);
     setSelectedBook('');
     setSelectedBookId(null);
+    setComboValue(null);
     setManualMinutes('');
     setManualPages('');
     setNotes('');
@@ -259,8 +279,7 @@ const ReadingTimerScreen = () => {
         <Text style={styles.headerTitleCard}>독서 시간 기록</Text>
         <Text style={styles.headerSubCard}>{`오늘 총 ${totalStats.totalMinutes}분, ${totalStats.totalPages}페이지 읽었어요`}</Text>
       </View>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* 타이머 카드 */}
+      {/* DropDownPicker가 포함된 카드들은 ScrollView 밖에서 View로 분리 */}
         <View style={styles.cardTimer}>
           <View style={styles.cardTitleRow}>
             <Feather name="clock" size={22} color="#2563eb" style={{ marginRight: 8 }} />
@@ -268,21 +287,28 @@ const ReadingTimerScreen = () => {
           </View>
           {/* 책 선택 */}
           <Text style={styles.label}>읽을 책</Text>
-          <View style={styles.pickerWrapperCard}>
-            <Picker
-              selectedValue={books.find(b => b.title === selectedBook) ? selectedBook : ''}
-              onValueChange={handleBookSelect}
-              style={styles.picker}
-            >
-              <Picker.Item label="책을 선택하세요" value="" />
-              {books.map((book) => (
-                <Picker.Item
-                  key={book.id}
-                  label={`${book.title} - ${book.author}`}
-                  value={book.title}
-                />
-              ))}
-            </Picker>
+        <View style={[styles.pickerWrapperCard, { overflow: 'visible', zIndex: 3000 }]}>
+          <DropDownPicker
+            open={open}
+            value={comboValue}
+            items={items}
+            setOpen={setOpen}
+            setValue={setComboValue}
+            onChangeValue={value => handleBookSelect(value || '')}
+            setItems={setItems}
+            placeholder="책을 선택하세요"
+            style={{ marginBottom: 8, zIndex: 3000 }}
+            zIndex={3000}
+            zIndexInverse={1000}
+            dropDownContainerStyle={{
+              zIndex: 4000,
+              elevation: 10,
+              position: 'absolute',
+              top: 44, // 필요시 조정
+              backgroundColor: '#fff',
+              borderColor: '#e2e8f0',
+            }}
+          />
           </View>
           {/* 타이머 디스플레이 */}
           <View style={styles.timerDisplayWrapperCard}>
@@ -334,7 +360,6 @@ const ReadingTimerScreen = () => {
             style={styles.inputCard}
           />
         </View>
-        {/* 수동 입력 카드 */}
         <View style={styles.cardTimer}>
           <View style={styles.cardTitleRow}>
             <Feather name="plus" size={22} color="#a21caf" style={{ marginRight: 8 }} />
@@ -342,20 +367,18 @@ const ReadingTimerScreen = () => {
           </View>
           <Text style={styles.label}>읽은 책</Text>
           <View style={styles.pickerWrapperCard}>
-            <Picker
-              selectedValue={selectedBook}
-              onValueChange={handleBookSelect}
-              style={styles.picker}
-            >
-              <Picker.Item label="책을 선택하세요" value="" />
-              {books.map((book) => (
-                <Picker.Item
-                  key={book.id}
-                  label={`${book.title} - ${book.author}`}
-                  value={book.title}
+          <DropDownPicker
+            open={open}
+            value={comboValue}
+            items={items}
+            setOpen={setOpen}
+            setValue={setComboValue}
+            onChangeValue={value => handleBookSelect(value || '')}
+            setItems={setItems}
+            placeholder="책을 선택하세요"
+            style={{ marginBottom: 8 }}
+            zIndex={1000}
                 />
-              ))}
-            </Picker>
           </View>
           <View style={styles.manualRowCard}>
             <View style={{ flex: 1, marginRight: 8 }}>
@@ -396,7 +419,8 @@ const ReadingTimerScreen = () => {
             <Text style={styles.buttonTextCard}>기록 추가</Text>
           </TouchableOpacity>
         </View>
-        {/* 오늘의 독서 기록 카드 */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* 오늘의 독서 기록 카드만 ScrollView 내부에 남김 */}
         <View style={styles.cardTimer}>
           <View style={styles.cardTitleRow}>
             <Feather name="book-open" size={22} color="#16a34a" style={{ marginRight: 8 }} />

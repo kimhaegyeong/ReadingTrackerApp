@@ -1,40 +1,51 @@
+// @ts-ignore: 타입 선언은 src/types/env.d.ts에서 제공
+import { ALADIN_API_KEY } from '@env';
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Keyboard, SafeAreaView, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Keyboard, SafeAreaView, Alert, Image } from 'react-native';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { DatabaseService } from '../DatabaseService';
+import axios from 'axios';
 
-const mockSearch = (query: string) => {
-  return new Promise<any[]>((resolve) => {
-    setTimeout(() => {
-      if (!query) return resolve([]);
-      resolve([
-        {
-          id: 1,
-          title: query,
-          author: '저자명',
-          isbn: '9788934942467',
-          publisher: '출판사',
-          publishedYear: '2023',
-        },
-        {
-          id: 2,
-          title: `${query} 시리즈`,
-          author: '다른 저자',
-          isbn: '9788934942468',
-          publisher: '다른 출판사',
-          publishedYear: '2022',
-        },
-        {
-          id: 3,
-          title: `완전한 ${query}`,
-          author: '또 다른 저자',
-          isbn: '9788934942469',
-          publisher: '새로운 출판사',
-          publishedYear: '2021',
-        },
-      ]);
-    }, 1000);
-  });
+const ALADIN_API_URL = 'https://www.aladin.co.kr/ttb/api/ItemSearch.aspx';
+
+const searchBooksAladin = async (query: string) => {
+  if (!query) return [];
+  const params = {
+    ttbkey: ALADIN_API_KEY,
+    Query: query,
+    QueryType: 'Title',
+    MaxResults: 10,
+    start: 1,
+    SearchTarget: 'Book',
+    output: 'js', // json(js) 형식
+    Version: '20131101',
+    Cover: 'Big',
+  };
+  try {
+    const url = `${ALADIN_API_URL}?${Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`;
+    const res = await axios.get(url);
+    const data = res.data;
+    let resultObj;
+    if (typeof data === 'object') {
+      resultObj = data;
+    } else {
+      // eslint-disable-next-line no-eval
+      resultObj = eval(data.replace(/^_ALADIN_BOOKSEARCH_CALLBACK_/, ''));
+    }
+    if (!resultObj || !resultObj.item) return [];
+    return resultObj.item.map((item: any) => ({
+      id: item.itemId,
+      title: item.title,
+      author: item.author,
+      isbn: item.isbn13 || item.isbn,
+      publisher: item.publisher,
+      publishedYear: item.pubDate ? item.pubDate.split('-')[0] : '',
+      cover: item.cover,
+    }));
+  } catch (e) {
+    console.error('알라딘 API 오류:', e);
+    return [];
+  }
 };
 
 // 커스텀 카드
@@ -62,7 +73,7 @@ const BookSearchScreen = ({ navigation }: any) => {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
     Keyboard.dismiss();
-    const results = await mockSearch(searchQuery.trim());
+    const results = await searchBooksAladin(searchQuery.trim());
     setSearchResults(results);
     setIsSearching(false);
   };
@@ -77,6 +88,7 @@ const BookSearchScreen = ({ navigation }: any) => {
         pages: undefined,
         status: 'want-to-read',
         cover_color: undefined,
+        cover: book.cover,
       });
       setSnackbar({ visible: true, message: `"${book.title}"이(가) 서재에 추가되었습니다!` });
       navigation.goBack && navigation.goBack();
@@ -133,7 +145,15 @@ const BookSearchScreen = ({ navigation }: any) => {
             <CustomCard key={book.id}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={styles.bookIconWrap}>
-                  <MaterialIcons name="menu-book" size={36} color="#90a4ae" />
+                  {book.cover ? (
+                    <Image
+                      source={{ uri: book.cover }}
+                      style={{ width: 48, height: 70, borderRadius: 6, backgroundColor: '#eee' }}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <MaterialIcons name="menu-book" size={36} color="#90a4ae" />
+                  )}
                 </View>
                 <View style={{ flex: 1, marginLeft: 16 }}>
                   <Text style={styles.bookTitle}>{book.title}</Text>

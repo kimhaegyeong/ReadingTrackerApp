@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { DatabaseService, Book as DBBook } from '../DatabaseService';
@@ -41,12 +41,42 @@ const BookLibraryScreen = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('all');
   const { books, fetchBooks, loading, dbService } = useBookContext();
+  const [todaySessions, setTodaySessions] = useState<any[]>([]);
+  const [todayStats, setTodayStats] = useState({ totalMinutes: 0, totalPages: 0, totalNotes: 0 });
+  const [statsLoading, setStatsLoading] = useState(false);
+
   useFocusEffect(
     React.useCallback(() => {
       if (dbService) fetchBooks(dbService);
     }, [dbService])
   );
-  const todayReading = { totalMinutes: 45, totalPages: 23, totalNotes: 3, sessions: [ { book: '아몬드', minutes: 25, pages: 15, notes: 2 }, { book: '사피엔스', minutes: 20, pages: 8, notes: 1 } ] };
+
+  useEffect(() => {
+    const fetchToday = async () => {
+      if (!dbService) return;
+      setStatsLoading(true);
+      try {
+        const sessions = await dbService.getTodaySessions();
+        setTodaySessions(sessions);
+        // 통계 계산
+        let totalMinutes = 0, totalPages = 0, totalNotes = 0;
+        for (const s of sessions) {
+          totalMinutes += s.duration_minutes || 0;
+          totalPages += s.pages_read || 0;
+          // 각 세션별 메모 개수 합산 (book_id 기준)
+          const notes = await dbService.getNotesByBook(s.book_id);
+          totalNotes += notes.length;
+        }
+        setTodayStats({ totalMinutes, totalPages, totalNotes });
+      } catch (e) {
+        // 무시
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    fetchToday();
+  }, [dbService]);
+
   const getStatusInfo = (status: DBBook['status']) => {
     switch (status) {
       case 'want-to-read': return { label: '읽고 싶은', icon: 'heart', color: '#ec4899' };
@@ -87,7 +117,15 @@ const BookLibraryScreen = () => {
           <View style={styles.cardContent}>
             <View style={styles.bookInfo}>
               <View style={[styles.bookCover, { backgroundColor: book.cover_color || '#3b82f6' }]}> 
-                <Ionicons name="book" size={24} color="white" />
+                {book.cover ? (
+                  <Image
+                    source={{ uri: book.cover }}
+                    style={{ width: 40, height: 56, borderRadius: 6, backgroundColor: '#eee' }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Ionicons name="book" size={24} color="white" />
+                )}
               </View>
               <View style={styles.bookDetails}>
                 <Text style={styles.bookTitle}>{book.title}</Text>
@@ -143,33 +181,46 @@ const BookLibraryScreen = () => {
               <Ionicons name="calendar" size={20} color="#2563eb" />
               <Text style={styles.todayTitle}>오늘의 독서 기록</Text>
             </View>
-            <View style={styles.statsGrid}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{todayReading.totalMinutes}</Text>
-                <Text style={styles.statLabel}>분</Text>
+            {statsLoading ? (
+              <View style={{ alignItems: 'center', padding: 16 }}>
+                <ActivityIndicator size="small" color="#2563eb" />
+                <Text style={{ marginTop: 8, color: '#2563eb' }}>불러오는 중...</Text>
               </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{todayReading.totalPages}</Text>
-                <Text style={styles.statLabel}>페이지</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{todayReading.totalNotes}</Text>
-                <Text style={styles.statLabel}>노트</Text>
-              </View>
-            </View>
-            <View style={styles.sessionsContainer}>
-              <Text style={styles.sessionsTitle}>독서 세션</Text>
-              {todayReading.sessions.map((session, index) => (
-                <View key={index} style={styles.sessionItem}>
-                  <Text style={styles.sessionBook}>{session.book}</Text>
-                  <View style={styles.sessionStats}>
-                    <Text style={styles.sessionText}>{session.minutes}분</Text>
-                    <Text style={styles.sessionText}>{session.pages}페이지</Text>
-                    <Text style={styles.sessionText}>{session.notes}노트</Text>
+            ) : (
+              <>
+                <View style={styles.statsGrid}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statNumber}>{todayStats.totalMinutes}</Text>
+                    <Text style={styles.statLabel}>분</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statNumber}>{todayStats.totalPages}</Text>
+                    <Text style={styles.statLabel}>페이지</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statNumber}>{todayStats.totalNotes}</Text>
+                    <Text style={styles.statLabel}>노트</Text>
                   </View>
                 </View>
-              ))}
-            </View>
+                <View style={styles.sessionsContainer}>
+                  <Text style={styles.sessionsTitle}>독서 세션</Text>
+                  {todaySessions.length === 0 ? (
+                    <Text style={{ color: '#64748b', marginTop: 8 }}>오늘의 독서 세션이 없습니다.</Text>
+                  ) : (
+                    todaySessions.map((session, index) => (
+                      <View key={index} style={styles.sessionItem}>
+                        <Text style={styles.sessionBook}>{session.book_title || '책'}</Text>
+                        <View style={styles.sessionStats}>
+                          <Text style={styles.sessionText}>{session.duration_minutes || 0}분</Text>
+                          <Text style={styles.sessionText}>{session.pages_read || 0}페이지</Text>
+                          <Text style={styles.sessionText}>{session.memo ? '메모 있음' : ''}</Text>
+                        </View>
+                      </View>
+                    ))
+                  )}
+                </View>
+              </>
+            )}
           </CustomCard>
           <View style={styles.tabsContainer}>
             <TabButton title="전체" value="all" isActive={activeTab === 'all'} />
@@ -181,8 +232,8 @@ const BookLibraryScreen = () => {
             {filteredBooks
               .filter(book => activeTab === 'all' ? true : book.status === activeTab)
               .map(book => (
-                <BookCard key={book.id} book={book} />
-              ))}
+              <BookCard key={book.id} book={book} />
+            ))}
           </View>
         </ScrollView>
         
