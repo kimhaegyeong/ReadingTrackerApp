@@ -69,6 +69,9 @@ const ReadingTimerScreen = () => {
   );
   const [bookModalVisible, setBookModalVisible] = useState(false);
   const [search, setSearch] = useState('');
+  const [manualBookModalVisible, setManualBookModalVisible] = useState(false);
+  const [selectedBookManual, setSelectedBookManual] = useState('');
+  const [selectedBookIdManual, setSelectedBookIdManual] = useState<string | null>(null);
 
   // DB에서 오늘의 기록, 통계 불러오기
   const fetchSessionsAndStats = async () => {
@@ -147,12 +150,20 @@ const ReadingTimerScreen = () => {
       b.author.toLowerCase().includes(search.toLowerCase())
   );
 
-  // 책 선택 핸들러 분리 (타이머/수동입력 구분)
+  // 책 선택 핸들러 (타이머용)
   const handleBookSelect = (id: string) => {
     setSelectedBookId(id);
     const found = books.find(b => String(b.id) === id);
     setSelectedBook(found ? found.title : '');
     setBookModalVisible(false);
+  };
+
+  // 책 선택 핸들러 (수동입력용)
+  const handleManualBookSelect = (id: string) => {
+    setSelectedBookIdManual(id);
+    const found = books.find(b => String(b.id) === id);
+    setSelectedBookManual(found ? found.title : '');
+    setManualBookModalVisible(false);
   };
 
   const handleStart = () => {
@@ -290,6 +301,7 @@ const ReadingTimerScreen = () => {
         <Text style={styles.headerTitleCard}>독서 시간 기록</Text>
         <Text style={styles.headerSubCard}>{`오늘 총 ${totalStats.totalMinutes}분, ${totalStats.totalPages}페이지 읽었어요`}</Text>
       </View>
+      {/* 타이머용 책 선택 모달 */}
       <Modal visible={bookModalVisible} animationType="none" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -325,6 +337,50 @@ const ReadingTimerScreen = () => {
                     <Text style={styles.bookAuthor}>{book.author}</Text>
                   </View>
                   {selectedBookId === String(book.id) && (
+                    <Feather name="check-circle" size={20} color="#2563eb" />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+      {/* 수동입력용 책 선택 모달 */}
+      <Modal visible={manualBookModalVisible} animationType="none" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>책 선택</Text>
+              <TouchableOpacity onPress={() => setManualBookModalVisible(false)}>
+                <Feather name="x" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="책 제목 또는 저자 검색"
+              value={search}
+              onChangeText={setSearch}
+            />
+            <ScrollView style={styles.bookList}>
+              {filteredBooks.map(book => (
+                <TouchableOpacity
+                  key={book.id}
+                  style={[
+                    styles.bookItem,
+                    selectedBookIdManual === String(book.id) && styles.selectedBookItem,
+                  ]}
+                  onPress={() => handleManualBookSelect(String(book.id))}
+                >
+                  {book.cover ? (
+                    <Image source={{ uri: book.cover }} style={styles.bookCover} />
+                  ) : (
+                    <View style={[styles.bookCover, { backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }]}/>
+                  )}
+                  <View style={styles.bookInfo}>
+                    <Text style={styles.bookTitle}>{book.title}</Text>
+                    <Text style={styles.bookAuthor}>{book.author}</Text>
+                  </View>
+                  {selectedBookIdManual === String(book.id) && (
                     <Feather name="check-circle" size={20} color="#2563eb" />
                   )}
                 </TouchableOpacity>
@@ -406,22 +462,11 @@ const ReadingTimerScreen = () => {
             <Text style={styles.cardTitle}>수동 입력</Text>
           </View>
           <Text style={styles.label}>읽은 책</Text>
-          <View style={styles.pickerWrapperCard}>
-            <DropDownPicker
-              open={open}
-              value={comboValue}
-              items={items}
-              setOpen={setOpen}
-              setValue={setComboValue}
-              onChangeValue={value => handleBookSelect(value || '')}
-              setItems={setItems}
-              placeholder="책을 선택하세요"
-              style={{ marginBottom: 8 }}
-              zIndex={1000}
-              listMode="MODAL"
-              modalTitle="책을 선택하세요"
-            />
-          </View>
+          <TouchableOpacity style={styles.pickerWrapperCard} onPress={() => setManualBookModalVisible(true)}>
+            <Text style={{ padding: 14, color: selectedBookManual ? '#222' : '#888' }}>
+              {selectedBookManual ? selectedBookManual : '책을 선택하세요'}
+            </Text>
+          </TouchableOpacity>
           <View style={styles.manualRowCard}>
             <View style={{ flex: 1, marginRight: 8 }}>
               <Text style={styles.label}>읽은 시간 (분)</Text>
