@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Image, ActivityIndicator } from 'react-native';
+import { Surface, Card, Button } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { DatabaseService, Book as DBBook } from '../DatabaseService';
@@ -40,7 +41,7 @@ const CustomButton = ({ onPress, icon, title, type, buttonStyle }: any) => (
 const BookLibraryScreen = () => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('all');
-  const { books, fetchBooks, loading, dbService } = useBookContext();
+  const { books, fetchBooks, loading, dbService, error } = useBookContext();
   const [todaySessions, setTodaySessions] = useState<any[]>([]);
   const [todayStats, setTodayStats] = useState({ totalMinutes: 0, totalPages: 0, totalNotes: 0 });
   const [statsLoading, setStatsLoading] = useState(false);
@@ -164,93 +165,113 @@ const BookLibraryScreen = () => {
   );
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+      <Surface style={styles.container}>
         <ScrollView style={styles.scrollView}>
-          <View style={styles.header}>
+          <View style={styles.header} accessibilityRole="header">
             <View style={styles.headerContent}>
-              <Ionicons name="library" size={32} color="#2563eb" />
+              <Ionicons name="library" size={32} color="#2563eb" accessibilityLabel="서재 아이콘" />
               <Text style={styles.headerTitle}>리브노트</Text>
             </View>
           </View>
           <View style={styles.welcomeSection}>
-            <Text style={styles.welcomeTitle}>내 서재</Text>
+            <Text style={styles.welcomeTitle} accessibilityRole="header">내 서재</Text>
             <Text style={styles.welcomeSubtitle}>지금까지 {filteredBooks.length}권의 책과 함께했어요</Text>
           </View>
-          <CustomCard style={styles.todayCard}>
-            <View style={styles.todayHeader}>
-              <Ionicons name="calendar" size={20} color="#2563eb" />
-              <Text style={styles.todayTitle}>오늘의 독서 기록</Text>
-            </View>
-            {statsLoading ? (
-              <View style={{ alignItems: 'center', padding: 16 }}>
-                <ActivityIndicator size="small" color="#2563eb" />
-                <Text style={{ marginTop: 8, color: '#2563eb' }}>불러오는 중...</Text>
+          <Card style={styles.todayCard} accessible accessibilityLabel="오늘의 독서 기록 카드">
+            <Card.Content>
+              <View style={styles.todayHeader}>
+                <Ionicons name="calendar" size={20} color="#2563eb" accessibilityLabel="달력 아이콘" />
+                <Text style={styles.todayTitle}>오늘의 독서 기록</Text>
               </View>
-            ) : (
-              <>
-                <View style={styles.statsGrid}>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{todayStats.totalMinutes}</Text>
-                    <Text style={styles.statLabel}>분</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{todayStats.totalPages}</Text>
-                    <Text style={styles.statLabel}>페이지</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statNumber}>{todayStats.totalNotes}</Text>
-                    <Text style={styles.statLabel}>노트</Text>
-                  </View>
+              {statsLoading ? (
+                <View style={{ alignItems: 'center', padding: 16 }}>
+                  <ActivityIndicator size="small" color="#2563eb" />
+                  <Text style={{ marginTop: 8, color: '#2563eb' }}>불러오는 중...</Text>
                 </View>
-                <View style={styles.sessionsContainer}>
-                  <Text style={styles.sessionsTitle}>독서 세션</Text>
-                  {todaySessions.length === 0 ? (
-                    <Text style={{ color: '#64748b', marginTop: 8 }}>오늘의 독서 세션이 없습니다.</Text>
-                  ) : (
-                    todaySessions.map((session, index) => (
-                      <View key={index} style={styles.sessionItem}>
-                        <Text 
-                          style={[styles.sessionBook, {width: '100%', flexShrink: 1, flexGrow: 1, flexBasis: 0}]} 
-                          numberOfLines={2} 
-                          ellipsizeMode="tail"
-                        >
-                          {session.book_title || '책'}
-                        </Text>
-                        <View style={styles.sessionStats}>
-                          <Text style={styles.sessionText}>{session.duration_minutes || 0}분</Text>
-                          <Text style={styles.sessionText}>{session.pages_read || 0}페이지</Text>
-                          <Text style={styles.sessionText}>{session.memo ? '메모 있음' : ''}</Text>
+              ) : (
+                <>
+                  <View style={styles.statsGrid}>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statNumber}>{todayStats.totalMinutes}</Text>
+                      <Text style={styles.statLabel}>분</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statNumber}>{todayStats.totalPages}</Text>
+                      <Text style={styles.statLabel}>페이지</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statNumber}>{todayStats.totalNotes}</Text>
+                      <Text style={styles.statLabel}>노트</Text>
+                    </View>
+                  </View>
+                  <View style={styles.sessionsContainer}>
+                    <Text style={styles.sessionsTitle}>독서 세션</Text>
+                    {todaySessions.length === 0 ? (
+                      <Text style={{ color: '#64748b', marginTop: 8 }}>오늘의 독서 세션이 없습니다.</Text>
+                    ) : (
+                      todaySessions.map((session, index) => (
+                        <View key={index} style={styles.sessionItem}>
+                          <Text 
+                            style={[styles.sessionBook, {width: '100%', flexShrink: 1, flexGrow: 1, flexBasis: 0}]} 
+                            numberOfLines={2} 
+                            ellipsizeMode="tail"
+                          >
+                            {session.book_title || '책'}
+                          </Text>
+                          <View style={styles.sessionStats}>
+                            <Text style={styles.sessionText}>{session.duration_minutes || 0}분</Text>
+                            <Text style={styles.sessionText}>{session.pages_read || 0}페이지</Text>
+                            <Text style={styles.sessionText}>{session.memo ? '메모 있음' : ''}</Text>
+                          </View>
                         </View>
-                      </View>
-                    ))
-                  )}
-                </View>
-              </>
-            )}
-          </CustomCard>
-          <View style={styles.tabsContainer}>
+                      ))
+                    )}
+                  </View>
+                </>
+              )}
+            </Card.Content>
+          </Card>
+          <View style={styles.tabsContainer} accessibilityRole="tablist">
             <TabButton title="전체" value="all" isActive={activeTab === 'all'} />
             <TabButton title="읽는 중" value="reading" isActive={activeTab === 'reading'} />
             <TabButton title="완료" value="completed" isActive={activeTab === 'completed'} />
             <TabButton title="읽고 싶은" value="want-to-read" isActive={activeTab === 'want-to-read'} />
           </View>
           <View style={styles.booksContainer}>
-            {filteredBooks
-              .filter(book => activeTab === 'all' ? true : book.status === activeTab)
-              .map(book => (
-              <BookCard key={book.id} book={book} />
-            ))}
+            {loading ? (
+              <View style={{ alignItems: 'center', marginTop: 32 }}>
+                <ActivityIndicator size="large" color="#2563eb" />
+                <Text style={{ marginTop: 12, color: '#2563eb' }}>책 목록을 불러오는 중입니다...</Text>
+              </View>
+            ) : error ? (
+              <View style={{ alignItems: 'center', marginTop: 32 }}>
+                <Text style={{ color: 'red', fontSize: 16 }}>오류가 발생했습니다: {String(error)}</Text>
+              </View>
+            ) : filteredBooks.filter(book => activeTab === 'all' ? true : book.status === activeTab).length === 0 ? (
+              <View style={{ alignItems: 'center', marginTop: 32 }}>
+                <Text style={{ color: '#64748b', fontSize: 16 }}>책이 없습니다.</Text>
+              </View>
+            ) : (
+              filteredBooks
+                .filter(book => activeTab === 'all' ? true : book.status === activeTab)
+                .map(book => (
+                  <BookCard key={book.id} book={book} />
+                ))
+            )}
           </View>
         </ScrollView>
-        
-        {/* 플로팅 액션 버튼 - ScrollView 밖에 배치 */}
-        <TouchableOpacity
+        <Button
+          mode="contained"
           onPress={() => (navigation as any).navigate('Search')}
           style={styles.floatingActionButton}
+          icon="plus"
+          accessibilityRole="button"
+          accessibilityLabel="책 추가 버튼"
+          contentStyle={{ flexDirection: 'row-reverse' }}
         >
-          <Ionicons name="add" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+          추가
+        </Button>
+      </Surface>
     </SafeAreaView>
   );
 };
