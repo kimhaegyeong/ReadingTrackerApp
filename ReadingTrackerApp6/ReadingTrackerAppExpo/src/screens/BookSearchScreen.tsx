@@ -9,7 +9,9 @@ import axios from 'axios';
 const ALADIN_API_URL = 'https://www.aladin.co.kr/ttb/api/ItemSearch.aspx';
 
 const searchBooksAladin = async (query: string) => {
-  if (!query) return [];
+  if (!query || query.trim().length < 2) {
+    return { items: [], error: '검색어는 2글자 이상 입력하세요.' };
+  }
   const params = {
     ttbkey: ALADIN_API_KEY,
     Query: query,
@@ -17,23 +19,32 @@ const searchBooksAladin = async (query: string) => {
     MaxResults: 10,
     start: 1,
     SearchTarget: 'Book',
-    output: 'js', // json(js) 형식
+    output: 'js',
     Version: '20131101',
     Cover: 'Big',
   };
   try {
     const url = `${ALADIN_API_URL}?${Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`;
     const res = await axios.get(url);
+    if (res.status !== 200) {
+      return { items: [], error: '도서 API 서버 오류가 발생했습니다.' };
+    }
     const data = res.data;
     let resultObj;
     if (typeof data === 'object') {
       resultObj = data;
     } else {
-      // eslint-disable-next-line no-eval
-      resultObj = eval(data.replace(/^_ALADIN_BOOKSEARCH_CALLBACK_/, ''));
+      try {
+        // eslint-disable-next-line no-eval
+        resultObj = eval(data.replace(/^_ALADIN_BOOKSEARCH_CALLBACK_/, ''));
+      } catch (e) {
+        return { items: [], error: '검색 결과 파싱에 실패했습니다.' };
+      }
     }
-    if (!resultObj || !resultObj.item) return [];
-    return resultObj.item.map((item: any) => ({
+    if (!resultObj || !resultObj.item) {
+      return { items: [], error: '검색 결과가 없습니다.' };
+    }
+    return { items: resultObj.item.map((item: any) => ({
       id: item.itemId,
       title: item.title,
       author: item.author,
@@ -41,10 +52,12 @@ const searchBooksAladin = async (query: string) => {
       publisher: item.publisher,
       publishedYear: item.pubDate ? item.pubDate.split('-')[0] : '',
       cover: item.cover,
-    }));
-  } catch (e) {
-    console.error('알라딘 API 오류:', e);
-    return [];
+    })), error: null };
+  } catch (e: any) {
+    if (e.response && e.response.status === 429) {
+      return { items: [], error: 'API 사용량 제한에 도달했습니다. 잠시 후 다시 시도하세요.' };
+    }
+    return { items: [], error: '네트워크 오류 또는 알 수 없는 오류가 발생했습니다.' };
   }
 };
 
@@ -68,13 +81,20 @@ const BookSearchScreen = ({ navigation }: any) => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
+      setSearchError('검색어는 2글자 이상 입력하세요.');
+      setSearchResults([]);
+      return;
+    }
     setIsSearching(true);
+    setSearchError(null);
     Keyboard.dismiss();
-    const results = await searchBooksAladin(searchQuery.trim());
-    setSearchResults(results);
+    const { items, error } = await searchBooksAladin(searchQuery.trim());
+    setSearchResults(items);
+    setSearchError(error);
     setIsSearching(false);
   };
 
@@ -146,7 +166,13 @@ const BookSearchScreen = ({ navigation }: any) => {
           {isSearching && (
             <View style={styles.centered}><ActivityIndicator size="large" color="#1976d2" /><Text style={styles.loadingText}>검색 중...</Text></View>
           )}
-          {!isSearching && searchResults.length > 0 && searchResults.map((book) => (
+          {searchError && !isSearching && (
+            <View style={styles.centered}>
+              <MaterialIcons name="error-outline" size={36} color="#ef4444" />
+              <Text style={{ color: '#ef4444', fontWeight: 'bold', marginTop: 8 }}>{searchError}</Text>
+            </View>
+          )}
+          {!isSearching && !searchError && searchResults.length > 0 && searchResults.map((book) => (
             <CustomCard key={book.id}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={styles.bookIconWrap}>
@@ -174,7 +200,7 @@ const BookSearchScreen = ({ navigation }: any) => {
               </View>
             </CustomCard>
           ))}
-          {!isSearching && searchQuery && searchResults.length === 0 && (
+          {!isSearching && !searchError && searchQuery && searchResults.length === 0 && (
             <View style={styles.centered}>
               <MaterialIcons name="menu-book" size={48} color="#e0e0e0" />
               <Text style={styles.emptyText}>검색 결과가 없습니다</Text>
