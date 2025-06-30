@@ -27,6 +27,12 @@ const AddBookScreen = ({ navigation }: any) => {
       return;
     }
     try {
+      const db = await require('../DatabaseService').DatabaseService.getInstance();
+      const existing = await db.getBookByUniqueKeys(title.trim(), author.trim(), isbn.trim() || undefined);
+      if (existing) {
+        Alert.alert('중복 등록', '이미 등록된 책입니다.');
+        return;
+      }
       await addBook({
         title,
         author,

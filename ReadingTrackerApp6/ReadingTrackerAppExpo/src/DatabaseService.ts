@@ -183,6 +183,23 @@ export class DatabaseService {
     }
   }
 
+  /**
+   * title, author, isbn(있으면) 모두 일치하는 책이 있는지 검사
+   * isbn이 없으면 title+author만 비교
+   */
+  public async getBookByUniqueKeys(title: string, author: string, isbn?: string): Promise<Book | null> {
+    if (!this.db) throw new Error('DB not initialized');
+    let query = `SELECT * FROM books WHERE title = ? AND author = ?`;
+    let params: any[] = [title, author];
+    if (isbn) {
+      query += ' AND isbn = ?';
+      params.push(isbn);
+    }
+    // @ts-ignore
+    const book = await this.db.getFirstAsync<Book>(query, ...params);
+    return book ?? null;
+  }
+
   public async getAllBooks(): Promise<Book[]> {
     try {
       if (!this.db) throw new Error('DB not initialized');

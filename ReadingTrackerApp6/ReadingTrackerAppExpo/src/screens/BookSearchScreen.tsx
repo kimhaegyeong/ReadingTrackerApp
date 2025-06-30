@@ -81,6 +81,11 @@ const BookSearchScreen = ({ navigation }: any) => {
   const handleAddBook = async (book: any) => {
     try {
       const db = await DatabaseService.getInstance();
+      const existing = await db.getBookByUniqueKeys(book.title.trim(), book.author.trim(), book.isbn?.trim() || undefined);
+      if (existing) {
+        Alert.alert('중복 등록', '이미 등록된 책입니다.');
+        return;
+      }
       await db.addBook({
         title: book.title,
         author: book.author,
