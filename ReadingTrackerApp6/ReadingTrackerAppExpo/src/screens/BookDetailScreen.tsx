@@ -19,6 +19,8 @@ import { RouteProp } from '@react-navigation/native';
 import { DatabaseService, Book as DBBook } from '../DatabaseService';
 import { useBookContext } from '../BookContext';
 import { Picker } from '@react-native-picker/picker';
+import * as ImagePicker from 'expo-image-picker';
+import * as MLKitOcr from 'expo-mlkit-ocr';
 
 interface Quote {
   id: number;
@@ -222,9 +224,34 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
     setActiveTab('notes'); // 메모 추가 후 메모 탭으로 전환
   };
 
-  const handleOCR = () => {
-    setNewQuote("OCR로 인식된 텍스트가 여기에 나타납니다.");
-    setIsQuoteModalVisible(true);
+  const handleOCR = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('권한 필요', '카메라 권한이 필요합니다.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
+      });
+      if (result.canceled || !result.assets || !result.assets[0].uri) {
+        return;
+      }
+      // detectFromUri만 사용 (타입 오류 무시)
+      const ocrResult = await (MLKitOcr as any).detectFromUri(result.assets[0].uri);
+      if (!ocrResult || ocrResult.length === 0) {
+        Alert.alert('OCR 실패', '텍스트를 인식하지 못했습니다.');
+        return;
+      }
+      // block.text 대신 string 처리
+      const text = ocrResult.map((block: any) => block.text ?? block).join('\n');
+      setNewQuote(text);
+      setIsQuoteModalVisible(true);
+    } catch (e) {
+      Alert.alert('OCR 오류', '텍스트 인식 중 오류가 발생했습니다.');
+    }
   };
 
   const getStatusBadge = (status: string) => {
