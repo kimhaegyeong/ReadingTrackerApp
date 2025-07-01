@@ -50,9 +50,11 @@ const ReadingTimerScreen = () => {
   const [books, setBooks] = useState<any[]>([]);
   const [selectedBook, setSelectedBook] = useState('');
   const [selectedBookId, setSelectedBookId] = useState<string | null>(null);
-  const [manualMinutes, setManualMinutes] = useState('');
+  const [timerNotes, setTimerNotes] = useState('');
+  const [timerPages, setTimerPages] = useState('');
+  const [manualNotes, setManualNotes] = useState('');
   const [manualPages, setManualPages] = useState('');
-  const [notes, setNotes] = useState('');
+  const [manualMinutes, setManualMinutes] = useState('');
   const [todaySessions, setTodaySessions] = useState<any[]>([]);
   const [totalStats, setTotalStats] = useState({ totalMinutes: 0, totalPages: 0 });
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -198,7 +200,7 @@ const ReadingTimerScreen = () => {
       end_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toTimeString().slice(0,8)}`,
       duration_minutes: minutes,
       pages_read: parseInt(manualPages) || 0,
-      memo: notes,
+      memo: manualNotes,
     };
     const db = await DatabaseService.getInstance();
     await db.addReadingSession(session);
@@ -208,7 +210,7 @@ const ReadingTimerScreen = () => {
     setSelectedBookId(null);
     setComboValue(null);
     setManualPages('');
-    setNotes('');
+    setManualNotes('');
     Alert.alert('성공', `${minutes}분 독서 기록이 저장되었습니다!`);
     fetchSessionsAndStats();
   };
@@ -225,7 +227,7 @@ const ReadingTimerScreen = () => {
       end_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toTimeString().slice(0,8)}`,
       duration_minutes: parseInt(manualMinutes),
       pages_read: parseInt(manualPages) || 0,
-      memo: notes,
+      memo: manualNotes,
     };
     const db = await DatabaseService.getInstance();
     await db.addReadingSession(session);
@@ -234,7 +236,7 @@ const ReadingTimerScreen = () => {
     setComboValueManual(null);
     setManualMinutes('');
     setManualPages('');
-    setNotes('');
+    setManualNotes('');
     Alert.alert('성공', '독서 기록이 추가되었습니다!');
     fetchSessionsAndStats();
   };
@@ -298,6 +300,32 @@ const ReadingTimerScreen = () => {
       {left && left()}
       <Text style={{ fontSize: 17, fontWeight: 'bold', color: '#222' }}>{title}</Text>
     </View>
+  );
+
+  // [2] 공통 컴포넌트: 카드, 버튼, 입력창
+  const Card = ({ children, style }: any) => (
+    <View style={[styles.cardCommon, style]}>{children}</View>
+  );
+  const Button = ({ onPress, icon, text, color, outline, disabled, style }: any) => (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      style={[styles.buttonCommon, outline && styles.buttonOutline, color && { backgroundColor: color }, disabled && { opacity: 0.5 }, style]}
+    >
+      {icon}
+      <Text style={[styles.buttonTextCommon, outline && color && { color }, !outline && { color: '#fff' }, icon && { marginLeft: 6 }]}>{text}</Text>
+    </TouchableOpacity>
+  );
+  const Input = ({ value, onChangeText, placeholder, keyboardType, multiline, style, ...props }: any) => (
+    <TextInput
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      keyboardType={keyboardType}
+      multiline={multiline}
+      style={[styles.inputCommon, style]}
+      {...props}
+    />
   );
 
   return (
@@ -453,8 +481,8 @@ const ReadingTimerScreen = () => {
           <Text style={styles.label}>메모</Text>
           <TextInput
             placeholder="독서 중 느낀 점이나 메모를 남겨보세요"
-            value={notes}
-            onChangeText={setNotes}
+            value={manualNotes}
+            onChangeText={setManualNotes}
             multiline
             numberOfLines={2}
             style={styles.inputCard}
@@ -499,8 +527,8 @@ const ReadingTimerScreen = () => {
           <Text style={styles.label}>메모</Text>
           <TextInput
             placeholder="독서 중 느낀 점이나 메모를 남겨보세요"
-            value={notes}
-            onChangeText={setNotes}
+            value={manualNotes}
+            onChangeText={setManualNotes}
             multiline
             numberOfLines={3}
             style={styles.inputCard}
@@ -872,6 +900,53 @@ const styles = StyleSheet.create({
   bookAuthor: {
     fontSize: 13,
     color: '#64748b',
+  },
+  cardCommon: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  buttonCommon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    height: 48,
+    paddingHorizontal: 20,
+    backgroundColor: '#2563eb',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  buttonOutline: {
+    backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#2563eb',
+  },
+  buttonTextCommon: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  inputCommon: {
+    marginBottom: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#1f2937',
   },
 });
 
