@@ -11,7 +11,6 @@ import {
   Alert,
   Platform,
   ActionSheetIOS,
-  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -122,10 +121,6 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
   const [statusMenuVisible, setStatusMenuVisible] = useState(false);
   const [actionMenuVisible, setActionMenuVisible] = useState(false);
 
-  const [isQuoteLoading, setIsQuoteLoading] = useState(false);
-  const [isNoteLoading, setIsNoteLoading] = useState(false);
-  const [isOcrLoading, setIsOcrLoading] = useState(false);
-
   // 상태별 정보
   const getStatusInfo = (status: string) => {
     switch (status) {
@@ -183,76 +178,53 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
   };
 
   const handleAddQuote = async () => {
-    if (!newQuote.trim()) {
-      Alert.alert('입력 필요', '인용문 내용을 입력하세요.');
-      return;
-    }
-    setIsQuoteLoading(true);
-    try {
-      if (!dbService) throw new Error('DB 서비스에 연결할 수 없습니다. 앱을 재시작하거나 관리자에게 문의하세요.');
-      await dbService.addQuote({
-        book_id: book.id,
-        content: newQuote,
-        memo: newQuoteMemo,
-        page: undefined,
-        tags: newQuoteTags.join(',')
-      });
-      setNewQuote('');
-      setNewQuoteMemo('');
-      setNewQuoteTags([]);
-      setIsQuoteModalVisible(false);
-      // 목록 갱신
-      const q = await dbService.getQuotesByBook(book.id);
-      setQuotes(q.map(q => ({
-        id: q.id,
-        text: q.content,
-        memo: q.memo || '',
-        page: q.page || 0,
-        createdAt: q.created_at || '',
-        tags: q.tags ? q.tags.split(',') : [],
-      })));
-      setActiveTab('quotes');
-    } catch (e: any) {
-      Alert.alert('DB 오류', e?.message || '인용문 추가 중 알 수 없는 오류가 발생했습니다.');
-    } finally {
-      setIsQuoteLoading(false);
-    }
+    if (!newQuote.trim() || !dbService) return;
+    await dbService.addQuote({
+      book_id: book.id,
+      content: newQuote,
+      memo: newQuoteMemo,
+      page: undefined,
+      tags: newQuoteTags.join(',')
+    });
+    setNewQuote('');
+    setNewQuoteMemo('');
+    setNewQuoteTags([]);
+    setIsQuoteModalVisible(false);
+    // 목록 갱신
+    const q = await dbService.getQuotesByBook(book.id);
+    setQuotes(q.map(q => ({
+      id: q.id,
+      text: q.content,
+      memo: q.memo || '',
+      page: q.page || 0,
+      createdAt: q.created_at || '',
+      tags: q.tags ? q.tags.split(',') : [],
+    })));
+    setActiveTab('quotes'); // 인용문 추가 후 인용문 탭으로 전환
   };
 
   const handleAddNote = async () => {
-    if (!newNote.trim()) {
-      Alert.alert('입력 필요', '메모 내용을 입력하세요.');
-      return;
-    }
-    setIsNoteLoading(true);
-    try {
-      if (!dbService) throw new Error('DB 서비스에 연결할 수 없습니다. 앱을 재시작하거나 관리자에게 문의하세요.');
-      await dbService.addNote({
-        book_id: book.id,
-        content: newNote,
-        tags: newNoteTags.join(',')
-      });
-      setNewNote('');
-      setNewNoteTags([]);
-      setIsNoteModalVisible(false);
-      // 목록 갱신
-      const n = await dbService.getNotesByBook(book.id);
-      setNotes(n.map(n => ({
-        id: n.id,
-        content: n.content,
-        createdAt: n.created_at || '',
-        tags: n.tags ? n.tags.split(',') : [],
-      })));
-      setActiveTab('notes');
-    } catch (e: any) {
-      Alert.alert('DB 오류', e?.message || '메모 추가 중 알 수 없는 오류가 발생했습니다.');
-    } finally {
-      setIsNoteLoading(false);
-    }
+    if (!newNote.trim() || !dbService) return;
+    await dbService.addNote({
+      book_id: book.id,
+      content: newNote,
+      tags: newNoteTags.join(',')
+    });
+    setNewNote('');
+    setNewNoteTags([]);
+    setIsNoteModalVisible(false);
+    // 목록 갱신
+    const n = await dbService.getNotesByBook(book.id);
+    setNotes(n.map(n => ({
+      id: n.id,
+      content: n.content,
+      createdAt: n.created_at || '',
+      tags: n.tags ? n.tags.split(',') : [],
+    })));
+    setActiveTab('notes'); // 메모 추가 후 메모 탭으로 전환
   };
 
   const handleOCR = async () => {
-    setIsOcrLoading(true);
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -267,26 +239,18 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
       if (result.canceled || !result.assets || !result.assets[0].uri) {
         return;
       }
+      // detectFromUri만 사용 (타입 오류 무시)
       const ocrResult = await (MLKitOcr as any).detectFromUri(result.assets[0].uri);
       if (!ocrResult || ocrResult.length === 0) {
-        Alert.alert('OCR 실패', '텍스트를 인식하지 못했습니다.\n- 사진이 흐리거나 글자가 작을 경우 인식률이 낮아질 수 있습니다.\n- 네트워크 연결이 불안정하면 모델 다운로드가 지연될 수 있습니다.');
+        Alert.alert('OCR 실패', '텍스트를 인식하지 못했습니다.');
         return;
       }
+      // block.text 대신 string 처리
       const text = ocrResult.map((block: any) => block.text ?? block).join('\n');
-      if (!text.trim()) {
-        Alert.alert('OCR 결과 없음', '인식된 텍스트가 없습니다.\n- 사진의 글자가 명확한지 확인해 주세요.');
-        return;
-      }
       setNewQuote(text);
       setIsQuoteModalVisible(true);
-    } catch (e: any) {
-      if (e?.message?.includes('network')) {
-        Alert.alert('OCR 네트워크 오류', '네트워크 연결이 불안정하거나, ML Kit 모델 다운로드에 실패했습니다.\n인터넷 연결을 확인 후 다시 시도해 주세요.');
-      } else {
-        Alert.alert('OCR 오류', e?.message || '텍스트 인식 중 알 수 없는 오류가 발생했습니다.');
-      }
-    } finally {
-      setIsOcrLoading(false);
+    } catch (e) {
+      Alert.alert('OCR 오류', '텍스트 인식 중 오류가 발생했습니다.');
     }
   };
 
@@ -660,12 +624,11 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
           </View>
           <ScrollView style={styles.modalContentCard}>
             <View style={styles.ocrButtonContainer}>
-              <TouchableOpacity onPress={handleOCR} style={[styles.ocrButton, styles.actionButtonCard, styles.noteButtonCard, { height: 40, paddingHorizontal: 16, borderRadius: 10, marginRight: 0, flexDirection: 'row', alignItems: 'center' }]} disabled={isOcrLoading}>
+              <TouchableOpacity onPress={handleOCR} style={[styles.ocrButton, styles.actionButtonCard, styles.noteButtonCard, { height: 40, paddingHorizontal: 16, borderRadius: 10, marginRight: 0 }]}> 
                 <Ionicons name="camera" size={16} color="#2563eb" style={{ marginRight: 6 }} />
                 <Text style={{ color: '#2563eb', fontWeight: '600', fontSize: 15 }}>OCR</Text>
-                {isOcrLoading && <ActivityIndicator size="small" color="#2563eb" style={{ marginLeft: 8 }} />}
               </TouchableOpacity>
-              <Text style={styles.ocrText}>카메라로 텍스트 인식 (한글 인식률은 첫 시도시 느릴 수 있습니다)</Text>
+              <Text style={styles.ocrText}>카메라로 텍스트 인식</Text>
             </View>
             <TextInput
               placeholder="인상 깊었던 구절을 입력하세요..."
@@ -711,13 +674,9 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                 </View>
               )}
             </View>
-            <TouchableOpacity onPress={handleAddQuote} style={[styles.actionButtonCard, styles.quoteButtonCard, { marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]} disabled={isQuoteLoading}>
-              {isQuoteLoading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />}
+            <TouchableOpacity onPress={handleAddQuote} style={[styles.actionButtonCard, styles.quoteButtonCard, { marginTop: 16 }]}> 
               <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>인용문 추가</Text>
             </TouchableOpacity>
-            <Text style={{ color: '#64748b', fontSize: 13, marginTop: 12, textAlign: 'center' }}>
-              인용문/메모는 최소 1글자 이상 입력해야 저장할 수 있습니다. OCR 결과를 꼭 확인하세요.
-            </Text>
           </ScrollView>
         </View>
       </Modal>
@@ -772,8 +731,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                 </View>
               )}
             </View>
-            <TouchableOpacity onPress={handleAddNote} style={[styles.actionButtonCard, styles.quoteButtonCard, { marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]} disabled={isNoteLoading}>
-              {isNoteLoading && <ActivityIndicator size="small" color="#fff" style={{ marginRight: 8 }} />}
+            <TouchableOpacity onPress={handleAddNote} style={[styles.actionButtonCard, styles.quoteButtonCard, { marginTop: 16 }]}> 
               <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>메모 추가</Text>
             </TouchableOpacity>
           </ScrollView>

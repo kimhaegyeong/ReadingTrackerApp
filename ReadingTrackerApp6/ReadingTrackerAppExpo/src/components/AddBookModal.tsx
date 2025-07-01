@@ -9,13 +9,8 @@ import {
   Dimensions,
   ActivityIndicator,
   SafeAreaView,
-} from 'react-native';
-import {
-  Card,
-  Title,
   TextInput,
-  Button,
-} from 'react-native-paper';
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
@@ -128,7 +123,7 @@ const AddBookModal = ({ visible, onDismiss, onAddBook }: AddBookModalProps) => {
           <View style={styles.header}>
             <View style={styles.headerContent}>
               <Ionicons name="add" size={24} color="#2563eb" />
-              <Title style={styles.headerTitle}>새 책 추가</Title>
+              <Text style={styles.headerTitle}>새 책 추가</Text>
             </View>
             <TouchableOpacity onPress={onDismiss}>
               <Ionicons name="close" size={24} color="#64748b" />
@@ -146,20 +141,20 @@ const AddBookModal = ({ visible, onDismiss, onAddBook }: AddBookModalProps) => {
               <View style={styles.searchContent}>
                 {/* Search Input */}
                 <View style={styles.searchInputContainer}>
-                  <TextInput
-                    placeholder="책 제목이나 저자를 검색하세요"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    onSubmitEditing={handleSearch}
-                    style={styles.searchInput}
-                    right={
-                      <TextInput.Icon
-                        icon="magnify"
-                        onPress={handleSearch}
-                        disabled={isSearching}
-                      />
-                    }
-                  />
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TextInput
+                      placeholder="책 제목이나 저자를 검색하세요"
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                      onSubmitEditing={handleSearch}
+                      style={[styles.searchInput, { flex: 1 }]}
+                      editable={!isSearching}
+                      returnKeyType="search"
+                    />
+                    <TouchableOpacity onPress={handleSearch} disabled={isSearching} style={{ marginLeft: 8 }}>
+                      <Ionicons name="search" size={22} color={isSearching ? '#d1d5db' : '#2563eb'} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 {isSearching && (
                   <View style={styles.loadingContainer}>
@@ -170,29 +165,28 @@ const AddBookModal = ({ visible, onDismiss, onAddBook }: AddBookModalProps) => {
                 {searchResults.length > 0 && (
                   <View style={styles.resultsContainer}>
                     {searchResults.map((book) => (
-                      <Card key={book.id} style={styles.resultCard}>
-                        <Card.Content style={styles.resultContent}>
+                      <View key={book.id} style={styles.resultCard}>
+                        <View style={styles.resultContent}>
                           <View style={styles.resultInfo}>
                             <View style={styles.bookCover}>
                               <Ionicons name="book" size={24} color="#9ca3af" />
                             </View>
                             <View style={styles.bookInfo}>
-                              <Title style={styles.bookTitle}>{book.title}</Title>
+                              <Text style={styles.bookTitle}>{book.title}</Text>
                               <Text style={styles.bookAuthor}>{book.author}</Text>
                               <Text style={styles.bookPublisher}>
                                 {book.publisher} · {book.publishedYear}
                               </Text>
                             </View>
                           </View>
-                          <Button
-                            mode="contained"
-                            onPress={() => handleAddFromSearch(book)}
+                          <TouchableOpacity
                             style={styles.addButton}
+                            onPress={() => handleAddFromSearch(book)}
                           >
-                            추가
-                          </Button>
-                        </Card.Content>
-                      </Card>
+                            <Text style={styles.addButtonText}>추가</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
                     ))}
                   </View>
                 )}
@@ -200,42 +194,36 @@ const AddBookModal = ({ visible, onDismiss, onAddBook }: AddBookModalProps) => {
             ) : (
               <View style={styles.manualContent}>
                 <TextInput
-                  label="책 제목 *"
-                  placeholder="책 제목을 입력하세요"
+                  placeholder="책 제목을 입력하세요 *"
                   value={manualBook.title}
-                  onChangeText={(text) => setManualBook({...manualBook, title: text})}
+                  onChangeText={(text) => setManualBook({ ...manualBook, title: text })}
                   style={styles.input}
                 />
                 <TextInput
-                  label="저자 *"
-                  placeholder="저자명을 입력하세요"
+                  placeholder="저자명을 입력하세요 *"
                   value={manualBook.author}
-                  onChangeText={(text) => setManualBook({...manualBook, author: text})}
+                  onChangeText={(text) => setManualBook({ ...manualBook, author: text })}
                   style={styles.input}
                 />
                 <TextInput
-                  label="ISBN (선택)"
-                  placeholder="ISBN을 입력하세요"
+                  placeholder="ISBN (선택)"
                   value={manualBook.isbn}
-                  onChangeText={(text) => setManualBook({...manualBook, isbn: text})}
+                  onChangeText={(text) => setManualBook({ ...manualBook, isbn: text })}
                   style={styles.input}
                 />
                 <TextInput
-                  label="페이지 수 (선택)"
-                  placeholder="페이지 수를 입력하세요"
+                  placeholder="페이지 수 (선택)"
                   value={manualBook.pages}
-                  onChangeText={(text) => setManualBook({...manualBook, pages: text})}
+                  onChangeText={(text) => setManualBook({ ...manualBook, pages: text })}
                   keyboardType="numeric"
                   style={styles.input}
                 />
-                <Button
-                  mode="contained"
-                  onPress={handleManualAdd}
+                <TouchableOpacity
                   style={styles.submitButton}
-                  contentStyle={styles.submitButtonContent}
+                  onPress={handleManualAdd}
                 >
-                  서재에 추가
-                </Button>
+                  <Text style={styles.submitButtonText}>서재에 추가</Text>
+                </TouchableOpacity>
               </View>
             )}
           </ScrollView>
@@ -360,6 +348,11 @@ const styles = StyleSheet.create({
   addButton: {
     backgroundColor: '#2563eb',
   },
+  addButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   manualContent: {
     flex: 1,
     maxWidth: '100%',
@@ -371,6 +364,11 @@ const styles = StyleSheet.create({
   submitButton: {
     backgroundColor: '#2563eb',
     marginTop: 16,
+  },
+  submitButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
   },
   submitButtonContent: {
     paddingVertical: 8,
