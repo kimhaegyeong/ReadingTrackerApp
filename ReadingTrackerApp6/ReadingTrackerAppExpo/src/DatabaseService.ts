@@ -11,6 +11,7 @@ export type Book = {
   cover?: string;
   created_at?: string;
   updated_at?: string;
+  finished_date?: string;
 };
 
 export type Quote = {
@@ -85,7 +86,8 @@ export class DatabaseService {
         cover_color TEXT DEFAULT '#3b82f6',
         cover TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        finished_date DATETIME
       );
       CREATE TABLE IF NOT EXISTS quotes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -163,6 +165,9 @@ export class DatabaseService {
         `INSERT INTO user_profile (id, name, bio, avatar, email) VALUES (1, '사용자', '', '', '')`
       );
     }
+    // 마이그레이션: finished_date 컬럼이 없으면 추가
+    // @ts-ignore
+    await this.db.execAsync(`ALTER TABLE books ADD COLUMN finished_date DATETIME;`).catch(() => {});
   }
 
   // --- BOOKS CRUD ---
@@ -234,21 +239,39 @@ export class DatabaseService {
   }
 
   public async updateBook(id: number, update: Partial<Omit<Book, 'id'>>): Promise<void> {
-    try {
-      if (!this.db) throw new Error('DB not initialized');
-      const fields = Object.keys(update).map(key => `${key} = ?`).join(', ');
-      const values = Object.values(update);
-      if (!fields) return;
+    if (!this.db) throw new Error('DB not initialized');
+    // 상태가 finished로 변경되는 경우 finished_date를 오늘 날짜로 항상 업데이트
+    if (update.status === 'finished') {
       // @ts-ignore
       await this.db.runAsync(
-        `UPDATE books SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        ...values,
+        `UPDATE books SET finished_date = CURRENT_TIMESTAMP, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        update.status,
         id
       );
-    } catch (e) {
-      console.error('updateBook error', e);
-      throw e;
+      // 나머지 필드 업데이트(상태 외)
+      const { status, ...rest } = update;
+      if (Object.keys(rest).length > 0) {
+        const fields = Object.keys(rest).map(key => `${key} = ?`).join(', ');
+        const values = Object.values(rest);
+        // @ts-ignore
+        await this.db.runAsync(
+          `UPDATE books SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          ...values,
+          id
+        );
+      }
+      return;
     }
+    // 기존 로직
+    const fields = Object.keys(update).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(update);
+    if (!fields) return;
+    // @ts-ignore
+    await this.db.runAsync(
+      `UPDATE books SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      ...values,
+      id
+    );
   }
 
   public async deleteBook(id: number): Promise<void> {
@@ -506,13 +529,13 @@ export class DatabaseService {
       minutes: number,
       pages: number
     }>(
-      `SELECT strftime('%m', b.updated_at) as month,
+      `SELECT strftime('%m', b.finished_date) as month,
               COUNT(DISTINCT b.id) as books,
               COALESCE(SUM(rs.duration_minutes),0) as minutes,
               COALESCE(SUM(rs.pages_read),0) as pages
        FROM books b
        LEFT JOIN reading_sessions rs ON rs.book_id = b.id
-       WHERE b.status = 'finished' AND strftime('%Y', b.updated_at) = ?
+       WHERE b.status = 'finished' AND strftime('%Y', b.finished_date) = ?
        GROUP BY month
        ORDER BY month ASC`,
       String(year)
@@ -537,10 +560,10 @@ export class DatabaseService {
       finishedDate: string,
       rating?: number
     }>(
-      `SELECT title, author, updated_at as finishedDate, NULL as rating
+      `SELECT title, author, finished_date as finishedDate, NULL as rating
        FROM books
        WHERE status = 'finished'
-       ORDER BY updated_at DESC
+       ORDER BY finished_date DESC
        LIMIT ?`,
       limit
     );
@@ -626,7 +649,7 @@ export class DatabaseService {
     if (!this.db) throw new Error('DB not initialized');
     // @ts-ignore
     const row = await this.db.getFirstAsync<{ count: number }>(
-      `SELECT COUNT(*) as count FROM books WHERE status = 'finished' AND strftime('%Y', updated_at) = ?`,
+      `SELECT COUNT(*) as count FROM books WHERE status = 'finished' AND strftime('%Y', finished_date) = ?`,
       String(year)
     );
     return row?.count ?? 0;

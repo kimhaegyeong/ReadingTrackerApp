@@ -42,13 +42,14 @@ interface Book {
   id: number;
   title: string;
   author: string;
-  status: 'want-to-read' | 'reading' | 'completed';
+  status: 'want-to-read' | 'reading' | 'finished';
   progress: number;
   coverColor: string;
   quotes: number;
   notes: number;
   readingTime: string;
   genre?: string;
+  finished_date?: string;
 }
 
 type RootStackParamList = {
@@ -116,7 +117,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
   const statusOptions = [
     { value: 'want-to-read', label: '읽고 싶은' },
     { value: 'reading', label: '읽는 중' },
-    { value: 'completed', label: '완료' },
+    { value: 'finished', label: '완료' },
   ];
 
   const [statusMenuVisible, setStatusMenuVisible] = useState(false);
@@ -129,7 +130,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
     switch (status) {
       case 'want-to-read': return { label: '읽고 싶은', color: '#ec4899', icon: 'heart' };
       case 'reading': return { label: '읽는 중', color: '#eab308', icon: 'time' };
-      case 'completed': return { label: '완료', color: '#22c55e', icon: 'checkmark-circle' };
+      case 'finished': return { label: '완료', color: '#22c55e', icon: 'checkmark-circle' };
       default: return { label: '알 수 없음', color: '#6b7280', icon: 'book' };
     }
   };
@@ -269,7 +270,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
         color = '#eab308';
         label = '읽는 중';
         break;
-      case 'completed':
+      case 'finished':
         color = '#22c55e';
         label = '완료';
         break;
@@ -499,6 +500,14 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
             <Ionicons name="calendar" size={20} color="#64748b" style={{ marginRight: 12 }} />
             <Text style={{ fontSize: 16, color: '#64748b' }}>추가일: {book.created_at ? new Date(book.created_at).toLocaleDateString('ko-KR') : '알 수 없음'}</Text>
           </View>
+          {book.status === 'finished' && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+              <Ionicons name="checkmark-done" size={20} color="#64748b" style={{ marginRight: 12 }} />
+              <Text style={{ fontSize: 16, color: '#64748b' }}>
+                완독일: {book.finished_date ? new Date(book.finished_date).toLocaleDateString('ko-KR') : '-'}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
       {/* 탭 */}
