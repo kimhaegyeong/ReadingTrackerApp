@@ -20,7 +20,15 @@ import { DatabaseService, Book as DBBook } from '../DatabaseService';
 import { useBookContext } from '../BookContext';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
-import * as MLKitOcr from 'expo-mlkit-ocr';
+// import * as MLKitOcr from 'expo-mlkit-ocr'; // 기존 import 주석 처리
+let MLKitOcr: any = null;
+if (typeof navigator !== 'undefined' && navigator.product !== 'ReactNativeWeb') {
+  try {
+    MLKitOcr = require('expo-mlkit-ocr');
+  } catch (e) {
+    MLKitOcr = null;
+  }
+}
 
 interface Quote {
   id: number;
@@ -42,14 +50,14 @@ interface Book {
   id: number;
   title: string;
   author: string;
-  status: 'want-to-read' | 'reading' | 'completed';
-  progress: number;
-  coverColor: string;
-  quotes: number;
-  notes: number;
-  readingTime: string;
-  genre?: string;
-  finished_date?: string;
+  isbn?: string;
+  pages?: number;
+  status: string;
+  cover_color?: string;
+  cover?: string;
+  created_at?: string;
+  updated_at?: string;
+  completed_date?: string;
 }
 
 type RootStackParamList = {
@@ -122,8 +130,6 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
 
   const [statusMenuVisible, setStatusMenuVisible] = useState(false);
   const [actionMenuVisible, setActionMenuVisible] = useState(false);
-
-  const [genre, setGenre] = useState(book.genre || '');
 
   // 상태별 정보
   const getStatusInfo = (status: string) => {
@@ -229,6 +235,10 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
   };
 
   const handleOCR = async () => {
+    if (!MLKitOcr) {
+      Alert.alert('OCR 미지원', '이 환경에서는 OCR 기능을 사용할 수 없습니다.');
+      return;
+    }
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -293,7 +303,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
 
   const handleUpdate = async () => {
     try {
-      await updateBook(book.id, { title, author, genre });
+      await updateBook(book.id, { title, author });
       Alert.alert('수정 완료', '책 정보가 수정되었습니다.');
       if ((navigation as any).canGoBack && (navigation as any).canGoBack()) {
         (navigation as any).goBack();
@@ -486,16 +496,6 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
               <Text style={{ fontSize: 16, color: '#64748b' }}>페이지: {book.pages}페이지</Text>
             </View>
           )}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-            <Ionicons name="pricetag" size={20} color="#64748b" style={{ marginRight: 12 }} />
-            <TextInput
-              placeholder="장르 (예: 소설, 에세이 등)"
-              value={genre}
-              onChangeText={text => setGenre(text.slice(0, 20))}
-              style={{ flex: 1, fontSize: 16, color: '#64748b' }}
-              maxLength={20}
-            />
-          </View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="calendar" size={20} color="#64748b" style={{ marginRight: 12 }} />
             <Text style={{ fontSize: 16, color: '#64748b' }}>추가일: {book.created_at ? new Date(book.created_at).toLocaleDateString('ko-KR') : '알 수 없음'}</Text>
@@ -504,7 +504,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
               <Ionicons name="checkmark-done" size={20} color="#64748b" style={{ marginRight: 12 }} />
               <Text style={{ fontSize: 16, color: '#64748b' }}>
-                완독일: {book.finished_date ? new Date(book.finished_date).toLocaleDateString('ko-KR') : '-'}
+                완독일: {book.completed_date ? new Date(book.completed_date).toLocaleDateString('ko-KR') : '-'}
               </Text>
             </View>
           )}

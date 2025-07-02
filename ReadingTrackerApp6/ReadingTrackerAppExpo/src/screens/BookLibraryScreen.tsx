@@ -122,7 +122,7 @@ const BookLibraryScreen = () => {
                 {book.cover ? (
                   <Image
                     source={{ uri: book.cover }}
-                    style={{ width: 40, height: 56, borderRadius: 6, backgroundColor: '#eee' }}
+                    style={styles.coverImage}
                     resizeMode="cover"
                   />
                 ) : (
@@ -268,9 +268,9 @@ const BookLibraryScreen = () => {
           icon="plus"
           accessibilityRole="button"
           accessibilityLabel="책 추가 버튼"
-          contentStyle={{ flexDirection: 'row-reverse' }}
+          contentStyle={{ width: 56, height: 56, justifyContent: 'center', alignItems: 'center' }}
         >
-          추가
+          {''}
         </Button>
       </Surface>
     </SafeAreaView>
@@ -351,23 +351,16 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: '#2563eb', borderRadius: 4 },
   floatingActionButton: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
+    bottom: 32,
+    right: 32,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#3b82f6',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    zIndex: 1000, // 다른 요소들 위에 표시
+    elevation: 4,
+    zIndex: 10,
   },
   addButton: {
     backgroundColor: '#2563eb',
@@ -388,6 +381,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#2563eb',
     marginVertical: 8,
+  },
+  coverImage: {
+    width: 72,
+    height: 104,
+    resizeMode: 'cover',
   },
 });
 
