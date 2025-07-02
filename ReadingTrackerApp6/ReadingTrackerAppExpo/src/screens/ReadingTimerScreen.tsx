@@ -5,6 +5,7 @@ import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { DatabaseService } from '../DatabaseService';
 import DropDownPicker from 'react-native-dropdown-picker';
+import { colors, typography } from '../styles/theme';
 
 const initialSessions = [
   {
@@ -306,14 +307,29 @@ const ReadingTimerScreen = () => {
   const Card = ({ children, style }: any) => (
     <View style={[styles.cardCommon, style]}>{children}</View>
   );
-  const Button = ({ onPress, icon, text, color, outline, disabled, style }: any) => (
+  const Button = ({ onPress, icon, text, color, outline, disabled, style, isPrimary }: any) => (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
-      style={[styles.buttonCommon, outline && styles.buttonOutline, color && { backgroundColor: color }, disabled && { opacity: 0.5 }, style]}
+      style={[
+        styles.buttonCommon,
+        isPrimary ? { backgroundColor: colors.primary } : { backgroundColor: colors.background },
+        outline && styles.buttonOutline,
+        color && { borderColor: color },
+        disabled && { opacity: 0.5 },
+        style,
+      ]}
     >
       {icon}
-      <Text style={[styles.buttonTextCommon, outline && color && { color }, !outline && { color: '#fff' }, icon && { marginLeft: 6 }]}>{text}</Text>
+      <Text
+        style={[
+          styles.buttonTextCommon,
+          isPrimary ? { color: colors.surface } : { color: color || colors.primary },
+          icon && { marginLeft: 6 },
+        ]}
+      >
+        {text}
+      </Text>
     </TouchableOpacity>
   );
   const Input = ({ value, onChangeText, placeholder, keyboardType, multiline, style, ...props }: any) => (
@@ -321,9 +337,10 @@ const ReadingTimerScreen = () => {
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
+      placeholderTextColor={colors.textMuted}
       keyboardType={keyboardType}
       multiline={multiline}
-      style={[styles.inputCommon, style]}
+      style={[styles.inputCommon, style, { color: colors.textPrimary }]}
       {...props}
     />
   );
@@ -424,70 +441,85 @@ const ReadingTimerScreen = () => {
       </Modal>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* 타이머 카드 */}
-        <View style={styles.cardTimer}>
+        <Card>
           <View style={styles.cardTitleRow}>
             <Feather name="clock" size={22} color="#2563eb" style={{ marginRight: 8 }} />
             <Text style={styles.cardTitle}>타이머</Text>
           </View>
           {/* 책 선택 */}
           <Text style={styles.label}>읽을 책</Text>
-          <TouchableOpacity style={styles.pickerWrapperCard} onPress={() => setBookModalVisible(true)}>
-            <Text style={{ padding: 14, color: selectedBook ? '#222' : '#888' }}>
-              {selectedBook ? selectedBook : '책을 선택하세요'}
-            </Text>
-          </TouchableOpacity>
+          <Button
+            onPress={() => setBookModalVisible(true)}
+            text={selectedBook ? selectedBook : '책을 선택하세요'}
+            outline
+            style={[
+              { 
+                justifyContent: 'flex-start', 
+                paddingLeft: 10, 
+                marginBottom: 8, 
+                height: 44,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                borderRadius: 10,
+                shadowColor: 'transparent', // 그림자 제거로 미니멀
+                elevation: 0,
+              }
+            ]}
+            color={colors.textSecondary}
+            icon={selectedBook ? <Feather name="book" size={18} color={colors.textSecondary} /> : null}
+          />
           {/* 타이머 디스플레이 */}
           <View style={styles.timerDisplayWrapperCard}>
             <Text style={styles.timerTextCard}>{formatTime(seconds)}</Text>
             <View style={styles.timerButtonRowCard}>
               {!isRunning ? (
-                <TouchableOpacity
+                <Button
                   onPress={handleStart}
-                  style={[styles.actionButtonCard, styles.actionButtonOutline, { flex: 1 }]}
-                >
-                  <Feather name="play" size={18} color="#2563eb" style={styles.buttonIconCard} />
-                  <Text style={[styles.buttonTextCard, { color: '#2563eb' }]}>시작</Text>
-                </TouchableOpacity>
+                  icon={<Feather name="play" size={18} color={colors.surface} />}
+                  text="시작"
+                  isPrimary
+                  style={{ flex: 1, marginRight: 6 }}
+                />
               ) : (
-                <TouchableOpacity
+                <Button
                   onPress={handlePause}
-                  style={[styles.actionButtonCard, styles.actionButtonOutline, { flex: 1 }]}
-                >
-                  <Feather name="pause" size={18} color="#2563eb" style={styles.buttonIconCard} />
-                  <Text style={[styles.buttonTextCard, { color: '#2563eb' }]}>일시정지</Text>
-                </TouchableOpacity>
+                  icon={<Feather name="pause" size={18} color={colors.primary} />}
+                  text="일시정지"
+                  outline
+                  color={colors.primary}
+                  style={{ flex: 1, marginRight: 6 }}
+                />
               )}
-              <TouchableOpacity
+              <Button
                 onPress={handleStop}
-                style={[styles.actionButtonCard, styles.actionButtonRed, seconds === 0 && { opacity: 0.5, flex: 1 }]}
+                icon={<Feather name="square" size={18} color="#fff" />}
+                text="종료"
+                color="#dc2626"
                 disabled={seconds === 0}
-              >
-                <Feather name="square" size={18} color="#2563eb" style={styles.buttonIconCard} />
-                <Text style={[styles.buttonTextCard, { color: '#fff' }]}>종료</Text>
-              </TouchableOpacity>
+                style={{ flex: 1, marginLeft: 6 }}
+              />
             </View>
           </View>
           {/* 추가 정보 입력 */}
           <Text style={styles.label}>읽은 페이지 수</Text>
-          <TextInput
+          <Input
             placeholder="페이지 수"
-            value={manualPages}
-            onChangeText={text => {
-              if (text === '' || /^\d+$/.test(text)) setManualPages(text);
-            }}
+            value={timerPages}
+            onChangeText={(text: string) => { if (text === '' || /^\d+$/.test(text)) setTimerPages(text); }}
             keyboardType="numeric"
-            style={styles.inputCard}
+            style={{ marginBottom: 8 }}
           />
           <Text style={styles.label}>메모</Text>
-          <TextInput
+          <Input
             placeholder="독서 중 느낀 점이나 메모를 남겨보세요"
-            value={manualNotes}
-            onChangeText={setManualNotes}
+            value={timerNotes}
+            onChangeText={setTimerNotes}
             multiline
             numberOfLines={2}
-            style={styles.inputCard}
+            style={{ marginBottom: 0 }}
           />
-        </View>
+        </Card>
         {/* 수동 입력 카드 */}
         <View style={styles.cardTimer}>
           <View style={styles.cardTitleRow}>
@@ -495,11 +527,27 @@ const ReadingTimerScreen = () => {
             <Text style={styles.cardTitle}>수동 입력</Text>
           </View>
           <Text style={styles.label}>읽은 책</Text>
-          <TouchableOpacity style={styles.pickerWrapperCard} onPress={() => setManualBookModalVisible(true)}>
-            <Text style={{ padding: 14, color: selectedBookManual ? '#222' : '#888' }}>
-              {selectedBookManual ? selectedBookManual : '책을 선택하세요'}
-            </Text>
-          </TouchableOpacity>
+          <Button
+            onPress={() => setManualBookModalVisible(true)}
+            text={selectedBookManual ? selectedBookManual : '책을 선택하세요'}
+            outline
+            style={[
+              {
+                justifyContent: 'flex-start',
+                paddingLeft: 10,
+                marginBottom: 8,
+                height: 44,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                borderRadius: 10,
+                shadowColor: 'transparent',
+                elevation: 0,
+              }
+            ]}
+            color={colors.textSecondary}
+            icon={selectedBookManual ? <Feather name="book" size={18} color={colors.textSecondary} /> : null}
+          />
           <View style={styles.manualRowCard}>
             <View style={{ flex: 1, marginRight: 8 }}>
               <Text style={styles.label}>읽은 시간 (분)</Text>
@@ -508,7 +556,17 @@ const ReadingTimerScreen = () => {
                 value={manualMinutes}
                 onChangeText={setManualMinutes}
                 keyboardType="numeric"
-                style={styles.inputCard}
+                style={[
+                  styles.inputCard,
+                  {
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                    borderRadius: 10,
+                    shadowColor: 'transparent',
+                    elevation: 0,
+                  }
+                ]}
               />
             </View>
             <View style={{ flex: 1 }}>
@@ -520,7 +578,17 @@ const ReadingTimerScreen = () => {
                   if (text === '' || /^\d+$/.test(text)) setManualPages(text);
                 }}
                 keyboardType="numeric"
-                style={styles.inputCard}
+                style={[
+                  styles.inputCard,
+                  {
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    backgroundColor: colors.surface,
+                    borderRadius: 10,
+                    shadowColor: 'transparent',
+                    elevation: 0,
+                  }
+                ]}
               />
             </View>
           </View>
@@ -531,14 +599,35 @@ const ReadingTimerScreen = () => {
             onChangeText={setManualNotes}
             multiline
             numberOfLines={3}
-            style={styles.inputCard}
+            style={[
+              styles.inputCard,
+              {
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                borderRadius: 10,
+                shadowColor: 'transparent',
+                elevation: 0,
+              }
+            ]}
           />
           <TouchableOpacity
             onPress={handleManualAdd}
-            style={[styles.actionButtonCard, styles.actionButtonOutline, { marginTop: 8, flex: 1 }]}
+            style={[
+              styles.actionButtonCard, 
+              styles.actionButtonOutline, 
+              { marginTop: 8, flex: 1,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                borderRadius: 10,
+                shadowColor: 'transparent',
+                elevation: 0,
+              }
+            ]}
           >
-            <Feather name="plus" size={18} color="#2563eb" style={styles.buttonIconCard} />
-            <Text style={[styles.buttonTextCard, { color: '#2563eb' }]}>기록 추가</Text>
+            <Feather name="plus" size={18} color={colors.textSecondary} style={styles.buttonIconCard} />
+            <Text style={[styles.buttonTextCard, { color: colors.textSecondary }]}>기록 추가</Text>
           </TouchableOpacity>
         </View>
         {/* 오늘의 독서 기록 카드 */}
@@ -575,7 +664,7 @@ const ReadingTimerScreen = () => {
                   <Text style={styles.sessionNotesCard}>{item.notes}</Text>
                 ) : null}
                 {/* 구분선 */}
-                <View style={{ height: 1, backgroundColor: '#e5e7eb', marginTop: 8 }} />
+                <View style={{ height: 1, backgroundColor: colors.border, marginTop: 8 }} />
               </View>
             ))
           )}
@@ -734,7 +823,7 @@ const styles = StyleSheet.create({
   },
   pickerWrapperCard: {
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     borderRadius: 10,
     marginBottom: 8,
     overflow: 'hidden',
@@ -774,8 +863,8 @@ const styles = StyleSheet.create({
   },
   actionButtonOutline: {
     backgroundColor: '#fff',
-    borderWidth: 1.5,
-    borderColor: '#2563eb',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   buttonIconCard: {
     marginRight: 8,
@@ -902,7 +991,7 @@ const styles = StyleSheet.create({
     color: '#64748b',
   },
   cardCommon: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 20,
     marginHorizontal: 16,
@@ -920,7 +1009,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     height: 48,
     paddingHorizontal: 20,
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.background,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -928,25 +1017,25 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   buttonOutline: {
-    backgroundColor: '#fff',
-    borderWidth: 1.5,
-    borderColor: '#2563eb',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   buttonTextCommon: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: typography.button.fontSize,
+    fontWeight: typography.button.fontWeight,
     letterSpacing: 0.2,
+    color: colors.primary,
   },
   inputCommon: {
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.border,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontSize: 15,
-    color: '#1f2937',
+    fontSize: typography.body.fontSize,
+    color: colors.textPrimary,
   },
 });
 
