@@ -200,20 +200,24 @@ const ReadingTimerScreen = () => {
       start_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${start.toTimeString().slice(0,8)}`,
       end_time: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.toTimeString().slice(0,8)}`,
       duration_minutes: minutes,
-      pages_read: parseInt(manualPages) || 0,
-      memo: manualNotes,
+      pages_read: parseInt(timerPages) || 0,
+      memo: timerNotes,
     };
-    const db = await DatabaseService.getInstance();
-    await db.addReadingSession(session);
-    setIsRunning(false);
-    setSeconds(0);
-    setSelectedBook('');
-    setSelectedBookId(null);
-    setComboValue(null);
-    setManualPages('');
-    setManualNotes('');
-    Alert.alert('성공', `${minutes}분 독서 기록이 저장되었습니다!`);
-    fetchSessionsAndStats();
+    try {
+      const db = await DatabaseService.getInstance();
+      await db.addReadingSession(session);
+      setIsRunning(false);
+      setSeconds(0);
+      setSelectedBook('');
+      setSelectedBookId(null);
+      setComboValue(null);
+      setTimerPages('');
+      setTimerNotes('');
+      Alert.alert('성공', `${minutes}분 독서 기록이 저장되었습니다!`);
+      fetchSessionsAndStats();
+    } catch (e) {
+      Alert.alert('오류', '기록 저장에 실패했습니다. 다시 시도해 주세요.');
+    }
   };
 
   const handleManualAdd = async () => {
