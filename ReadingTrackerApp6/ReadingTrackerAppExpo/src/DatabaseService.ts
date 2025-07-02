@@ -11,7 +11,7 @@ export type Book = {
   cover?: string;
   created_at?: string;
   updated_at?: string;
-  finished_date?: string;
+  completed_date?: string;
 };
 
 export type Quote = {
@@ -76,6 +76,10 @@ export class DatabaseService {
     this.db = await SQLite.openDatabaseAsync('reading_tracker.db');
     // @ts-ignore
     await this.db.execAsync(`
+      ALTER TABLE books RENAME COLUMN finished_date TO completed_date;
+    `).catch(() => {}); // 이미 변경된 경우 무시
+    // @ts-ignore
+    await this.db.execAsync(`
       CREATE TABLE IF NOT EXISTS books (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
@@ -87,7 +91,7 @@ export class DatabaseService {
         cover TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        finished_date DATETIME
+        completed_date DATETIME
       );
       CREATE TABLE IF NOT EXISTS quotes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -165,9 +169,9 @@ export class DatabaseService {
         `INSERT INTO user_profile (id, name, bio, avatar, email) VALUES (1, '사용자', '', '', '')`
       );
     }
-    // 마이그레이션: finished_date 컬럼이 없으면 추가
+    // 마이그레이션: completed_date 컬럼이 없으면 추가
     // @ts-ignore
-    await this.db.execAsync(`ALTER TABLE books ADD COLUMN finished_date DATETIME;`).catch(() => {});
+    await this.db.execAsync(`ALTER TABLE books ADD COLUMN completed_date DATETIME;`).catch(() => {});
   }
 
   // --- BOOKS CRUD ---
@@ -240,11 +244,11 @@ export class DatabaseService {
 
   public async updateBook(id: number, update: Partial<Omit<Book, 'id'>>): Promise<void> {
     if (!this.db) throw new Error('DB not initialized');
-    // 상태가 finished로 변경되는 경우 finished_date를 오늘 날짜로 항상 업데이트
-    if (update.status === 'finished') {
+    // 상태가 finished로 변경되는 경우 completed_date를 오늘 날짜로 항상 업데이트
+    if (update.status === 'completed') {
       // @ts-ignore
       await this.db.runAsync(
-        `UPDATE books SET finished_date = CURRENT_TIMESTAMP, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        `UPDATE books SET completed_date = CURRENT_TIMESTAMP, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
         update.status,
         id
       );
@@ -521,7 +525,7 @@ export class DatabaseService {
   public async getMonthlyStats(year: number): Promise<Array<{ month: number, books: number, minutes: number, pages: number }>> {
     if (!this.db) throw new Error('DB not initialized');
     // 월별로 책 완료 수, 총 독서 시간, 총 페이지
-    // status = 'finished'인 책을 기준으로 집계
+    // status = 'completed'인 책을 기준으로 집계
     // @ts-ignore
     const rows = await this.db.getAllAsync<{
       month: number,
@@ -529,13 +533,13 @@ export class DatabaseService {
       minutes: number,
       pages: number
     }>(
-      `SELECT strftime('%m', b.finished_date) as month,
+      `SELECT strftime('%m', b.completed_date) as month,
               COUNT(DISTINCT b.id) as books,
               COALESCE(SUM(rs.duration_minutes),0) as minutes,
               COALESCE(SUM(rs.pages_read),0) as pages
        FROM books b
        LEFT JOIN reading_sessions rs ON rs.book_id = b.id
-       WHERE b.status = 'finished' AND strftime('%Y', b.finished_date) = ?
+       WHERE b.status = 'completed' AND strftime('%Y', b.completed_date) = ?
        GROUP BY month
        ORDER BY month ASC`,
       String(year)
@@ -551,19 +555,19 @@ export class DatabaseService {
   /**
    * 최근 읽은 책(완독 기준, 최신순)
    */
-  public async getRecentBooks(limit: number = 5): Promise<Array<{ title: string, author: string, finishedDate: string, rating?: number }>> {
+  public async getRecentBooks(limit: number = 5): Promise<Array<{ title: string, author: string, completedDate: string, rating?: number }>> {
     if (!this.db) throw new Error('DB not initialized');
     // @ts-ignore
     const rows = await this.db.getAllAsync<{
       title: string,
       author: string,
-      finishedDate: string,
+      completedDate: string,
       rating?: number
     }>(
-      `SELECT title, author, finished_date as finishedDate, NULL as rating
+      `SELECT title, author, completed_date as completedDate, NULL as rating
        FROM books
-       WHERE status = 'finished'
-       ORDER BY finished_date DESC
+       WHERE status = 'completed'
+       ORDER BY completed_date DESC
        LIMIT ?`,
       limit
     );
@@ -580,7 +584,7 @@ export class DatabaseService {
     const rows = await this.db.getAllAsync(
       `SELECT genre as name, COUNT(*) as value
        FROM books
-       WHERE status = 'finished' AND genre != ''
+       WHERE status = 'completed' AND genre != ''
        GROUP BY genre`
     );
     // 장르별로 색상 매핑(고정 팔레트, 부족하면 랜덤)
@@ -643,13 +647,13 @@ export class DatabaseService {
   }
 
   /**
-   * 올해 완료(상태: finished)한 책의 개수 반환
+   * 올해 완료(상태: completed)한 책의 개수 반환
    */
   public async getBooksReadCount(year: number): Promise<number> {
     if (!this.db) throw new Error('DB not initialized');
     // @ts-ignore
     const row = await this.db.getFirstAsync<{ count: number }>(
-      `SELECT COUNT(*) as count FROM books WHERE status = 'finished' AND strftime('%Y', finished_date) = ?`,
+      `SELECT COUNT(*) as count FROM books WHERE status = 'completed' AND strftime('%Y', completed_date) = ?`,
       String(year)
     );
     return row?.count ?? 0;

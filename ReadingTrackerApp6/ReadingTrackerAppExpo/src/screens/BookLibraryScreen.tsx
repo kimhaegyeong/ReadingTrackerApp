@@ -82,7 +82,8 @@ const BookLibraryScreen = () => {
     switch (status) {
       case 'want-to-read': return { label: '읽고 싶은', icon: 'heart', color: '#ec4899' };
       case 'reading': return { label: '읽는 중', icon: 'time', color: '#eab308' };
-      case 'completed': return { label: '완료', icon: 'checkmark-circle', color: '#22c55e' };
+      case 'completed':
+        return { label: '완료', icon: 'checkmark-circle', color: '#22c55e' };
       default: return { label: '알 수 없음', icon: 'book', color: '#6b7280' };
     }
   };
