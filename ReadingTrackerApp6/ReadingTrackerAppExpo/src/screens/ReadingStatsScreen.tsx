@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Share, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Share, SafeAreaView, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { Feather, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { BarChart, PieChart } from 'react-native-chart-kit';
 import { DatabaseService } from '../DatabaseService';
@@ -43,11 +43,31 @@ const ReadingStatsScreen = ({ navigation }: any) => {
   const [monthlyStats, setMonthlyStats] = useState<any[]>([]);
   const [genres, setGenres] = useState<any[]>([]);
   const [recentBooks, setRecentBooks] = useState<any[]>([]);
+  const [goalModalVisible, setGoalModalVisible] = useState(false);
+  const [goalInput, setGoalInput] = useState('');
+  const [goalSaving, setGoalSaving] = useState(false);
+
+  // 목표/기록 탭용: 일별 독서 기록
+  const [dailyHistory, setDailyHistory] = useState<string[]>([]);
+  const [expandedDate, setExpandedDate] = useState<string | null>(null);
+  const [sessionsByDate, setSessionsByDate] = useState<{ [date: string]: any[] }>({});
+  const [loadingSessions, setLoadingSessions] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
       setLoading(true);
       const db = await DatabaseService.getInstance();
+      // 연간 목표(settings 테이블에서 불러오기)
+      let goal = 24;
+      try {
+        const setting = await db.getSetting('yearly_goal');
+        if (setting && setting.value && !isNaN(Number(setting.value))) {
+          goal = Number(setting.value);
+        }
+      } catch (e) {
+        // 무시하고 기본값 사용
+      }
+      setYearlyGoal(goal);
       // 누적 통계
       const total = await db.getTotalStats();
       setTotalMinutes(total.totalMinutes);
@@ -61,8 +81,9 @@ const ReadingStatsScreen = ({ navigation }: any) => {
       // 장르별 통계
       const genreStats = await db.getGenreStats();
       setGenres(genreStats);
-      // 읽은 책 수
-      setBooksRead(monthly.reduce((sum, m) => sum + m.books, 0));
+      // 읽은 책 수(상태: finished, 올해)
+      const finishedCount = await db.getBooksReadCount(selectedYear);
+      setBooksRead(finishedCount);
       // streak 계산 함수 구현
       const streakStats = await db.getStreakStats();
       setCurrentStreak(streakStats.currentStreak);
@@ -72,17 +93,30 @@ const ReadingStatsScreen = ({ navigation }: any) => {
     fetchStats();
   }, [selectedYear]);
 
-  // 목표/기록 탭용: 일별 독서 기록
-  const [dailyHistory, setDailyHistory] = useState<string[]>([]);
   useEffect(() => {
     if (selectedTab === 'goals' || selectedTab === 'history') {
       (async () => {
         const db = await DatabaseService.getInstance();
         const days = await db.getDailyHistory();
-        setDailyHistory(days);
+        setDailyHistory(days.reverse()); // 최신순
       })();
     }
   }, [selectedTab]);
+
+  const handleToggleDate = async (date: string) => {
+    if (expandedDate === date) {
+      setExpandedDate(null);
+      return;
+    }
+    setExpandedDate(date);
+    if (!sessionsByDate[date]) {
+      setLoadingSessions(true);
+      const db = await DatabaseService.getInstance();
+      const sessions = await db.getSessionsByDate(date);
+      setSessionsByDate(prev => ({ ...prev, [date]: sessions }));
+      setLoadingSessions(false);
+    }
+  };
 
   const progressPercentage = yearlyGoal ? (booksRead / yearlyGoal) * 100 : 0;
 
@@ -92,6 +126,27 @@ const ReadingStatsScreen = ({ navigation }: any) => {
       await Share.share({ message: statsText });
     } catch (e) {
       setSnackbar({ visible: true, message: '공유에 실패했습니다.' });
+    }
+  };
+
+  // 연간 목표 저장 핸들러
+  const handleSaveGoal = async () => {
+    const newGoal = Number(goalInput);
+    if (isNaN(newGoal) || newGoal < 1 || newGoal > 999) {
+      setSnackbar({ visible: true, message: '1~999 사이의 숫자를 입력하세요.' });
+      return;
+    }
+    setGoalSaving(true);
+    try {
+      const db = await DatabaseService.getInstance();
+      await db.setSetting('yearly_goal', String(newGoal));
+      setYearlyGoal(newGoal);
+      setGoalModalVisible(false);
+      setSnackbar({ visible: true, message: '연간 목표가 저장되었습니다.' });
+    } catch (e) {
+      setSnackbar({ visible: true, message: '저장에 실패했습니다.' });
+    } finally {
+      setGoalSaving(false);
     }
   };
 
@@ -217,69 +272,56 @@ const ReadingStatsScreen = ({ navigation }: any) => {
 
         {/* 차트 탭 */}
         {selectedTab === 'charts' && (
-          <View style={{ gap: 24, marginTop: 8 }}>
-            {/* 월별 독서 시간/페이지 BarChart */}
-            <CustomCard style={{ padding: 16 }}>
-              <Text style={styles.sectionTitle}>월별 독서 시간(분)</Text>
-              {monthlyStats && monthlyStats.length > 0 ? (
-                <BarChart
-                  data={{
-                    labels: monthlyStats.map((m: any) => `${m.month}월`),
-                    datasets: [
-                      { data: monthlyStats.map((m: any) => m.minutes || 0) },
-                    ],
-                  }}
-                  width={width - 48}
-                  height={180}
-                  yAxisLabel=""
-                  yAxisSuffix="분"
-                  chartConfig={{
-                    backgroundColor: '#fff',
-                    backgroundGradientFrom: '#fff',
-                    backgroundGradientTo: '#fff',
-                    decimalPlaces: 0,
-                    color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(55, 65, 81, ${opacity})`,
-                    style: { borderRadius: 12 },
-                    propsForDots: { r: '4', strokeWidth: '2', stroke: '#2563eb' },
-                  }}
-                  style={{ marginVertical: 8, borderRadius: 12 }}
-                  fromZero
-                />
-              ) : (
-                <Text style={{ color: '#888', textAlign: 'center', marginVertical: 24 }}>월별 통계 데이터가 없습니다.</Text>
-              )}
-            </CustomCard>
-            {/* 장르별 PieChart */}
-            <CustomCard style={{ padding: 16 }}>
-              <Text style={styles.sectionTitle}>장르별 독서 비율</Text>
-              {genres && genres.length > 0 ? (
-                <PieChart
-                  data={genres.map((g: any, idx: number) => ({
-                    name: g.genre || '기타',
-                    population: g.count,
-                    color: ['#2563eb','#f59e0b','#10b981','#8b5cf6','#ef4444','#64748b'][idx%6],
-                    legendFontColor: '#374151',
-                    legendFontSize: 13,
-                  }))}
-                  width={width - 48}
-                  height={180}
-                  chartConfig={{
-                    backgroundColor: '#fff',
-                    backgroundGradientFrom: '#fff',
-                    backgroundGradientTo: '#fff',
-                    color: (opacity = 1) => `rgba(55, 65, 81, ${opacity})`,
-                  }}
-                  accessor="population"
-                  backgroundColor="transparent"
-                  paddingLeft="16"
-                  absolute
-                  style={{ marginVertical: 8, borderRadius: 12 }}
-                />
-              ) : (
-                <Text style={{ color: '#888', textAlign: 'center', marginVertical: 24 }}>장르별 통계 데이터가 없습니다.</Text>
-              )}
-            </CustomCard>
+          <View style={styles.chartsContainer}>
+            <View style={styles.chartCard}>
+              <Text style={styles.chartTitle}>월별 독서량</Text>
+              <BarChart
+                data={{
+                  labels: monthlyStats.map((s: any) => `${s.month}월`),
+                  datasets: [{ data: monthlyStats.map((s: any) => s.books) }]
+                }}
+                width={width - 48}
+                height={200}
+                yAxisLabel=""
+                yAxisSuffix=""
+                chartConfig={{
+                  backgroundColor: '#fff',
+                  backgroundGradientFrom: '#fff',
+                  backgroundGradientTo: '#fff',
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`,
+                  style: { borderRadius: 16 },
+                  propsForDots: { r: '6', strokeWidth: '2', stroke: '#2563eb' },
+                }}
+                style={{ borderRadius: 16 }}
+              />
+            </View>
+            <View style={styles.chartCard}>
+              <Text style={styles.chartTitle}>장르별 통계</Text>
+              <PieChart
+                data={genres.map((g: any) => ({
+                  name: g.name,
+                  population: g.value,
+                  color: g.color,
+                  legendFontColor: '#374151',
+                  legendFontSize: 14
+                }))}
+                width={width - 48}
+                height={180}
+                chartConfig={{
+                  backgroundColor: '#fff',
+                  backgroundGradientFrom: '#fff',
+                  backgroundGradientTo: '#fff',
+                  color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
+                  labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`,
+                }}
+                accessor="population"
+                backgroundColor="transparent"
+                paddingLeft="15"
+                absolute
+              />
+            </View>
           </View>
         )}
 
@@ -289,7 +331,12 @@ const ReadingStatsScreen = ({ navigation }: any) => {
             <View style={styles.progressCard}>
               <View style={styles.progressHeader}>
                 <Text style={styles.progressTitle}>연간 목표</Text>
-                <Text style={styles.progressPercentage}>{booksRead}/{yearlyGoal}권</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.progressPercentage}>{booksRead}/{yearlyGoal}권</Text>
+                  <TouchableOpacity onPress={() => { setGoalInput(String(yearlyGoal)); setGoalModalVisible(true); }} style={{ marginLeft: 8 }}>
+                    <Feather name="edit-2" size={18} color="#2563eb" />
+                  </TouchableOpacity>
+                </View>
               </View>
               <View style={styles.progressBarContainer}>
                 <View style={styles.progressBar}>
@@ -300,6 +347,37 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                 {booksRead}권 완료 • {yearlyGoal - booksRead}권 남음
               </Text>
             </View>
+            {/* 연간 목표 변경 모달 */}
+            <Modal
+              visible={goalModalVisible}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setGoalModalVisible(false)}
+            >
+              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'center', alignItems: 'center' }}>
+                <View style={{ backgroundColor: '#fff', borderRadius: 16, padding: 24, width: 300, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}>연간 목표 수정</Text>
+                  <TextInput
+                    value={goalInput}
+                    onChangeText={setGoalInput}
+                    keyboardType="number-pad"
+                    maxLength={3}
+                    style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, width: '100%', padding: 12, fontSize: 16, marginBottom: 16, textAlign: 'center' }}
+                    placeholder="목표 권수 입력 (1~999)"
+                  />
+                  <TouchableOpacity
+                    onPress={handleSaveGoal}
+                    disabled={goalSaving}
+                    style={{ backgroundColor: '#2563eb', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 32, width: '100%', alignItems: 'center', opacity: goalSaving ? 0.6 : 1 }}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>{goalSaving ? '저장 중...' : '저장'}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setGoalModalVisible(false)} style={{ marginTop: 12 }}>
+                    <Text style={{ color: '#6b7280' }}>취소</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
             <View style={styles.progressCard}>
               <View style={styles.progressHeader}>
                 <Text style={styles.progressTitle}>연속 기록</Text>
@@ -318,7 +396,43 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                 <Text style={styles.progressText}>독서 기록이 없습니다.</Text>
               ) : (
                 dailyHistory.map(date => (
-                  <Text key={date} style={styles.progressText}>{date}</Text>
+                  <View key={date} style={{ marginBottom: 12 }}>
+                    <TouchableOpacity
+                      onPress={() => handleToggleDate(date)}
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10 }}
+                    >
+                      <Text style={{ fontSize: 15, color: '#1e293b', fontWeight: '600' }}>{date}</Text>
+                      <Feather name={expandedDate === date ? 'chevron-up' : 'chevron-down'} size={20} color="#2563eb" />
+                    </TouchableOpacity>
+                    {expandedDate === date && (
+                      loadingSessions ? (
+                        <ActivityIndicator size="small" color="#2563eb" style={{ marginVertical: 8 }} />
+                      ) : (
+                        (sessionsByDate[date] && sessionsByDate[date].length > 0) ? (
+                          sessionsByDate[date].map((item: any) => (
+                            <View key={item.id} style={{ backgroundColor: '#f8fafc', borderRadius: 10, padding: 12, marginBottom: 6, marginLeft: 8 }}>
+                              <Text style={{ fontWeight: '600', color: '#1e293b', fontSize: 15, marginBottom: 2 }} numberOfLines={2} ellipsizeMode="tail">{item.book_title}</Text>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                                <Text style={{ fontSize: 12, color: '#64748b' }}>{item.start_time?.slice(11,16)} - {item.end_time?.slice(11,16)}</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                  <View style={{ borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: '#e0e7ff', marginLeft: 0 }}><Text style={{ color: '#3730a3', fontSize: 12, fontWeight: '500' }}>{`${item.duration_minutes}분`}</Text></View>
+                                  {item.pages_read > 0 && (
+                                    <View style={{ borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2, backgroundColor: '#e0e7ff', marginLeft: 4 }}><Text style={{ color: '#3730a3', fontSize: 12, fontWeight: '500' }}>{`${item.pages_read}페이지`}</Text></View>
+                                  )}
+                                </View>
+                              </View>
+                              {item.memo ? (
+                                <Text style={{ fontSize: 14, color: '#334155', marginTop: 2 }}>{item.memo}</Text>
+                              ) : null}
+                            </View>
+                          ))
+                        ) : (
+                          <Text style={{ color: '#888', marginLeft: 8, marginBottom: 8 }}>기록이 없습니다.</Text>
+                        )
+                      )
+                    )}
+                    <View style={{ height: 1, backgroundColor: '#e5e7eb', marginTop: 6 }} />
+                  </View>
                 ))
               )}
             </View>
@@ -542,6 +656,27 @@ const styles = StyleSheet.create({
   },
   ratingContainer: {
     flexDirection: 'row',
+  },
+  chartsContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  chartCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 16,
   },
   snackbar: { position: 'absolute', bottom: 32, left: 24, right: 24, backgroundColor: '#222', borderRadius: 8, padding: 16, alignItems: 'center', zIndex: 100 },
   snackbarText: { color: '#fff', fontSize: 15 },

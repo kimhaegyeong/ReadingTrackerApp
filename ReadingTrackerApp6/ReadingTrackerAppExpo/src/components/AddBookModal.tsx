@@ -23,6 +23,7 @@ interface Book {
   coverUrl: string | null;
   publisher: string;
   publishedYear: string;
+  genre: string;
 }
 
 interface AddBookModalProps {
@@ -42,6 +43,7 @@ const AddBookModal = ({ visible, onDismiss, onAddBook }: AddBookModalProps) => {
     author: '',
     isbn: '',
     pages: '',
+    genre: '',
   });
 
   const handleSearch = async () => {
@@ -57,6 +59,7 @@ const AddBookModal = ({ visible, onDismiss, onAddBook }: AddBookModalProps) => {
           coverUrl: null,
           publisher: '출판사',
           publishedYear: '2023',
+          genre: '소설',
         },
         {
           id: 2,
@@ -66,6 +69,7 @@ const AddBookModal = ({ visible, onDismiss, onAddBook }: AddBookModalProps) => {
           coverUrl: null,
           publisher: '다른 출판사',
           publishedYear: '2022',
+          genre: '에세이',
         },
       ];
       setSearchResults(mockResults);
@@ -93,10 +97,11 @@ const AddBookModal = ({ visible, onDismiss, onAddBook }: AddBookModalProps) => {
       coverUrl: null,
       publisher: '',
       publishedYear: '',
+      genre: manualBook.genre,
     };
     onAddBook(newBook);
     onDismiss();
-    setManualBook({ title: '', author: '', isbn: '', pages: '' });
+    setManualBook({ title: '', author: '', isbn: '', pages: '', genre: '' });
   };
 
   const TabButton = ({ title, value, isActive }: { title: string; value: string; isActive: boolean }) => (
@@ -216,6 +221,12 @@ const AddBookModal = ({ visible, onDismiss, onAddBook }: AddBookModalProps) => {
                   value={manualBook.pages}
                   onChangeText={(text) => setManualBook({ ...manualBook, pages: text })}
                   keyboardType="numeric"
+                  style={styles.input}
+                />
+                <TextInput
+                  placeholder="장르 (예: 소설, 에세이 등)"
+                  value={manualBook.genre}
+                  onChangeText={(text) => setManualBook({ ...manualBook, genre: text })}
                   style={styles.input}
                 />
                 <TouchableOpacity

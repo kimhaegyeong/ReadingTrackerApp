@@ -144,8 +144,15 @@ export class DatabaseService {
         await this.db.execAsync(`ALTER TABLE books ADD COLUMN cover TEXT;`);
         console.log('[DatabaseService] books 테이블에 cover 컬럼 추가 완료');
       }
+      // genre 컬럼이 없으면 추가 (마이그레이션)
+      const hasGenre = columns.some((col: any) => col.name === 'genre');
+      if (!hasGenre) {
+        // @ts-ignore
+        await this.db.execAsync(`ALTER TABLE books ADD COLUMN genre TEXT DEFAULT '';`);
+        console.log('[DatabaseService] books 테이블에 genre 컬럼 추가 완료');
+      }
     } catch (e) {
-      console.error('[DatabaseService] books 테이블 cover 컬럼 마이그레이션 오류', e);
+      console.error('[DatabaseService] books 테이블 cover/genre 컬럼 마이그레이션 오류', e);
     }
     // 최초 실행 시 기본 프로필 생성
     // @ts-ignore
@@ -434,8 +441,24 @@ export class DatabaseService {
   }
 
   // --- SETTINGS CRUD (패턴만, 상세 구현은 동일) ---
-  public async setSetting(key: string, value: string): Promise<void> { /* ... */ throw new Error('not implemented'); }
-  public async getSetting(key: string): Promise<Setting | null> { /* ... */ throw new Error('not implemented'); }
+  public async setSetting(key: string, value: string): Promise<void> {
+    if (!this.db) throw new Error('DB not initialized');
+    // @ts-ignore
+    await this.db.runAsync(
+      `INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)`,
+      key, value
+    );
+  }
+
+  public async getSetting(key: string): Promise<Setting | null> {
+    if (!this.db) throw new Error('DB not initialized');
+    // @ts-ignore
+    const row = await this.db.getFirstAsync<Setting>(
+      `SELECT * FROM settings WHERE key = ?`,
+      key
+    );
+    return row ?? null;
+  }
 
   public async getUserProfile(): Promise<UserProfile> {
     if (!this.db) throw new Error('DB not initialized');
@@ -525,26 +548,24 @@ export class DatabaseService {
   }
 
   /**
-   * 장르별 통계(책 테이블에 genre 컬럼이 없으므로, 임시로 cover_color로 그룹핑)
+   * 장르별 통계(genre 컬럼 기준)
    */
   public async getGenreStats(): Promise<Array<{ name: string, value: number, color: string }>> {
     if (!this.db) throw new Error('DB not initialized');
-    // genre 컬럼이 없으므로 cover_color로 대체(실제 앱에서는 genre 컬럼 추가 권장)
+    // genre 컬럼 기준으로 집계 (빈 문자열 제외)
     // @ts-ignore
-    const rows = await this.db.getAllAsync<{
-      color: string,
-      value: number
-    }>(
-      `SELECT cover_color as color, COUNT(*) as value
+    const rows = await this.db.getAllAsync(
+      `SELECT genre as name, COUNT(*) as value
        FROM books
-       WHERE status = 'finished'
-       GROUP BY cover_color`
+       WHERE status = 'finished' AND genre != ''
+       GROUP BY genre`
     );
-    // 색상명을 장르명으로 임시 매핑
+    // 장르별로 색상 매핑(고정 팔레트, 부족하면 랜덤)
+    const palette = ['#3b82f6','#f59e42','#10b981','#f43f5e','#a78bfa','#fbbf24','#6366f1','#14b8a6','#eab308','#ef4444'];
     return rows.map((r: any, i: number) => ({
-      name: `장르${i+1}`,
+      name: r.name,
       value: r.value,
-      color: r.color || '#3b82f6'
+      color: palette[i % palette.length]
     }));
   }
 
@@ -596,5 +617,33 @@ export class DatabaseService {
     const diffToday = (today.setHours(0,0,0,0) - lastDate.setHours(0,0,0,0)) / (1000 * 60 * 60 * 24);
     const currentStreak = diffToday === 0 ? current : 0;
     return { currentStreak, longestStreak: max };
+  }
+
+  /**
+   * 올해 완료(상태: finished)한 책의 개수 반환
+   */
+  public async getBooksReadCount(year: number): Promise<number> {
+    if (!this.db) throw new Error('DB not initialized');
+    // @ts-ignore
+    const row = await this.db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM books WHERE status = 'finished' AND strftime('%Y', updated_at) = ?`,
+      String(year)
+    );
+    return row?.count ?? 0;
+  }
+
+  /**
+   * 특정 날짜(YYYY-MM-DD)의 독서 세션 전체 반환
+   */
+  public async getSessionsByDate(date: string): Promise<(ReadingSession & { book_title: string })[]> {
+    if (!this.db) throw new Error('DB not initialized');
+    // @ts-ignore
+    const start = `${date} 00:00:00`;
+    const end = `${date} 23:59:59`;
+    const rows = await this.db.getAllAsync(
+      `SELECT rs.*, b.title as book_title FROM reading_sessions rs JOIN books b ON rs.book_id = b.id WHERE rs.start_time BETWEEN ? AND ? ORDER BY rs.start_time ASC`,
+      start, end
+    );
+    return rows;
   }
 } 

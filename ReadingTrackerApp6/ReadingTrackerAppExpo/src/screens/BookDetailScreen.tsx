@@ -48,6 +48,7 @@ interface Book {
   quotes: number;
   notes: number;
   readingTime: string;
+  genre?: string;
 }
 
 type RootStackParamList = {
@@ -120,6 +121,8 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
 
   const [statusMenuVisible, setStatusMenuVisible] = useState(false);
   const [actionMenuVisible, setActionMenuVisible] = useState(false);
+
+  const [genre, setGenre] = useState(book.genre || '');
 
   // 상태별 정보
   const getStatusInfo = (status: string) => {
@@ -289,7 +292,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
 
   const handleUpdate = async () => {
     try {
-      await updateBook(book.id, { title, author });
+      await updateBook(book.id, { title, author, genre });
       Alert.alert('수정 완료', '책 정보가 수정되었습니다.');
       if ((navigation as any).canGoBack && (navigation as any).canGoBack()) {
         (navigation as any).goBack();
@@ -482,6 +485,16 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
               <Text style={{ fontSize: 16, color: '#64748b' }}>페이지: {book.pages}페이지</Text>
             </View>
           )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <Ionicons name="pricetag" size={20} color="#64748b" style={{ marginRight: 12 }} />
+            <TextInput
+              placeholder="장르 (예: 소설, 에세이 등)"
+              value={genre}
+              onChangeText={text => setGenre(text.slice(0, 20))}
+              style={{ flex: 1, fontSize: 16, color: '#64748b' }}
+              maxLength={20}
+            />
+          </View>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="calendar" size={20} color="#64748b" style={{ marginRight: 12 }} />
             <Text style={{ fontSize: 16, color: '#64748b' }}>추가일: {book.created_at ? new Date(book.created_at).toLocaleDateString('ko-KR') : '알 수 없음'}</Text>
