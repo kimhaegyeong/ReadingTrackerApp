@@ -217,56 +217,69 @@ const ReadingStatsScreen = ({ navigation }: any) => {
 
         {/* 차트 탭 */}
         {selectedTab === 'charts' && (
-          <View style={styles.chartsContainer}>
-            <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>월별 독서량</Text>
-              <BarChart
-                data={{
-                  labels: monthlyStats.map((s: any) => `${s.month}월`),
-                  datasets: [{ data: monthlyStats.map((s: any) => s.books) }]
-                }}
-                width={width - 48}
-                height={200}
-                yAxisLabel=""
-                yAxisSuffix=""
-                chartConfig={{
-                  backgroundColor: '#fff',
-                  backgroundGradientFrom: '#fff',
-                  backgroundGradientTo: '#fff',
-                  decimalPlaces: 0,
-                  color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`,
-                  style: { borderRadius: 16 },
-                  propsForDots: { r: '6', strokeWidth: '2', stroke: '#2563eb' },
-                }}
-                style={{ borderRadius: 16 }}
-              />
-            </View>
-            <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>장르별 통계</Text>
-              <PieChart
-                data={genres.map((g: any) => ({
-                  name: g.name,
-                  population: g.value,
-                  color: g.color,
-                  legendFontColor: '#374151',
-                  legendFontSize: 14
-                }))}
-                width={width - 48}
-                height={180}
-                chartConfig={{
-                  backgroundColor: '#fff',
-                  backgroundGradientFrom: '#fff',
-                  backgroundGradientTo: '#fff',
-                  color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-                  labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`,
-                }}
-                accessor="population"
-                backgroundColor="transparent"
-                paddingLeft="15"
-                absolute
-              />
-            </View>
+          <View style={{ gap: 24, marginTop: 8 }}>
+            {/* 월별 독서 시간/페이지 BarChart */}
+            <CustomCard style={{ padding: 16 }}>
+              <Text style={styles.sectionTitle}>월별 독서 시간(분)</Text>
+              {monthlyStats && monthlyStats.length > 0 ? (
+                <BarChart
+                  data={{
+                    labels: monthlyStats.map((m: any) => `${m.month}월`),
+                    datasets: [
+                      { data: monthlyStats.map((m: any) => m.minutes || 0) },
+                    ],
+                  }}
+                  width={width - 48}
+                  height={180}
+                  yAxisLabel=""
+                  yAxisSuffix="분"
+                  chartConfig={{
+                    backgroundColor: '#fff',
+                    backgroundGradientFrom: '#fff',
+                    backgroundGradientTo: '#fff',
+                    decimalPlaces: 0,
+                    color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(55, 65, 81, ${opacity})`,
+                    style: { borderRadius: 12 },
+                    propsForDots: { r: '4', strokeWidth: '2', stroke: '#2563eb' },
+                  }}
+                  style={{ marginVertical: 8, borderRadius: 12 }}
+                  fromZero
+                />
+              ) : (
+                <Text style={{ color: '#888', textAlign: 'center', marginVertical: 24 }}>월별 통계 데이터가 없습니다.</Text>
+              )}
+            </CustomCard>
+            {/* 장르별 PieChart */}
+            <CustomCard style={{ padding: 16 }}>
+              <Text style={styles.sectionTitle}>장르별 독서 비율</Text>
+              {genres && genres.length > 0 ? (
+                <PieChart
+                  data={genres.map((g: any, idx: number) => ({
+                    name: g.genre || '기타',
+                    population: g.count,
+                    color: ['#2563eb','#f59e0b','#10b981','#8b5cf6','#ef4444','#64748b'][idx%6],
+                    legendFontColor: '#374151',
+                    legendFontSize: 13,
+                  }))}
+                  width={width - 48}
+                  height={180}
+                  chartConfig={{
+                    backgroundColor: '#fff',
+                    backgroundGradientFrom: '#fff',
+                    backgroundGradientTo: '#fff',
+                    color: (opacity = 1) => `rgba(55, 65, 81, ${opacity})`,
+                  }}
+                  accessor="population"
+                  backgroundColor="transparent"
+                  paddingLeft="16"
+                  absolute
+                  style={{ marginVertical: 8, borderRadius: 12 }}
+                />
+              ) : (
+                <Text style={{ color: '#888', textAlign: 'center', marginVertical: 24 }}>장르별 통계 데이터가 없습니다.</Text>
+              )}
+            </CustomCard>
           </View>
         )}
 
@@ -529,27 +542,6 @@ const styles = StyleSheet.create({
   },
   ratingContainer: {
     flexDirection: 'row',
-  },
-  chartsContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  chartCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-  },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 16,
   },
   snackbar: { position: 'absolute', bottom: 32, left: 24, right: 24, backgroundColor: '#222', borderRadius: 8, padding: 16, alignItems: 'center', zIndex: 100 },
   snackbarText: { color: '#fff', fontSize: 15 },
