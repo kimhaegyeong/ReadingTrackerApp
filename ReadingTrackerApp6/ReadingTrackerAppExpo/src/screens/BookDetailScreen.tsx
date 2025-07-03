@@ -20,6 +20,10 @@ import { DatabaseService, Book as DBBook } from '../DatabaseService';
 import { useBookContext } from '../BookContext';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
+import CustomCard from '../components/common/CustomCard';
+import CustomButton from '../components/common/CustomButton';
+import CustomBadge from '../components/common/CustomBadge';
+import { formatNumber } from '../lib/utils';
 // import * as MLKitOcr from 'expo-mlkit-ocr'; // 기존 import 주석 처리
 let MLKitOcr: any = null;
 if (typeof navigator !== 'undefined' && navigator.product !== 'ReactNativeWeb') {
@@ -67,39 +71,6 @@ type RootStackParamList = {
 interface BookDetailScreenProps {
   route: RouteProp<RootStackParamList, 'BookDetail'>;
 }
-
-// 커스텀 카드
-const CustomCard = ({ children, style }: any) => {
-  // children이 문자열인 경우 <Text>로 감싸기
-  if (typeof children === 'string') {
-    return (
-      <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>
-        <Text>{children}</Text>
-      </View>
-    );
-  }
-  
-  // children이 배열인 경우 문자열들을 <Text>로 감싸기
-  if (Array.isArray(children)) {
-    const processedChildren = children.map((child, index) => {
-      if (typeof child === 'string' && child.trim() !== '') {
-        return <Text key={index}>{child}</Text>;
-      }
-      return child;
-    });
-    return <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>{processedChildren}</View>;
-  }
-  
-  // 그 외의 경우는 그대로 렌더링
-  return <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>{children}</View>;
-};
-
-// 커스텀 칩
-const CustomChip = ({ title, onPress, style, textStyle }: any) => (
-  <TouchableOpacity onPress={onPress} style={[styles.tagChip, style]}>
-    <Text style={[styles.tagText, textStyle]}>{title}</Text>
-  </TouchableOpacity>
-);
 
 const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
   const navigation = useNavigation();
@@ -446,6 +417,13 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
     }
   };
 
+  // 커스텀 칩
+  const CustomChip = ({ title, onPress, style, textStyle }: any) => (
+    <TouchableOpacity onPress={onPress} style={[styles.tagChip, style]}>
+      <Text style={[styles.tagText, textStyle]}>{title}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* 헤더 */}
@@ -503,7 +481,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
           {book.pages && (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
               <Ionicons name="document-text" size={20} color="#64748b" style={{ marginRight: 12 }} />
-              <Text style={{ fontSize: 16, color: '#64748b' }}>페이지: {book.pages.toLocaleString()}페이지</Text>
+              <Text style={{ fontSize: 16, color: '#64748b' }}>페이지: {formatNumber(book.pages)}페이지</Text>
             </View>
           )}
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>

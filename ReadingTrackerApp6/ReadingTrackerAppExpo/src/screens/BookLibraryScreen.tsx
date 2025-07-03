@@ -5,38 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { DatabaseService, Book as DBBook } from '../DatabaseService';
 import { useBookContext } from '../BookContext';
-
-// 커스텀 카드
-const CustomCard = ({ children, style }: any) => {
-  const wrappedChildren = React.Children.map(children, (child) => {
-    if (typeof child === 'string' && child.trim() !== '') {
-      return <Text>{child}</Text>;
-    }
-    if (typeof child === 'string') {
-      // 공백/줄바꿈은 무시
-      return null;
-    }
-    return child;
-  });
-  return <View style={[styles.card, { backgroundColor: '#fff', padding: 16 }, style]}>{wrappedChildren}</View>;
-};
-
-// 커스텀 버튼
-const CustomButton = ({ onPress, icon, title, type, buttonStyle }: any) => (
-  <TouchableOpacity
-    onPress={onPress}
-    style={[
-      type === 'solid' ? styles.addButton : styles.headerButton,
-      buttonStyle,
-      type === 'outline' && { backgroundColor: '#fff', borderWidth: 1, borderColor: '#2563eb' },
-    ]}
-  >
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-      {icon}
-      <Text style={{ color: type === 'solid' ? '#fff' : '#2563eb', fontWeight: 'bold', marginLeft: 6 }}>{title}</Text>
-    </View>
-  </TouchableOpacity>
-);
+import CustomCard from '../components/common/CustomCard';
+import CustomButton from '../components/common/CustomButton';
+import CustomBadge from '../components/common/CustomBadge';
+import { formatNumber } from '../lib/utils';
 
 const BookLibraryScreen = () => {
   const navigation = useNavigation();

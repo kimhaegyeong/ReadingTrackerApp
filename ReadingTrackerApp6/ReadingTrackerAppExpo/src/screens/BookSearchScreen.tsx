@@ -5,6 +5,10 @@ import { View, Text, TextInput, StyleSheet, ScrollView, ActivityIndicator, Touch
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import { DatabaseService } from '../DatabaseService';
 import axios from 'axios';
+import CustomCard from '../components/common/CustomCard';
+import CustomButton from '../components/common/CustomButton';
+import CustomBadge from '../components/common/CustomBadge';
+import { formatNumber } from '../lib/utils';
 
 const ALADIN_API_URL = 'https://www.aladin.co.kr/ttb/api/ItemSearch.aspx';
 
@@ -59,21 +63,6 @@ const searchBooksAladin = async (query: string) => {
     }
     return { items: [], error: '네트워크 오류 또는 알 수 없는 오류가 발생했습니다.' };
   }
-};
-
-// 커스텀 카드
-const CustomCard = ({ children, style }: any) => {
-  const wrappedChildren = React.Children.map(children, (child) => {
-    if (typeof child === 'string' && child.trim() !== '') {
-      return <Text>{child}</Text>;
-    }
-    if (typeof child === 'string') {
-      // 공백/줄바꿈은 무시
-      return null;
-    }
-    return child;
-  });
-  return <View style={[styles.card, style]}>{wrappedChildren}</View>;
 };
 
 const BookSearchScreen = ({ navigation }: any) => {

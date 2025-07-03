@@ -3,6 +3,10 @@ import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Share
 import { Feather, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { BarChart, PieChart } from 'react-native-chart-kit';
 import { DatabaseService } from '../DatabaseService';
+import CustomCard from '../components/common/CustomCard';
+import CustomButton from '../components/common/CustomButton';
+import CustomBadge from '../components/common/CustomBadge';
+import { formatNumber } from '../lib/utils';
 
 const { width } = Dimensions.get('window');
 
@@ -12,20 +16,6 @@ const TABS = [
   { key: 'goals', label: '목표' },
   { key: 'history', label: '기록' },
 ];
-
-const CustomCard = ({ children, style }: any) => {
-  const wrappedChildren = React.Children.map(children, (child) => {
-    if (typeof child === 'string' && child.trim() !== '') {
-      return <Text>{child}</Text>;
-    }
-    if (typeof child === 'string') {
-      // 공백/줄바꿈은 무시
-      return null;
-    }
-    return child;
-  });
-  return <View style={[styles.card, style]}>{wrappedChildren}</View>;
-};
 
 const ReadingStatsScreen = ({ navigation }: any) => {
   const [selectedTab, setSelectedTab] = useState('overview');
