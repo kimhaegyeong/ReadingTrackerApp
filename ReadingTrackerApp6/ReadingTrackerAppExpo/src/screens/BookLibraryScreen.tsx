@@ -205,7 +205,7 @@ const BookLibraryScreen = () => {
                       <Text style={styles.statLabel}>노트</Text>
                     </View>
                   </View>
-                  <View style={styles.sessionsContainer}>
+                  {/* <View style={styles.sessionsContainer}>
                     <Text style={styles.sessionsTitle}>독서 세션</Text>
                     {todaySessions.length === 0 ? (
                       <Text style={{ color: '#64748b', marginTop: 8 }}>오늘의 독서 세션이 없습니다.</Text>
@@ -227,7 +227,7 @@ const BookLibraryScreen = () => {
                         </View>
                       ))
                     )}
-                  </View>
+                  </View> */}
                 </>
               )}
             </Card.Content>

@@ -439,18 +439,24 @@ export class DatabaseService {
   public async updateReadingSession(id: number, update: Partial<Omit<ReadingSession, 'id'>>): Promise<void> { throw new Error('not implemented'); }
   public async deleteReadingSession(id: number): Promise<void> { throw new Error('not implemented'); }
 
-  public async getTodaySessions(): Promise<ReadingSession[]> {
+  /**
+   * 오늘의 독서 세션을 books 테이블과 조인하여 book_title을 포함해 반환
+   */
+  public async getTodaySessions(): Promise<any[]> {
     if (!this.db) throw new Error('DB not initialized');
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
-    const start = `${yyyy}-${mm}-${dd} 00:00:00`;
-    const end = `${yyyy}-${mm}-${dd} 23:59:59`;
+    const todayStr = `${yyyy}-${mm}-${dd}`;
     // @ts-ignore
-    const rows = await this.db.getAllAsync<ReadingSession & { book_title: string }>(
-      `SELECT rs.*, b.title as book_title FROM reading_sessions rs JOIN books b ON rs.book_id = b.id WHERE rs.start_time BETWEEN ? AND ? ORDER BY rs.start_time DESC`,
-      start, end
+    const rows = await this.db.getAllAsync<any>(
+      `SELECT rs.*, b.title as book_title
+       FROM reading_sessions rs
+       LEFT JOIN books b ON rs.book_id = b.id
+       WHERE date(rs.start_time) = ?
+       ORDER BY rs.start_time DESC`,
+      todayStr
     );
     return rows;
   }
