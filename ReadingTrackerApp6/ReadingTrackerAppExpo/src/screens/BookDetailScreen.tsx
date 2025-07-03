@@ -26,8 +26,6 @@ import CustomCard from '../components/common/CustomCard';
 import CustomButton from '../components/common/CustomButton';
 import CustomBadge from '../components/common/CustomBadge';
 import { formatNumber } from '../lib/utils';
-import { useStatsContext } from '../contexts/StatsContext';
-import { buttonStyles, inputStyles } from '../styles/theme';
 // import * as MLKitOcr from 'expo-mlkit-ocr'; // 기존 import 주석 처리
 let MLKitOcr: any = null;
 if (typeof navigator !== 'undefined' && navigator.product !== 'ReactNativeWeb') {
