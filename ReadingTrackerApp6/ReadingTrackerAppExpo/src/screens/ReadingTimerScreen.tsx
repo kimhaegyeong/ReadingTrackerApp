@@ -359,6 +359,19 @@ const ReadingTimerScreen = () => {
     />
   );
 
+  useEffect(() => {
+    // route param으로 책이 넘어온 경우, 수동 입력에도 자동 선택
+    if (route && (route as any).params && (route as any).params.book) {
+      const book = (route as any).params.book;
+      const found = books.find((b: any) => b.id === book.id);
+      if (found) {
+        setSelectedBookManual(found.title);
+        setSelectedBookIdManual(String(found.id));
+        setComboValueManual(String(found.id));
+      }
+    }
+  }, [books, route]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.headerCard}>
