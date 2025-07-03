@@ -202,6 +202,7 @@ const ReadingTimerScreen = () => {
       setSelectedBookId(null);
       setTimerPages('');
       setTimerNotes('');
+      (navigation as any).navigate('Main', { screen: 'Library' });
       Alert.alert('성공', `${minutes}분 독서 기록이 저장되었습니다!`);
       fetchSessionsAndStats();
     } catch (e) {
@@ -514,7 +515,7 @@ const ReadingTimerScreen = () => {
               )}
               <Button
                 onPress={handleStop}
-                icon={<Feather name="square" size={18} color="#dc262" />}
+                icon={<Feather name="square" size={18} color="#dc2626" />}
                 text="종료"
                 color="#dc2626"
                 disabled={seconds === 0}

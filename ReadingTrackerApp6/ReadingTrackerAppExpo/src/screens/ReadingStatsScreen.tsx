@@ -327,14 +327,11 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                   const num = Number(value);
                   if (chartType === 'minutes') {
                     if (num >= 60) {
-                      return `${Math.round(num / 60)}h`;
+                      return `${Math.round(num / 60).toLocaleString()}시간`;
                     }
-                    return `${num}m`;
-                  }
-                  if (num >= 1000) {
-                    return `${(num / 1000).toFixed(1).replace(/\.0$/, '')}k`;
-                  }
-                  return num.toString();
+                    return `${num}분`;
+                  } 
+                  return num.toLocaleString();
                 }}
                 chartConfig={{
                   backgroundColor: '#fff',
