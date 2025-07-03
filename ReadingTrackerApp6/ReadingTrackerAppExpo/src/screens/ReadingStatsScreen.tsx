@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Share, SafeAreaView, ActivityIndicator, Modal, TextInput } from 'react-native';
 import { Feather, MaterialIcons, FontAwesome } from '@expo/vector-icons';
-import { BarChart, PieChart } from 'react-native-chart-kit';
+import { LineChart, PieChart } from 'react-native-chart-kit';
 import { DatabaseService } from '../DatabaseService';
 import CustomCard from '../components/common/CustomCard';
 import CustomButton from '../components/common/CustomButton';
@@ -27,7 +27,11 @@ const CHART_TYPES = [
   { key: 'pages', label: '페이지 수' },
 ];
 
+const CARD_PADDING = 20;
+
 const ReadingStatsScreen = ({ navigation }: any) => {
+  const [chartWidthLine, setChartWidthLine] = React.useState(width - 40);
+  const [chartWidthPie, setChartWidthPie] = React.useState(width - 40);
   const [selectedTab, setSelectedTab] = useState('overview');
   const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
   const selectedYear = new Date().getFullYear();
@@ -298,21 +302,40 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                 </TouchableOpacity>
               ))}
             </View>
-            <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>
-                {chartType === 'books' ? '월별 독서량(권)' : chartType === 'minutes' ? '월별 독서 시간(분)' : '월별 읽은 페이지'}
-              </Text>
-              <BarChart
+            <View
+              style={[styles.chartCard, { alignItems: 'center' }]}
+              onLayout={e => setChartWidthLine(e.nativeEvent.layout.width)}
+            >
+              <LineChart
                 data={{
                   labels: monthlyStats.map((s: any) => `${s.month}월`),
                   datasets: [
-                    { data: monthlyStats.map((s: any) => chartType === 'books' ? s.books : chartType === 'minutes' ? s.minutes : s.pages) }
+                    {
+                      data: monthlyStats.map((s: any) => chartType === 'books' ? s.books : chartType === 'minutes' ? s.minutes : s.pages),
+                      color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
+                      strokeWidth: 2
+                    }
                   ]
                 }}
-                width={width - 48}
+                width={chartWidthLine - CARD_PADDING * 2}
                 height={200}
                 yAxisLabel=""
-                yAxisSuffix={chartType === 'books' ? '권' : chartType === 'minutes' ? '분' : 'p'}
+                yAxisSuffix={chartType === 'books' ? '권' : chartType === 'minutes' ? '' : 'p'}
+                fromZero
+                verticalLabelRotation={30}
+                formatYLabel={value => {
+                  const num = Number(value);
+                  if (chartType === 'minutes') {
+                    if (num >= 60) {
+                      return `${Math.round(num / 60)}h`;
+                    }
+                    return `${num}m`;
+                  }
+                  if (num >= 1000) {
+                    return `${(num / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+                  }
+                  return num.toString();
+                }}
                 chartConfig={{
                   backgroundColor: '#fff',
                   backgroundGradientFrom: '#fff',
@@ -321,13 +344,13 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                   color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
                   labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`,
                   style: { borderRadius: 16 },
-                  propsForDots: { r: '6', strokeWidth: '2', stroke: '#2563eb' },
+                  propsForDots: { r: '4', strokeWidth: '2', stroke: '#2563eb' },
                 }}
+                bezier
                 style={{ borderRadius: 16 }}
               />
             </View>
-            <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>장르별 통계</Text>
+            <View style={[styles.chartCard, { alignItems: 'center' }]} onLayout={e => setChartWidthPie(e.nativeEvent.layout.width)}>
               <PieChart
                 data={genres.map((g: any) => ({
                   name: g.name,
@@ -336,7 +359,7 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                   legendFontColor: '#374151',
                   legendFontSize: 14
                 }))}
-                width={width - 48}
+                width={chartWidthPie - CARD_PADDING * 2}
                 height={180}
                 chartConfig={{
                   backgroundColor: '#fff',
@@ -344,6 +367,7 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                   backgroundGradientTo: '#fff',
                   color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
                   labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`,
+                  formatYLabel: value => formatNumber(Number(value)),
                 }}
                 accessor="population"
                 backgroundColor="transparent"
