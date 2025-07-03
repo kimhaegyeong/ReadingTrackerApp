@@ -206,6 +206,11 @@ const ReadingTimerScreen = () => {
     try {
       const db = await DatabaseService.getInstance();
       await db.addReadingSession(session);
+      // 세션 저장 후, 해당 책의 status가 'want-to-read'면 'reading'으로 변경
+      const book = books.find(b => b.id === parseInt(selectedBookId!));
+      if (book && book.status === 'want-to-read') {
+        await db.updateBook(book.id, { status: 'reading' });
+      }
       setIsRunning(false);
       setSeconds(0);
       setSelectedBook('');
@@ -236,6 +241,11 @@ const ReadingTimerScreen = () => {
     };
     const db = await DatabaseService.getInstance();
     await db.addReadingSession(session);
+    // 세션 저장 후, 해당 책의 status가 'want-to-read'면 'reading'으로 변경
+    const book = books.find(b => b.id === parseInt(selectedBookIdManual!));
+    if (book && book.status === 'want-to-read') {
+      await db.updateBook(book.id, { status: 'reading' });
+    }
     setSelectedBookManual('');
     setSelectedBookIdManual(null);
     setComboValueManual(null);
