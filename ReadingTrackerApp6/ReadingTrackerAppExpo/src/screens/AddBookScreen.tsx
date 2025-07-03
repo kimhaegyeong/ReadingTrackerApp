@@ -41,12 +41,18 @@ const AddBookScreen = ({ navigation }: any) => {
         status: 'want-to-read',
         cover_color: undefined,
       });
-      Alert.alert('성공', '책이 추가되었습니다.');
-      setTitle('');
-      setAuthor('');
-      setIsbn('');
-      setPages('');
-      navigation.goBack && navigation.goBack();
+      Alert.alert('성공', '책이 추가되었습니다.', [
+        {
+          text: '확인',
+          onPress: () => {
+            setTitle('');
+            setAuthor('');
+            setIsbn('');
+            setPages('');
+            navigation.navigate('Main', { screen: 'Library' });
+          }
+        }
+      ]);
     } catch (e) {
       Alert.alert('오류', '책 추가에 실패했습니다.');
     }

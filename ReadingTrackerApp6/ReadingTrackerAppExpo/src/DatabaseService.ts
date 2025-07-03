@@ -555,10 +555,10 @@ export class DatabaseService {
       const idx = Number(r.month) - 1;
       if (idx >= 0 && idx < 12) {
         base[idx] = {
-          month: Number(r.month),
-          books: r.books,
-          minutes: r.minutes,
-          pages: r.pages
+      month: Number(r.month),
+      books: r.books,
+      minutes: r.minutes,
+      pages: r.pages
         };
       }
     });
