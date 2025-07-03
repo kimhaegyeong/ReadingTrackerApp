@@ -353,7 +353,7 @@ const ReadingTimerScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.headerCard}>
         <Text style={styles.headerTitleCard}>독서 시간 기록</Text>
-        <Text style={styles.headerSubCard}>{`오늘 총 ${totalStats.totalMinutes}분, ${totalStats.totalPages}페이지 읽었어요`}</Text>
+        <Text style={styles.headerSubCard}>{`오늘 총 ${totalStats.totalMinutes.toLocaleString()}분, ${totalStats.totalPages.toLocaleString()}페이지 읽었어요`}</Text>
       </View>
       {/* 타이머용 책 선택 모달 */}
       <Modal visible={bookModalVisible} animationType="none" transparent>

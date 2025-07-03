@@ -141,15 +141,15 @@ const BookLibraryScreen = () => {
                 <View style={{ flexDirection: 'row', marginTop: 6 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
                     <Ionicons name="chatbox-ellipses-outline" size={14} color="#64748b" />
-                    <Text style={{ fontSize: 13, color: '#64748b', marginLeft: 2 }}>{quoteCount} 인용문</Text>
+                    <Text style={{ fontSize: 13, color: '#64748b', marginLeft: 2 }}>{quoteCount.toLocaleString()} 인용문</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 12 }}>
                     <Ionicons name="document-text-outline" size={14} color="#64748b" />
-                    <Text style={{ fontSize: 13, color: '#64748b', marginLeft: 2 }}>{noteCount} 메모</Text>
+                    <Text style={{ fontSize: 13, color: '#64748b', marginLeft: 2 }}>{noteCount.toLocaleString()} 메모</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Ionicons name="timer-outline" size={14} color="#64748b" />
-                    <Text style={{ fontSize: 13, color: '#64748b', marginLeft: 2 }}>{totalMinutes}분</Text>
+                    <Text style={{ fontSize: 13, color: '#64748b', marginLeft: 2 }}>{totalMinutes.toLocaleString()}분</Text>
                   </View>
                 </View>
               </View>
@@ -176,7 +176,7 @@ const BookLibraryScreen = () => {
           </View>
           <View style={styles.welcomeSection}>
             <Text style={styles.welcomeTitle} accessibilityRole="header">내 서재</Text>
-            <Text style={styles.welcomeSubtitle}>지금까지 {filteredBooks.length}권의 책과 함께했어요</Text>
+            <Text style={styles.welcomeSubtitle}>지금까지 {filteredBooks.length.toLocaleString()}권의 책과 함께했어요</Text>
           </View>
           <Card style={styles.todayCard} accessible accessibilityLabel="오늘의 독서 기록 카드">
             <Card.Content>
@@ -193,15 +193,15 @@ const BookLibraryScreen = () => {
                 <>
                   <View style={styles.statsGrid}>
                     <View style={styles.statItem}>
-                      <Text style={styles.statNumber}>{todayStats.totalMinutes}</Text>
+                      <Text style={styles.statNumber}>{todayStats.totalMinutes.toLocaleString()}</Text>
                       <Text style={styles.statLabel}>분</Text>
                     </View>
                     <View style={styles.statItem}>
-                      <Text style={styles.statNumber}>{todayStats.totalPages}</Text>
+                      <Text style={styles.statNumber}>{todayStats.totalPages.toLocaleString()}</Text>
                       <Text style={styles.statLabel}>페이지</Text>
                     </View>
                     <View style={styles.statItem}>
-                      <Text style={styles.statNumber}>{todayStats.totalNotes}</Text>
+                      <Text style={styles.statNumber}>{todayStats.totalNotes.toLocaleString()}</Text>
                       <Text style={styles.statLabel}>노트</Text>
                     </View>
                   </View>

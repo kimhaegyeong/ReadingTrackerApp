@@ -199,15 +199,15 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                 <View style={styles.statIconContainer}>
                   <MaterialIcons name="menu-book" size={24} color="#2563eb" />
                 </View>
-                <Text style={styles.statNumber}>{booksRead}</Text>
+                <Text style={styles.statNumber}>{booksRead.toLocaleString()}</Text>
                 <Text style={styles.statLabel}>읽은 책</Text>
-                <Text style={styles.statSubtext}>목표 {yearlyGoal}권</Text>
+                <Text style={styles.statSubtext}>목표 {yearlyGoal.toLocaleString()}권</Text>
               </View>
               <View style={styles.statCard}>
                 <View style={styles.statIconContainer}>
                   <FontAwesome name="clock-o" size={24} color="#8b5cf6" />
                 </View>
-                <Text style={styles.statNumber}>{Math.floor(totalMinutes / 60)}</Text>
+                <Text style={styles.statNumber}>{Math.floor(totalMinutes / 60).toLocaleString()}</Text>
                 <Text style={styles.statLabel}>독서 시간</Text>
                 <Text style={styles.statSubtext}>시간</Text>
               </View>
@@ -215,7 +215,7 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                 <View style={styles.statIconContainer}>
                   <Feather name="trending-up" size={24} color="#10b981" />
                 </View>
-                <Text style={styles.statNumber}>{currentStreak}</Text>
+                <Text style={styles.statNumber}>{currentStreak.toLocaleString()}</Text>
                 <Text style={styles.statLabel}>연속 기록</Text>
                 <Text style={styles.statSubtext}>일</Text>
               </View>
@@ -223,7 +223,7 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                 <View style={styles.statIconContainer}>
                   <MaterialIcons name="bar-chart" size={24} color="#f59e0b" />
                 </View>
-                <Text style={styles.statNumber}>{Math.floor(totalPages / 1000)}k</Text>
+                <Text style={styles.statNumber}>{Math.floor(totalPages / 1000).toLocaleString()}k</Text>
                 <Text style={styles.statLabel}>총 페이지</Text>
                 <Text style={styles.statSubtext}>페이지</Text>
               </View>
@@ -232,7 +232,7 @@ const ReadingStatsScreen = ({ navigation }: any) => {
             <View style={styles.progressCard}>
               <View style={styles.progressHeader}>
                 <Text style={styles.progressTitle}>올해 목표 진행률</Text>
-                <Text style={styles.progressPercentage}>{Math.round(progressPercentage)}%</Text>
+                <Text style={styles.progressPercentage}>{Math.round(progressPercentage).toLocaleString()}%</Text>
               </View>
               <View style={styles.progressBarContainer}>
                 <View style={styles.progressBar}>
@@ -240,7 +240,7 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                 </View>
               </View>
               <Text style={styles.progressText}>
-                {booksRead}권 완료 • {yearlyGoal - booksRead}권 남음
+                {booksRead.toLocaleString()}권 완료 • {(yearlyGoal - booksRead).toLocaleString()}권 남음
               </Text>
             </View>
             {/* 최근 읽은 책 */}
@@ -332,7 +332,7 @@ const ReadingStatsScreen = ({ navigation }: any) => {
               <View style={styles.progressHeader}>
                 <Text style={styles.progressTitle}>연간 목표</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Text style={styles.progressPercentage}>{booksRead}/{yearlyGoal}권</Text>
+                  <Text style={styles.progressPercentage}>{booksRead.toLocaleString()}/{yearlyGoal.toLocaleString()}권</Text>
                   <TouchableOpacity onPress={() => { setGoalInput(String(yearlyGoal)); setGoalModalVisible(true); }} style={{ marginLeft: 8 }}>
                     <Feather name="edit-2" size={18} color="#2563eb" />
                   </TouchableOpacity>
@@ -344,7 +344,7 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                 </View>
               </View>
               <Text style={styles.progressText}>
-                {booksRead}권 완료 • {yearlyGoal - booksRead}권 남음
+                {booksRead.toLocaleString()}권 완료 • {(yearlyGoal - booksRead).toLocaleString()}권 남음
               </Text>
             </View>
             {/* 연간 목표 변경 모달 */}
@@ -381,9 +381,9 @@ const ReadingStatsScreen = ({ navigation }: any) => {
             <View style={styles.progressCard}>
               <View style={styles.progressHeader}>
                 <Text style={styles.progressTitle}>연속 기록</Text>
-                <Text style={styles.progressPercentage}>{currentStreak}일</Text>
+                <Text style={styles.progressPercentage}>{currentStreak.toLocaleString()}일</Text>
               </View>
-              <Text style={styles.progressText}>최장 연속 기록: {longestStreak}일</Text>
+              <Text style={styles.progressText}>최장 연속 기록: {longestStreak.toLocaleString()}일</Text>
             </View>
           </View>
         )}

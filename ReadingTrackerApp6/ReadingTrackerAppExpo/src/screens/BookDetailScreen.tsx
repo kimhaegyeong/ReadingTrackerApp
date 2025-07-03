@@ -493,7 +493,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
           {book.pages && (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
               <Ionicons name="document-text" size={20} color="#64748b" style={{ marginRight: 12 }} />
-              <Text style={{ fontSize: 16, color: '#64748b' }}>페이지: {book.pages}페이지</Text>
+              <Text style={{ fontSize: 16, color: '#64748b' }}>페이지: {book.pages.toLocaleString()}페이지</Text>
             </View>
           )}
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -536,7 +536,7 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
                         </View>
                       ) : null}
                       <View style={styles.quoteMeta}>
-                        <Text style={styles.quoteMetaText}>페이지 {quote.page}</Text>
+                        <Text style={styles.quoteMetaText}>페이지 {quote.page.toLocaleString()}</Text>
                         <Text style={styles.quoteMetaText}>•</Text>
                         <Text style={styles.quoteMetaText}>{quote.createdAt}</Text>
                       </View>
