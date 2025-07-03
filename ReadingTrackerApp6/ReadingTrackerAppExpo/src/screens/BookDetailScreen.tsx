@@ -379,10 +379,13 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
       const dd = String(today.getDate()).padStart(2, '0');
       const completedDate = `${yyyy}-${mm}-${dd}`;
       await updateBook(book.id, { status, completed_date: completedDate });
+      book.status = status;
+      book.completed_date = completedDate;
     } else {
       await updateBook(book.id, { status });
+      book.status = status;
+      book.completed_date = undefined;
     }
-    // 필요시 최신화
   };
 
   // 상태 변경 메뉴
@@ -449,12 +452,6 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
         <View style={{ backgroundColor: '#fff', borderRadius: 12, padding: 20, marginBottom: 16, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
             <Ionicons name="book" size={24} color="#2563eb" style={{ marginRight: 12 }} />
-            <TextInput
-              placeholder="책 제목을 입력하세요..."
-              value={title}
-              onChangeText={setTitle}
-              style={{ flex: 1, fontSize: 18, fontWeight: 'bold', color: '#1e293b' }}
-            />
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
             <Ionicons name="person" size={20} color="#64748b" style={{ marginRight: 12 }} />
@@ -574,21 +571,25 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
       </ScrollView>
       {/* 하단 액션 바 */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', height: 64, borderTopWidth: 1, borderColor: '#e0e0e0', backgroundColor: '#fff' }}>
+        <TouchableOpacity onPress={() => (navigation as any).navigate('Main', { screen: 'Library' })} style={{ alignItems: 'center', flex: 1 }}>
+          <Ionicons name="library-outline" size={26} color="gray" />
+          <Text style={{ color: 'gray', fontSize: 12, marginTop: 2 }}>내 서재</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => setIsQuoteModalVisible(true)} style={{ alignItems: 'center', flex: 1 }}>
-          <Ionicons name="chatbubble" size={26} color="#2563eb" />
-          <Text style={{ color: '#2563eb', fontSize: 12, marginTop: 2 }}>인용문</Text>
+          <Ionicons name="chatbubble-outline" size={26} color="gray" />
+          <Text style={{ color: 'gray', fontSize: 12, marginTop: 2 }}>인용문</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setIsNoteModalVisible(true)} style={{ alignItems: 'center', flex: 1 }}>
-          <Ionicons name="document-text" size={26} color="#8b5cf6" />
-          <Text style={{ color: '#8b5cf6', fontSize: 12, marginTop: 2 }}>메모</Text>
+          <Ionicons name="document-text-outline" size={26} color="gray" />
+          <Text style={{ color: 'gray', fontSize: 12, marginTop: 2 }}>메모</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => (navigation as any).navigate('Main', { screen: 'Timer', params: { book } })} style={{ alignItems: 'center', flex: 1 }}>
-          <Ionicons name="timer" size={26} color="#22c55e" />
-          <Text style={{ color: '#22c55e', fontSize: 12, marginTop: 2 }}>기록</Text>
+          <Ionicons name="timer-outline" size={26} color="gray" />
+          <Text style={{ color: 'gray', fontSize: 12, marginTop: 2 }}>기록</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={showActionMenu} style={{ alignItems: 'center', flex: 1 }}>
-          <MaterialIcons name="more-vert" size={26} color="#64748b" />
-          <Text style={{ color: '#64748b', fontSize: 12, marginTop: 2 }}>더보기</Text>
+          <MaterialIcons name="more-vert" size={26} color="gray" />
+          <Text style={{ color: 'gray', fontSize: 12, marginTop: 2 }}>더보기</Text>
         </TouchableOpacity>
       </View>
       {/* 상태 변경 드롭다운(안드로이드) */}
