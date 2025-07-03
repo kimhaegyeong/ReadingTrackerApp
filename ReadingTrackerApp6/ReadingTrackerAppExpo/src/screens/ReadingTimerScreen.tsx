@@ -676,6 +676,10 @@ const ReadingTimerScreen = () => {
                 >
                   {item.book}
                 </Text>
+                {/* 메모 */}
+                {item.notes ? (
+                  <Text style={styles.sessionNotesCard}>{item.notes}</Text>
+                ) : null}
                 {/* 시간/분/페이지 한 줄 */}
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2, width: '100%' }}>
                   <Text style={styles.sessionTimeCard}>{item.startTime} - {item.endTime}</Text>
@@ -686,10 +690,6 @@ const ReadingTimerScreen = () => {
                     )}
                   </View>
                 </View>
-                {/* 메모 */}
-                {item.notes ? (
-                  <Text style={styles.sessionNotesCard}>{item.notes}</Text>
-                ) : null}
                 {/* 구분선 */}
                 <View style={{ height: 1, backgroundColor: colors.border, marginTop: 8 }} />
               </View>
