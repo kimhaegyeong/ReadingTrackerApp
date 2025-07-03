@@ -19,16 +19,18 @@ export const spacing = {
   md: 16,
   lg: 24,
   xl: 32,
-  xxl: 48,
+};
+
+export const borderRadius = {
+  sm: 6,
+  md: 10,
+  lg: 16,
 };
 
 export const typography = {
-  h1: { fontSize: 28, fontWeight: 'bold' as const },
-  h2: { fontSize: 22, fontWeight: 'bold' as const },
-  h3: { fontSize: 18, fontWeight: '600' as const },
-  body: { fontSize: 15, color: colors.textPrimary },
-  caption: { fontSize: 12, color: colors.textMuted },
-  button: { fontSize: 16, fontWeight: '600' as const },
+  body: { fontSize: 16, fontWeight: '400' },
+  button: { fontSize: 16, fontWeight: '600' },
+  title: { fontSize: 20, fontWeight: 'bold' },
 };
 
 export const iconSizes = {
@@ -41,10 +43,9 @@ export const iconSizes = {
 export const commonStyles = {
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 10,
+    borderRadius: borderRadius.md,
     marginBottom: spacing.md,
     padding: spacing.md,
-    // elevation, border, 그림자 제거
   },
   header: {
     backgroundColor: colors.surface,
@@ -60,15 +61,15 @@ export const commonStyles = {
   tabContainer: {
     flexDirection: 'row' as const,
     backgroundColor: colors.divider,
-    borderRadius: 8,
-    padding: 4,
+    borderRadius: borderRadius.sm,
+    padding: spacing.xs,
     marginHorizontal: spacing.md,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: spacing.sm * 1.5,
     alignItems: 'center' as const,
-    borderRadius: 6,
+    borderRadius: borderRadius.sm,
   },
   activeTabButton: {
     backgroundColor: colors.surface,
@@ -94,4 +95,48 @@ export const chartConfig = {
   labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
   style: { borderRadius: 8 },
   propsForBackgroundLines: { stroke: colors.border }
+};
+
+export const buttonStyles = {
+  primary: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  outline: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  text: {
+    backgroundColor: 'transparent',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+};
+
+export const inputStyles = {
+  base: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: typography.body.fontSize,
+    color: colors.textPrimary,
+  },
+  error: {
+    borderColor: colors.error,
+  },
 }; 

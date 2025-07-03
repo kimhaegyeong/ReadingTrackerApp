@@ -7,6 +7,10 @@ import CustomCard from '../components/common/CustomCard';
 import CustomButton from '../components/common/CustomButton';
 import CustomBadge from '../components/common/CustomBadge';
 import { formatNumber } from '../lib/utils';
+import { useStats } from '../hooks/useStats';
+import { colors, spacing, borderRadius, commonStyles } from '../styles/theme';
+import { useStatsContext } from '../contexts/StatsContext';
+import { buttonStyles, inputStyles } from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 

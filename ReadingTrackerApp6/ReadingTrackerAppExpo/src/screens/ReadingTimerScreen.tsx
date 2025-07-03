@@ -5,11 +5,14 @@ import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { DatabaseService } from '../DatabaseService';
 import DropDownPicker from 'react-native-dropdown-picker';
-import { colors, typography } from '../styles/theme';
+import { colors, typography, spacing, borderRadius, commonStyles, buttonStyles, inputStyles } from '../styles/theme';
 import CustomCard from '../components/common/CustomCard';
 import CustomButton from '../components/common/CustomButton';
 import CustomBadge from '../components/common/CustomBadge';
 import { formatNumber } from '../lib/utils';
+import { useBooks } from '../hooks/useBooks';
+import { useReadingSessions } from '../hooks/useReadingSessions';
+import { useStatsContext } from '../contexts/StatsContext';
 
 const initialSessions = [
   {

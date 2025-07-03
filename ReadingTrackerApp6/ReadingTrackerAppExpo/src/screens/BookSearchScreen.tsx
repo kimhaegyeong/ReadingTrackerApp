@@ -9,6 +9,10 @@ import CustomCard from '../components/common/CustomCard';
 import CustomButton from '../components/common/CustomButton';
 import CustomBadge from '../components/common/CustomBadge';
 import { formatNumber } from '../lib/utils';
+import { useBooks } from '../hooks/useBooks';
+import { colors, spacing, borderRadius, commonStyles } from '../styles/theme';
+import { useStatsContext } from '../contexts/StatsContext';
+import { buttonStyles, inputStyles } from '../styles/theme';
 
 const ALADIN_API_URL = 'https://www.aladin.co.kr/ttb/api/ItemSearch.aspx';
 

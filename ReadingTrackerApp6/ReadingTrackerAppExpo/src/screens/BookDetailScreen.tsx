@@ -17,13 +17,16 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
 import { DatabaseService, Book as DBBook } from '../DatabaseService';
-import { useBookContext } from '../BookContext';
+import { useBooks } from '../hooks/useBooks';
+import { colors, spacing, borderRadius, commonStyles } from '../styles/theme';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import CustomCard from '../components/common/CustomCard';
 import CustomButton from '../components/common/CustomButton';
 import CustomBadge from '../components/common/CustomBadge';
 import { formatNumber } from '../lib/utils';
+import { useStatsContext } from '../contexts/StatsContext';
+import { buttonStyles, inputStyles } from '../styles/theme';
 // import * as MLKitOcr from 'expo-mlkit-ocr'; // 기존 import 주석 처리
 let MLKitOcr: any = null;
 if (typeof navigator !== 'undefined' && navigator.product !== 'ReactNativeWeb') {
@@ -75,7 +78,7 @@ interface BookDetailScreenProps {
 const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
   const navigation = useNavigation();
   const { book } = route.params;
-  const { updateBook, deleteBook, dbService } = useBookContext();
+  const { updateBook, deleteBook, dbService } = useBooks();
   const [title, setTitle] = useState(book.title);
   const [author, setAuthor] = useState(book.author);
   const [activeTab, setActiveTab] = useState('quotes');
