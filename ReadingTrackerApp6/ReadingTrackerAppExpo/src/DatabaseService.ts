@@ -675,4 +675,16 @@ export class DatabaseService {
     );
     return rows;
   }
+
+  /**
+   * status가 'completed' 또는 'reading'인 책의 전체 페이지 합계 반환
+   */
+  public async getTotalBookPages(): Promise<number> {
+    if (!this.db) throw new Error('DB not initialized');
+    // @ts-ignore
+    const row = await this.db.getFirstAsync<{ totalBookPages: number }>(
+      `SELECT SUM(pages) as totalBookPages FROM books WHERE (status = 'completed' OR status = 'reading')`
+    );
+    return row?.totalBookPages || 0;
+  }
 } 

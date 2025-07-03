@@ -38,6 +38,7 @@ const ReadingStatsScreen = ({ navigation }: any) => {
   const [booksRead, setBooksRead] = useState(0);
   const [totalMinutes, setTotalMinutes] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalBookPages, setTotalBookPages] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
   const [monthlyStats, setMonthlyStats] = useState<any[]>([]);
@@ -72,6 +73,9 @@ const ReadingStatsScreen = ({ navigation }: any) => {
       const total = await db.getTotalStats();
       setTotalMinutes(total.totalMinutes);
       setTotalPages(total.totalPages);
+      // status가 completed 또는 reading인 책의 전체 페이지 합계
+      const totalBookPages = await db.getTotalBookPages();
+      setTotalBookPages(totalBookPages);
       // 월별 통계
       const monthly = await db.getMonthlyStats(selectedYear);
       setMonthlyStats(monthly);
@@ -150,6 +154,14 @@ const ReadingStatsScreen = ({ navigation }: any) => {
     }
   };
 
+  // k 단위 포맷 함수 추가
+  const formatPages = (num: number) => {
+    if (num >= 1000) {
+      return `${Math.floor(num / 1000).toLocaleString()}k`;
+    }
+    return num.toLocaleString();
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -223,8 +235,8 @@ const ReadingStatsScreen = ({ navigation }: any) => {
                 <View style={styles.statIconContainer}>
                   <MaterialIcons name="bar-chart" size={24} color="#f59e0b" />
                 </View>
-                <Text style={styles.statNumber}>{Math.floor(totalPages / 1000).toLocaleString()}k</Text>
-                <Text style={styles.statLabel}>총 페이지</Text>
+                <Text style={styles.statNumber}>{formatPages(totalPages)}</Text>
+                <Text style={styles.statLabel}>실제 읽은 페이지</Text>
                 <Text style={styles.statSubtext}>페이지</Text>
               </View>
             </View>
