@@ -219,10 +219,10 @@ export class DatabaseService {
   public async getAllBooks(): Promise<Book[]> {
     try {
       if (!this.db) throw new Error('DB not initialized');
-      console.log('[DatabaseService] getAllBooks 호출');
+      //console.log('[DatabaseService] getAllBooks 호출');
       // @ts-ignore
       const rows = await this.db.getAllAsync<Book>(`SELECT * FROM books ORDER BY created_at DESC`);
-      console.log('[DatabaseService] getAllBooks 결과:', rows);
+      //console.log('[DatabaseService] getAllBooks 결과:', rows);
       return rows;
     } catch (e) {
       console.error('getAllBooks error', e);
@@ -461,6 +461,7 @@ export class DatabaseService {
     const row = await this.db.getFirstAsync<{ totalMinutes: number, totalPages: number }>(
       `SELECT SUM(duration_minutes) as totalMinutes, SUM(pages_read) as totalPages FROM reading_sessions`
     );
+    console.log('[DB] getTotalStats 쿼리 결과:', row);
     return {
       totalMinutes: row?.totalMinutes || 0,
       totalPages: row?.totalPages || 0,
@@ -656,6 +657,7 @@ export class DatabaseService {
       `SELECT COUNT(*) as count FROM books WHERE status = 'completed' AND strftime('%Y', completed_date) = ?`,
       String(year)
     );
+    console.log(`[DB] getBooksReadCount(${year}) 쿼리 결과:`, row);
     return row?.count ?? 0;
   }
 

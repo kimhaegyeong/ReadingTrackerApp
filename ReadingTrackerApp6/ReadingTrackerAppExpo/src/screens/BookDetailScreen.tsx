@@ -398,7 +398,17 @@ const BookDetailScreen = ({ route }: BookDetailScreenProps) => {
 
   // 상태 변경 핸들러 예시
   const handleStatusChange = async (status: string) => {
-    await updateBook(book.id, { status });
+    if (status === 'completed') {
+      // 오늘 날짜를 YYYY-MM-DD 형식으로 생성
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const completedDate = `${yyyy}-${mm}-${dd}`;
+      await updateBook(book.id, { status, completed_date: completedDate });
+    } else {
+      await updateBook(book.id, { status });
+    }
     // 필요시 최신화
   };
 
