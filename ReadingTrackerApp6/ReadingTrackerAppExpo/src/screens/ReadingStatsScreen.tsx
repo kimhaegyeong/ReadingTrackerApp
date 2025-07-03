@@ -21,6 +21,12 @@ const TABS = [
   { key: 'history', label: '기록' },
 ];
 
+const CHART_TYPES = [
+  { key: 'books', label: '책 수' },
+  { key: 'minutes', label: '독서 시간' },
+  { key: 'pages', label: '페이지 수' },
+];
+
 const ReadingStatsScreen = ({ navigation }: any) => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
@@ -47,6 +53,8 @@ const ReadingStatsScreen = ({ navigation }: any) => {
   const [expandedDate, setExpandedDate] = useState<string | null>(null);
   const [sessionsByDate, setSessionsByDate] = useState<{ [date: string]: any[] }>({});
   const [loadingSessions, setLoadingSessions] = useState(false);
+
+  const [chartType, setChartType] = useState<'books' | 'minutes' | 'pages'>('books');
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -279,17 +287,32 @@ const ReadingStatsScreen = ({ navigation }: any) => {
         {/* 차트 탭 */}
         {selectedTab === 'charts' && (
           <View style={styles.chartsContainer}>
+            <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+              {CHART_TYPES.map(type => (
+                <TouchableOpacity
+                  key={type.key}
+                  style={[styles.tabButton, chartType === type.key && styles.activeTabButton]}
+                  onPress={() => setChartType(type.key as any)}
+                >
+                  <Text style={[styles.tabText, chartType === type.key && styles.activeTabText]}>{type.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             <View style={styles.chartCard}>
-              <Text style={styles.chartTitle}>월별 독서량</Text>
+              <Text style={styles.chartTitle}>
+                {chartType === 'books' ? '월별 독서량(권)' : chartType === 'minutes' ? '월별 독서 시간(분)' : '월별 읽은 페이지'}
+              </Text>
               <BarChart
                 data={{
                   labels: monthlyStats.map((s: any) => `${s.month}월`),
-                  datasets: [{ data: monthlyStats.map((s: any) => s.books) }]
+                  datasets: [
+                    { data: monthlyStats.map((s: any) => chartType === 'books' ? s.books : chartType === 'minutes' ? s.minutes : s.pages) }
+                  ]
                 }}
                 width={width - 48}
                 height={200}
                 yAxisLabel=""
-                yAxisSuffix=""
+                yAxisSuffix={chartType === 'books' ? '권' : chartType === 'minutes' ? '분' : 'p'}
                 chartConfig={{
                   backgroundColor: '#fff',
                   backgroundGradientFrom: '#fff',

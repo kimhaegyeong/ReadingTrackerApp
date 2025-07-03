@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
 import { DatabaseService, Book as DBBook } from '../DatabaseService';

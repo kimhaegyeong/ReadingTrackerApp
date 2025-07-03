@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Alert, FlatList, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, Alert, FlatList, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, SafeAreaView, TextInput, Image, Modal, Dimensions } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { MaterialCommunityIcons, Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -13,6 +13,7 @@ import { formatNumber } from '../lib/utils';
 import { useBooks } from '../hooks/useBooks';
 import { useReadingSessions } from '../hooks/useReadingSessions';
 import { useStatsContext } from '../contexts/StatsContext';
+import { BarChart } from 'react-native-chart-kit';
 
 const initialSessions = [
   {
@@ -82,6 +83,9 @@ const ReadingTimerScreen = () => {
   const [manualBookModalVisible, setManualBookModalVisible] = useState(false);
   const [selectedBookManual, setSelectedBookManual] = useState('');
   const [selectedBookIdManual, setSelectedBookIdManual] = useState<string | null>(null);
+  const [monthlyStats, setMonthlyStats] = useState<{ month: number; books: number; minutes: number; pages: number; }[]>([]);
+  const [chartType, setChartType] = useState('books');
+  const [width, setWidth] = useState(0);
 
   // DB에서 오늘의 기록, 통계 불러오기
   const fetchSessionsAndStats = async () => {
@@ -379,6 +383,18 @@ const ReadingTimerScreen = () => {
     }
   }, [books, route]);
 
+  useEffect(() => {
+    (async () => {
+      const db = await DatabaseService.getInstance();
+      const stats = await db.getMonthlyStats(new Date().getFullYear());
+      setMonthlyStats(stats);
+    })();
+  }, []);
+
+  useEffect(() => {
+    setWidth(Dimensions.get('window').width);
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.headerCard}>
@@ -412,7 +428,7 @@ const ReadingTimerScreen = () => {
                   onPress={() => handleBookSelect(String(book.id))}
                 >
                   {book.cover ? (
-                    <Image source={{ uri: book.cover }} style={styles.bookCover} />
+                    <Image source={{ uri: book.cover }} style={styles.bookCover as any} />
                   ) : (
                     <View style={[styles.bookCover, { backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }]}/>
                   )}
@@ -456,7 +472,7 @@ const ReadingTimerScreen = () => {
                   onPress={() => handleManualBookSelect(String(book.id))}
                 >
                   {book.cover ? (
-                    <Image source={{ uri: book.cover }} style={styles.bookCover} />
+                    <Image source={{ uri: book.cover }} style={styles.bookCover as any} />
                   ) : (
                     <View style={[styles.bookCover, { backgroundColor: '#e5e7eb', alignItems: 'center', justifyContent: 'center' }]}/>
                   )}
@@ -702,6 +718,51 @@ const ReadingTimerScreen = () => {
               </View>
             ))
           )}
+        </View>
+        {/* 월별 독서량 차트 카드 */}
+        <View style={styles.chartCard}>
+          <Text style={styles.chartTitle}>
+            {chartType === 'books' ? '월별 독서량(권)' : chartType === 'minutes' ? '월별 독서 시간(분)' : '월별 읽은 페이지'}
+          </Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chartContainer}
+          >
+            <BarChart
+              data={{
+                labels: monthlyStats.map((s: any) => `${s.month}월`),
+                datasets: [{ data: monthlyStats.map((s: any) => chartType === 'books' ? s.books : chartType === 'minutes' ? s.minutes : s.pages) }]
+              }}
+              width={width - 80}
+              height={200}
+              yAxisLabel=""
+              yAxisSuffix={chartType === 'books' ? '권' : chartType === 'minutes' ? '분' : 'p'}
+              chartConfig={{
+                backgroundColor: '#fff',
+                backgroundGradientFrom: '#fff',
+                backgroundGradientTo: '#fff',
+                decimalPlaces: 0,
+                color: (opacity = 1) => `rgba(37, 99, 235, ${opacity})`,
+                labelColor: (opacity = 1) => `rgba(0,0,0,${opacity})`,
+                style: { borderRadius: 16 },
+                propsForDots: { r: '6', strokeWidth: '2', stroke: '#2563eb' },
+                propsForLabels: {
+                  fontSize: 10,
+                },
+                propsForVerticalLabels: {
+                  fontSize: 10,
+                },
+                propsForHorizontalLabels: {
+                  fontSize: 10,
+                },
+              }}
+              style={{ 
+                borderRadius: 16,
+                marginHorizontal: 20,
+              }}
+            />
+          </ScrollView>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -1056,7 +1117,7 @@ const styles = StyleSheet.create({
   },
   buttonTextCommon: {
     fontSize: typography.button.fontSize,
-    fontWeight: typography.button.fontWeight,
+    fontWeight: typography.button.fontWeight as any,
     letterSpacing: 0.2,
     color: colors.primary,
   },
@@ -1070,6 +1131,29 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: typography.body.fontSize,
     color: colors.textPrimary,
+  },
+  chartCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    overflow: 'hidden',
+  },
+  chartContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: '100%',
+  },
+  chartTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 12,
   },
 });
 

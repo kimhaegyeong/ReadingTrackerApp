@@ -527,12 +527,13 @@ export class DatabaseService {
   }
 
   /**
-   * 월별 독서량(책 수, 시간, 페이지) 통계 반환 (올해)
+   * 월별 독서량(책 수, 시간, 페이지) 통계 반환 (올해, 독서 세션 기준)
    */
   public async getMonthlyStats(year: number): Promise<Array<{ month: number, books: number, minutes: number, pages: number }>> {
     if (!this.db) throw new Error('DB not initialized');
-    // 월별로 책 완료 수, 총 독서 시간, 총 페이지
-    // status = 'completed'인 책을 기준으로 집계
+    // 1~12월 전체 데이터 생성, 빈 월은 0으로
+    const base = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, books: 0, minutes: 0, pages: 0 }));
+    // 독서 세션 기준으로 집계 (완독/읽는 중 모두 포함)
     // @ts-ignore
     const rows = await this.db.getAllAsync<{
       month: number,
@@ -540,23 +541,28 @@ export class DatabaseService {
       minutes: number,
       pages: number
     }>(
-      `SELECT strftime('%m', b.completed_date) as month,
-              COUNT(DISTINCT b.id) as books,
+      `SELECT strftime('%m', rs.start_time) as month,
+              COUNT(DISTINCT rs.book_id) as books,
               COALESCE(SUM(rs.duration_minutes),0) as minutes,
               COALESCE(SUM(rs.pages_read),0) as pages
-       FROM books b
-       LEFT JOIN reading_sessions rs ON rs.book_id = b.id
-       WHERE b.status = 'completed' AND strftime('%Y', b.completed_date) = ?
+       FROM reading_sessions rs
+       WHERE strftime('%Y', rs.start_time) = ?
        GROUP BY month
        ORDER BY month ASC`,
       String(year)
     );
-    return rows.map((r: any) => ({
-      month: Number(r.month),
-      books: r.books,
-      minutes: r.minutes,
-      pages: r.pages
-    }));
+    rows.forEach((r: any) => {
+      const idx = Number(r.month) - 1;
+      if (idx >= 0 && idx < 12) {
+        base[idx] = {
+          month: Number(r.month),
+          books: r.books,
+          minutes: r.minutes,
+          pages: r.pages
+        };
+      }
+    });
+    return base;
   }
 
   /**

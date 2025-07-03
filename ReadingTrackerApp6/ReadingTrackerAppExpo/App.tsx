@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, StackScreenProps } from '@react-navigation/stack';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,8 +17,14 @@ import AddBookScreen from './src/screens/AddBookScreen';
 import { DatabaseService } from './src/DatabaseService';
 import { BookProvider } from './src/BookContext';
 
+type RootStackParamList = {
+  Main: undefined;
+  BookDetail: { book: any };
+  AddBook: undefined;
+};
+
 const Tab = createBottomTabNavigator();
-const Stack = createStackNavigator();
+const Stack = createStackNavigator<RootStackParamList>();
 const queryClient = new QueryClient();
 
 function TabNavigator() {
@@ -52,7 +58,7 @@ function StackNavigator() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Main" component={TabNavigator} options={{ headerShown: false }} />
-      <Stack.Screen name="BookDetail" component={BookDetailScreen as any} options={{ headerShown: false }} />
+      <Stack.Screen name="BookDetail" component={BookDetailScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AddBook" component={AddBookScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
