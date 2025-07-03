@@ -15,27 +15,6 @@ import { useReadingSessions } from '../hooks/useReadingSessions';
 import { useStatsContext } from '../contexts/StatsContext';
 import { BarChart } from 'react-native-chart-kit';
 
-const initialSessions = [
-  {
-    id: 1,
-    book: '아몬드',
-    minutes: 25,
-    pages: 15,
-    notes: '감정에 대한 새로운 관점을 얻었다',
-    startTime: '14:30',
-    endTime: '14:55',
-  },
-  {
-    id: 2,
-    book: '사피엔스',
-    minutes: 20,
-    pages: 8,
-    notes: '허구와 현실의 경계에 대한 흥미로운 내용',
-    startTime: '16:00',
-    endTime: '16:20',
-  },
-];
-
 const formatTime = (totalSeconds: number) => {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -67,10 +46,6 @@ const ReadingTimerScreen = () => {
   const [todaySessions, setTodaySessions] = useState<any[]>([]);
   const [totalStats, setTotalStats] = useState({ totalMinutes: 0, totalPages: 0 });
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const [open, setOpen] = useState(false);
-  const [openManual, setOpenManual] = useState(false);
-  const [comboValue, setComboValue] = useState<string | null>(null);
-  const [comboValueManual, setComboValueManual] = useState<string | null>(null);
   const [items, setItems] = useState(
     books.map(book => ({
       label: `${book.title} - ${book.author}`,
@@ -145,7 +120,6 @@ const ReadingTimerScreen = () => {
         if (found) {
           setSelectedBook(found.title);
           setSelectedBookId(String(found.id));
-          setComboValue(String(found.id));
         }
       }
     })();
@@ -226,7 +200,6 @@ const ReadingTimerScreen = () => {
       setSeconds(0);
       setSelectedBook('');
       setSelectedBookId(null);
-      setComboValue(null);
       setTimerPages('');
       setTimerNotes('');
       Alert.alert('성공', `${minutes}분 독서 기록이 저장되었습니다!`);
@@ -259,7 +232,6 @@ const ReadingTimerScreen = () => {
     }
     setSelectedBookManual('');
     setSelectedBookIdManual(null);
-    setComboValueManual(null);
     setManualMinutes('');
     setManualPages('');
     setManualNotes('');
@@ -378,7 +350,6 @@ const ReadingTimerScreen = () => {
       if (found) {
         setSelectedBookManual(found.title);
         setSelectedBookIdManual(String(found.id));
-        setComboValueManual(String(found.id));
       }
     }
   }, [books, route]);
@@ -543,7 +514,7 @@ const ReadingTimerScreen = () => {
               )}
               <Button
                 onPress={handleStop}
-                icon={<Feather name="square" size={18} color="#fff" />}
+                icon={<Feather name="square" size={18} color="#dc262" />}
                 text="종료"
                 color="#dc2626"
                 disabled={seconds === 0}
