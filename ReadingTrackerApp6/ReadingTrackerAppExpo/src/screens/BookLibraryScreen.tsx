@@ -261,17 +261,15 @@ const BookLibraryScreen = () => {
             )}
           </View>
         </ScrollView>
-        <Button
-          mode="contained"
-          onPress={() => (navigation as any).navigate('Search')}
+        {/* FAB: 책 추가 버튼 */}
+        <TouchableOpacity
           style={styles.floatingActionButton}
-          icon="plus"
+          onPress={() => (navigation as any).navigate('Search')}
           accessibilityRole="button"
           accessibilityLabel="책 추가 버튼"
-          contentStyle={{ width: 56, height: 56, justifyContent: 'center', alignItems: 'center' }}
         >
-          {''}
-        </Button>
+          <Ionicons name="add" size={32} color="#fff" />
+        </TouchableOpacity>
       </Surface>
     </SafeAreaView>
   );
@@ -351,15 +349,19 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: '#2563eb', borderRadius: 4 },
   floatingActionButton: {
     position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: 28,
+    right: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#3b82f6',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
     zIndex: 10,
   },
   addButton: {
